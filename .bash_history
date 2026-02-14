@@ -179,3 +179,54 @@ git commit -m "Fix accenti (CIMÒ), integrazione SweetAlert2 e data entry assist
 # 3. Carica le modifiche sul server remoto (se configurato)
 git push
 docker-compose stop
+docker build -t smartreg-app:v2 .
+kubectl apply -f progetto-k8s.yaml
+kubectl get pods -w
+# Questo riavvia l'app e il db senza cancellare i dati del volume
+kubectl rollout restart deployment web-automatico
+kubectl rollout restart deployment database-santo
+docker build -t smartreg-app:v2 .
+kubectl apply -f progetto-k8s.yaml
+kubectl get pods
+kubectl delete pods --all
+kubectl get pods
+docker-compose down
+kubectl delete pods --all
+kubectl get pods
+kubectl logs deployment/web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add index.php && git commit -m "Versione definitiva SmartReg Pro - Supervisione CIMÒ" && git push
+git rm -r --cached .vscode-server/
+echo "/.vscode-server/" >> .gitignore && git add .gitignore && git commit --amend --no-edit && git filter-branch --force --index-filter 'git rm --cached --ignore-unmatch .vscode-server/bin/*/node' --prune-empty --tag-name-filter cat -- --all && git push -f
+git stash && git reset --soft HEAD~1 && echo ".vscode-server/" >> .gitignore && git add index.php .gitignore && git commit -m "Versione definitiva SmartReg - CIMÒ" && git push -f && git stash pop
+git reset --hard origin/master && echo ".vscode-server/" >> .gitignore && git add index.php .gitignore && git commit -m "Fix finale: index.php e gitignore - CIMÒ" && git push -f
+git rm -r --cached .vscode-server/ ; git add . ; git commit --amend --no-edit ; git push -f
+rm -rf .git && git init && git remote add origin https://github.com/santocimo/mio-primo-devops.git && git add . && git commit -m "Deploy pulito SmartReg - Supervisione CIMÒ" && git push -f origin master
+kubectl delete pod -l app=web-automatico
+minikube status
+# oppure, se era spento:
+minikube start
+mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config
+minikube update-context
+mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config && kubectl delete pod -l app=web-automatico && kubectl get pods
+sudo kubeadm kubeconfig user --client-name santo > $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config
+sudo find / -name "admin.conf" 2>/dev/null
+sudo /usr/bin/kubeadm kubeconfig user --client-name santo > $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl get nodes
+nano $HOME/.kube/config
