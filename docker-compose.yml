@@ -1,0 +1,41 @@
+services:
+  web-automatico:
+    build: .   # <--- Fondamentale: usa il Dockerfile per installare i driver
+    ports:
+      - "8081:80"
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - default
+    depends_on:
+      - database-santo
+
+  database-santo:
+    image: mariadb:latest
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: password_segreta
+      MYSQL_DATABASE: mio_database
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+  dashboard-db:
+    image: adminer:latest
+    restart: always
+    ports:
+      - "8082:8080"
+
+  monitoraggio:
+    image: portainer/portainer-ce:latest
+    restart: always
+    ports:
+      - "9443:9443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+
+volumes:
+  portainer_data:
+  db_data:

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Santo DevOps Lab</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e2e; /* Colore scuro moderno */
+            color: #cdd6f4;           /* Testo chiaro */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            border-radius: 15px;
+            background-color: #313244;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border: 1px solid #45475a;
+        }
+        h1 { color: #89b4fa; } /* Titolo azzurro */
+        .status {
+            color: #a6e3a1; /* Verde "online" */
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Santo DevOps Lab</h1>
+        <p>Il mio server Docker è <span class="status">ONLINE</span></p>
+        <p>Gestito con Git, Docker e tanta pazienza.</p>
+        <br>
+        <a href="contatti.html" style="color: #f9e2af; text-decoration: none; border: 1px solid #f9e2af; padding: 5px 10px; border-radius: 5px;">Vai ai Contatti ➡</a>
+        <a href="segreto.html">Vai alla pagina segreta</a>
+    </div>
+</body>
+</html>

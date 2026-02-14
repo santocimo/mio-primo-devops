@@ -1,0 +1,19 @@
+# VS Code Server (Il colpevole del blocco)
+.vscode-server/
+.vscode/
+
+# Database e Dati locali
+db_data/
+mysql/
+*.sql
+
+# Logs e file temporanei
+*.log
+.DS_Store
+Thumbs.db
+node_modules/
+
+# Credenziali e Ambiente
+config_segreta.php
+.env
+.docker/
