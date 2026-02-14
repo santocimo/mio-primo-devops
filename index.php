@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
 
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
@@ -53,7 +52,6 @@ try {
         header("Location: index.php"); exit;
     }
 
-    // STATISTICHE PER GRAFICI
     $totale = $pdo->query("SELECT COUNT(*) FROM visitatori")->fetchColumn() ?: 0;
     $uomini = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='M'")->fetchColumn() ?: 0;
     $donne = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='F'")->fetchColumn() ?: 0;
@@ -64,68 +62,71 @@ try {
 <html lang="it">
 <head>
     <meta charset="UTF-8">
-    <title>SmartReg Pro | Dashboard <?php echo $supervisore; ?></title>
+    <title>SmartReg Pro | <?php echo $supervisore; ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        :root { --accent: #7c4dff; --sidebar: #1a1a2e; }
-        body { background-color: #f4f7fe; font-family: 'Inter', sans-serif; overflow-x: hidden; }
-        .sidebar { background: var(--sidebar); min-height: 100vh; padding: 2rem; color: #fff; position: sticky; top: 0; z-index: 1000; }
-        .stat-card { border: none; border-radius: 20px; transition: 0.3s; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .main-card { background: #fff; border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 1.5rem; height: 100%; }
-        .cf-box { background: linear-gradient(135deg, #7c4dff 0%, #64b5f6 100%); border-radius: 12px; padding: 15px; color: white; text-align: center; }
-        .cf-text { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: transparent; border: none; color: white; width: 100%; text-align: center; }
-        .footer-sig { position: absolute; bottom: 20px; font-size: 0.7rem; opacity: 0.5; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; width: 80%; }
+        :root { --accent: #6610f2; --sidebar: #1a1a2e; --bg-light: #f4f7fe; }
+        body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
+        .sidebar { background: var(--sidebar); min-height: 100vh; padding: 2rem; color: #fff; position: sticky; top: 0; }
         
+        /* Grafica Viola CIMÒ */
+        .stat-card { border: none; border-radius: 15px; color: white; transition: 0.3s; box-shadow: 0 4px 15px rgba(102, 16, 242, 0.1); }
+        .card-totale { background: linear-gradient(135deg, #6610f2 0%, #3d0891 100%); }
+        .card-uomini { background: linear-gradient(135deg, #6f42c1 0%, #4b2ea2 100%); }
+        .card-donne { background: linear-gradient(135deg, #8553e8 0%, #5a2bb1 100%); }
+        
+        .main-card { background: #fff; border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 1.5rem; }
+        
+        /* Label Carine */
+        .label-custom { font-size: 0.7rem; font-weight: 800; color: #5a6268; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.5px; }
+        .input-custom { border: 2px solid #e9ecef; border-radius: 10px; padding: 0.6rem; font-size: 0.9rem; }
+        .input-custom:focus { border-color: var(--accent); box-shadow: none; }
+        
+        .cf-box { background: #1a1a2e; border-radius: 12px; padding: 15px; color: #fff; text-align: center; }
+        .cf-text { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: transparent; border: none; color: #8553e8; width: 100%; text-align: center; }
+        .footer-sig { position: absolute; bottom: 20px; font-size: 0.7rem; opacity: 0.4; width: 80%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+
         @media print {
-            .sidebar, .btn-actions, #form-col, .azioni-col, .chart-container { display: none !important; }
+            .sidebar, .btn-actions, #form-col, .azioni-col { display: none !important; }
             .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
             body { background: white !important; }
-            .main-card { box-shadow: none !important; }
+            .main-card { box-shadow: none !important; border: 1px solid #eee; }
         }
     </style>
 </head>
 <body>
 <div class="container-fluid p-0 d-flex">
     <div class="sidebar d-none d-lg-block" style="width: 280px;">
-        <h4 class="fw-bold mb-5"><i class="bi bi-cpu-fill text-primary"></i> SmartReg Pro</h4>
+        <h4 class="fw-bold mb-5"><i class="bi bi-shield-check text-primary"></i> SmartReg</h4>
         <div class="mb-4">
-            <small class="text-muted d-block text-uppercase small fw-bold">User Status</small>
-            <span class="badge bg-primary"><?php echo $ruolo_reale; ?></span>
+            <small class="text-muted d-block text-uppercase small">Accesso</small>
+            <span class="fw-bold"><?php echo $ruolo_reale; ?></span>
         </div>
-        <a href="?logout=1" class="btn btn-outline-danger btn-sm w-100 mt-5"><i class="bi bi-power"></i> Logout</a>
+        <a href="?logout=1" class="text-danger text-decoration-none mt-5 d-block small fw-bold"><i class="bi bi-power"></i> LOGOUT</a>
         <div class="footer-sig">System Architect: <strong><?php echo $supervisore; ?></strong><br>Rel: <?php echo $versione_software; ?></div>
     </div>
 
     <div class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 btn-actions">
-            <h2 class="fw-bold m-0">Dashboard Analitica</h2>
+            <h2 class="fw-bold m-0">Registro Visitatori</h2>
             <div class="d-flex gap-2">
-                <button onclick="window.print()" class="btn btn-danger rounded-pill px-4"><i class="bi bi-file-pdf"></i> PDF</button>
-                <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-success rounded-pill px-4"><i class="bi bi-file-excel"></i> EXCEL</a><?php endif; ?>
+                <button onclick="window.print()" class="btn btn-dark rounded-pill px-4 btn-sm fw-bold">PDF EXPORT</button>
+                <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-outline-primary rounded-pill px-4 btn-sm fw-bold">EXCEL</a><?php endif; ?>
             </div>
         </div>
 
         <div class="row g-3 mb-4 btn-actions">
-            <div class="col-md-4">
-                <div class="card stat-card bg-primary text-white p-3">
-                    <div class="d-flex justify-content-between"><div><small>Totale Iscritti</small><h3 class="fw-bold m-0"><?php echo $totale; ?></h3></div><i class="bi bi-people fs-1 opacity-50"></i></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stat-card bg-info text-white p-3">
-                    <div class="d-flex justify-content-between"><div><small>Uomini (M)</small><h3 class="fw-bold m-0"><?php echo $uomini; ?></h3></div><i class="bi bi-gender-male fs-1 opacity-50"></i></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card stat-card bg-warning text-white p-3">
-                    <div class="d-flex justify-content-between"><div><small>Donne (F)</small><h3 class="fw-bold m-0"><?php echo $donne; ?></h3></div><i class="bi bi-gender-female fs-1 opacity-50"></i></div>
-                </div>
-            </div>
+            <div class="col-md-4"><div class="card stat-card card-totale p-3">
+                <small class="opacity-75 fw-bold">TOTALE</small><h3 class="fw-bold m-0"><?php echo $totale; ?></h3>
+            </div></div>
+            <div class="col-md-4"><div class="card stat-card card-uomini p-3">
+                <small class="opacity-75 fw-bold">UOMINI</small><h3 class="fw-bold m-0"><?php echo $uomini; ?></h3>
+            </div></div>
+            <div class="col-md-4"><div class="card stat-card card-donne p-3">
+                <small class="opacity-75 fw-bold">DONNE</small><h3 class="fw-bold m-0"><?php echo $donne; ?></h3>
+            </div></div>
         </div>
 
         <div class="row g-4">
@@ -134,47 +135,44 @@ try {
                     <h5 class="fw-bold mb-4" id="formTitle">Anagrafica</h5>
                     <form method="POST">
                         <input type="hidden" name="id_record" id="id_record">
-                        <div class="mb-2"><label class="small fw-bold">NOME</label><input type="text" name="nuovo_nome" id="nome" class="form-control" required></div>
-                        <div class="mb-2"><label class="small fw-bold">COGNOME</label><input type="text" name="nuovo_cognome" id="cognome" class="form-control" required></div>
-                        <div class="row g-2 mb-2">
-                            <div class="col-8"><label class="small fw-bold">DATA NASCITA</label><input type="text" id="datepicker" class="form-control" required><input type="hidden" name="data_nascita_db" id="data_db"></div>
-                            <div class="col-4"><label class="small fw-bold">SESSO</label><select name="sesso" id="sesso" class="form-select"><option value="M">M</option><option value="F">F</option></select></div>
+                        <div class="mb-3"><label class="label-custom">Nome</label><input type="text" name="nuovo_nome" id="nome" class="form-control input-custom" required></div>
+                        <div class="mb-3"><label class="label-custom">Cognome</label><input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" required></div>
+                        <div class="row g-2 mb-3">
+                            <div class="col-7"><label class="label-custom">Nascita</label><input type="text" id="datepicker" class="form-control input-custom" placeholder="GG/MM/AAAA" required><input type="hidden" name="data_nascita_db" id="data_db"></div>
+                            <div class="col-5"><label class="label-custom">Sesso</label><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">M</option><option value="F">F</option></select></div>
                         </div>
-                        <div class="mb-2"><label class="small fw-bold">COMUNE</label><input type="text" name="luogo_nascita" id="comune_input" class="form-control"></div>
-                        <div class="mb-2"><label class="small fw-bold">INDIRIZZO</label><input type="text" name="indirizzo" id="indirizzo" class="form-control"></div>
-                        <div class="mb-3"><label class="small fw-bold">TELEFONO</label><input type="text" name="recapito" id="recapito" class="form-control"></div>
-                        <div class="cf-box mb-3"><small class="d-block opacity-75 small">CODICE FISCALE</small><input type="text" name="nuovo_cf" id="cf_output" class="cf-text" readonly></div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold">SALVA REGISTRO</button>
+                        <div class="mb-3"><label class="label-custom">Comune</label><input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom"></div>
+                        <div class="mb-3"><label class="label-custom">Indirizzo</label><input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom"></div>
+                        <div class="mb-3"><label class="label-custom">Telefono</label><input type="text" name="recapito" id="recapito" class="form-control input-custom"></div>
+                        <div class="cf-box mb-4"><small class="label-custom text-white opacity-50">Codice Fiscale</small><input type="text" name="nuovo_cf" id="cf_output" class="cf-text" readonly></div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm" style="background: var(--accent); border:none;">SALVA NEL REGISTRO</button>
                     </form>
-                    <div class="chart-container mt-4" style="height:200px">
-                        <canvas id="genderChart"></canvas>
-                    </div>
                 </div>
             </div>
 
             <div class="col-lg-8">
                 <div class="card main-card">
-                    <h5 class="fw-bold mb-4">Registro Cronologico</h5>
+                    <h5 class="fw-bold mb-4 text-muted small">LISTA ISCRITTI</h5>
                     <div class="table-responsive">
                         <table class="table align-middle">
-                            <thead class="table-light small">
-                                <tr>
-                                    <th>UTENTE</th>
-                                    <th>CONTATTI / RESIDENZA</th>
-                                    <th class="text-end azioni-col">AZIONI</th>
+                            <thead class="table-light">
+                                <tr class="label-custom">
+                                    <th>Utente / CF</th>
+                                    <th>Contatto / Luogo</th>
+                                    <th class="text-end azioni-col">Azioni</th>
                                 </tr>
                             </thead>
-                            <tbody>
+                            <tbody class="small">
                                 <?php 
                                 $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
                                 while($v = $st->fetch()) {
                                     $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
                                     echo "<tr>
-                                        <td><strong>{$v['nome']} {$v['cognome']}</strong><br><small class='text-primary font-monospace'>{$v['codice_fiscale']}</small></td>
-                                        <td><small><i class='bi bi-telephone text-muted'></i> {$v['recapito']}<br><span class='text-muted'>{$v['indirizzo']} ({$v['luogo_nascita']})</span></small></td>
+                                        <td><strong>{$v['nome']} {$v['cognome']}</strong><br><span class='text-primary font-monospace'>{$v['codice_fiscale']}</span></td>
+                                        <td><i class='bi bi-telephone'></i> {$v['recapito']}<br><span class='text-muted'>{$v['indirizzo']} ({$v['luogo_nascita']})</span></td>
                                         <td class='text-end azioni-col'>
-                                            <button onclick='modificaRecord($v_json)' class='btn btn-sm btn-light border'><i class='bi bi-pencil'></i></button>
-                                            <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-light border text-danger'><i class='bi bi-trash'></i></button>
+                                            <button onclick='modificaRecord($v_json)' class='btn btn-sm btn-light'><i class='bi bi-pencil'></i></button>
+                                            <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-light text-danger'><i class='bi bi-trash'></i></button>
                                         </td>
                                     </tr>";
                                 }
@@ -190,19 +188,10 @@ try {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(function() {
     let belfiore = "";
-    // Grafico
-    new Chart(document.getElementById('genderChart'), {
-        type: 'doughnut',
-        data: {
-            labels: ['Uomini', 'Donne'],
-            datasets: [{ data: [<?php echo "$uomini, $donne"; ?>], backgroundColor: ['#0dcaf0', '#ffc107'] }]
-        },
-        options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
-    });
-
     function generaCF() {
         const n=$("#nome").val(), c=$("#cognome").val(), dIn=$("#datepicker").val(), s=$("#sesso").val();
         if (n && c && dIn.length === 10 && belfiore) {
@@ -231,7 +220,7 @@ $(function() {
         return String.fromCharCode(65 + (s%26));
     }
     window.confermaElimina = function(id, nome) {
-        Swal.fire({ title: 'Eliminare?', text: nome, icon: 'warning', showCancelButton: true }).then((r) => { if (r.isConfirmed) window.location.href = "?delete=" + id; });
+        Swal.fire({ title: 'Eliminare?', text: nome, icon: 'warning', showCancelButton: true, confirmButtonColor: '#6610f2' }).then((r) => { if (r.isConfirmed) window.location.href = "?delete=" + id; });
     }
     window.modificaRecord = function(d) {
         $("#formTitle").text("Modifica Record"); $("#id_record").val(d.id);
