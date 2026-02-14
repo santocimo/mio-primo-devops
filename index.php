@@ -4,7 +4,7 @@ if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
 
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
-$versione_software = "V3.3 Final";
+$versione_software = "V3.3.1 Final";
 
 // Database
 $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'password_segreta';
@@ -17,7 +17,6 @@ try {
 
     function forzaMaiuscolo($str) { return mb_convert_case($str, MB_CASE_UPPER, "UTF-8"); }
 
-    // EXPORT EXCEL
     if (isset($_GET['export_excel']) && $_SESSION['user_role'] == 'admin') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
@@ -28,13 +27,11 @@ try {
         exit;
     }
 
-    // ELIMINAZIONE
     if (isset($_GET['delete'])) {
         $pdo->prepare("DELETE FROM visitatori WHERE id = ?")->execute([$_GET['delete']]);
         header("Location: index.php"); exit;
     }
 
-    // SALVATAGGIO
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuovo_cf'])) {
         $params = [
             ':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), 
@@ -66,30 +63,25 @@ try {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         :root { --accent: #6610f2; --sidebar: #1a1a2e; --bg-light: #f4f7fe; }
         body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
         .sidebar { background: var(--sidebar); min-height: 100vh; padding: 2rem; color: #fff; position: sticky; top: 0; }
-        
         .stat-card { border: none; border-radius: 15px; color: white; transition: 0.3s; box-shadow: 0 4px 15px rgba(102, 16, 242, 0.1); }
         .card-totale { background: linear-gradient(135deg, #6610f2 0%, #3d0891 100%); }
         .card-uomini { background: linear-gradient(135deg, #6f42c1 0%, #4b2ea2 100%); }
         .card-donne { background: linear-gradient(135deg, #8553e8 0%, #5a2bb1 100%); }
-        
         .main-card { background: #fff; border: none; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 1.5rem; }
         .label-custom { font-size: 0.7rem; font-weight: 800; color: #5a6268; text-transform: uppercase; margin-bottom: 5px; display: block; letter-spacing: 0.5px; }
         .input-custom { border: 2px solid #e9ecef; border-radius: 10px; padding: 0.6rem; font-size: 0.9rem; }
-        
         .cf-box { background: #1a1a2e; border-radius: 12px; padding: 15px; color: #fff; text-align: center; }
         .cf-text { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: transparent; border: none; color: #8553e8; width: 100%; text-align: center; }
         .footer-sig { position: absolute; bottom: 20px; font-size: 0.7rem; opacity: 0.4; width: 80%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-
-        /* Correzione Allineamento Tabella */
         .table thead th { vertical-align: middle; border-bottom: 2px solid #f0f0f0; padding: 12px 8px; }
         .table tbody td { vertical-align: middle; padding: 12px 8px; }
         .azioni-col { width: 100px; text-align: center !important; }
         .btn-group-custom { display: flex; gap: 5px; justify-content: center; }
-
         @media print {
             .sidebar, .btn-actions, #form-col, .azioni-col { display: none !important; }
             .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
@@ -163,13 +155,14 @@ try {
                                 $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
                                 while($v = $st->fetch()) {
                                     $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
+                                    $p_nome = $v['nome'] . ' ' . $v['cognome'];
                                     echo "<tr>
                                         <td><strong>{$v['nome']} {$v['cognome']}</strong><br><span class='text-primary font-monospace'>{$v['codice_fiscale']}</span></td>
                                         <td><i class='bi bi-telephone'></i> {$v['recapito']}<br><span class='text-muted'>{$v['indirizzo']} ({$v['luogo_nascita']})</span></td>
                                         <td class='azioni-col'>
                                             <div class='btn-group-custom'>
                                                 <button onclick='modificaRecord($v_json)' class='btn btn-sm btn-light border'><i class='bi bi-pencil'></i></button>
-                                                <button onclick='confermaElimina({{$v['id']}}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-light border text-danger'><i class='bi bi-trash'></i></button>
+                                                <button onclick='confermaElimina({$v['id']}, \"$p_nome\")' class='btn btn-sm btn-light border text-danger'><i class='bi bi-trash'></i></button>
                                             </div>
                                         </td>
                                     </tr>";
@@ -186,25 +179,13 @@ try {
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
 $(function() {
     let belfiore = "";
 
     function calcolaControllo(cf15) {
-        // Tabelle divise per non allertare i bot di sicurezza
-        const d = {
-            '0':1, '1':0, '2':5, '3':7, '4':9, '5':13, '6':15, '7':17, '8':19, '9':21,
-            'A':1, 'B':0, 'C':5, 'D':7, 'E':9, 'F':13, 'G':15, 'H':17, 'I':19, 'J':21,
-            'K':2, 'L':4, 'M':18, 'N':20, 'O':11, 'P':3, 'Q':6, 'R':8, 'S':12, 'T':14,
-            'U':16, 'V':10, 'W':22, 'X':25, 'Y':24, 'Z':23
-        };
-        const p = {
-            '0':0, '1':1, '2':2, '3':3, '4':4, '5':5, '6':6, '7':7, '8':8, '9':9,
-            'A':0, 'B':1, 'C':2, 'D':3, 'E':4, 'F':5, 'G':6, 'H':7, 'I':8, 'J':9,
-            'K':10, 'L':11, 'M':12, 'N':13, 'O':14, 'P':15, 'Q':16, 'R':17, 'S':18, 'T':19,
-            'U':20, 'V':21, 'W':22, 'X':23, 'Y':24, 'Z':25
-        };
+        const d = {'0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23};
+        const p = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25};
         let s=0; for(let i=0; i<15; i++) s += ((i+1)%2 !== 0) ? d[cf15[i]] : p[cf15[i]];
         return String.fromCharCode(65 + (s%26));
     }
@@ -234,7 +215,20 @@ $(function() {
     }
 
     window.confermaElimina = function(id, nome) {
-        Swal.fire({ title: 'Eliminare?', text: nome, icon: 'warning', showCancelButton: true, confirmButtonColor: '#6610f2' }).then((r) => { if (r.isConfirmed) window.location.href = "?delete=" + id; });
+        Swal.fire({
+            title: 'Sei sicuro?',
+            text: "Vuoi eliminare " + nome + "?",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#6610f2',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Sì, elimina!',
+            cancelButtonText: 'Annulla'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = "?delete=" + id;
+            }
+        });
     }
 
     window.modificaRecord = function(d) {
