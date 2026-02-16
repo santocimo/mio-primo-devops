@@ -1,58 +1,49 @@
 <?php
 session_start();
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
-
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
-$versione_software = "V3.3.1 Final";
-
-// Database
+$versione_software = "V3.4.0 Pro";
 $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'password_segreta';
-
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
-
     function forzaMaiuscolo($str) { return mb_convert_case($str, MB_CASE_UPPER, "UTF-8"); }
-
+    function calcolaEta($data) {
+        $n = new DateTime($data); $o = new DateTime();
+        return $n->diff($o)->y;
+    }
     if (isset($_GET['export_excel']) && $_SESSION['user_role'] == 'admin') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
-        $output = fopen('php://output', 'w');
-        fputcsv($output, ['ID', 'NOME', 'COGNOME', 'CF', 'DATA NASCITA', 'COMUNE', 'INDIRIZZO', 'RECAPITO', 'SESSO']);
-        $rows = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
-        while ($row = $rows->fetch()) fputcsv($output, $row);
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['ID', 'NOME', 'COGNOME', 'CF', 'DATA NASCITA', 'COMUNE', 'INDIRIZZO', 'RECAPITO', 'SESSO']);
+        $rs = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+        while ($r = $rs->fetch()) fputcsv($out, $r);
         exit;
     }
-
     if (isset($_GET['delete'])) {
         $pdo->prepare("DELETE FROM visitatori WHERE id = ?")->execute([$_GET['delete']]);
         header("Location: index.php"); exit;
     }
-
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuovo_cf'])) {
-        $params = [
-            ':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), 
-            ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], 
-            ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), 
-            ':r' => $_POST['recapito'], ':s' => $_POST['sesso']
-        ];
+        $p = [':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), ':r' => $_POST['recapito'], ':s' => $_POST['sesso']];
         if (!empty($_POST['id_record'])) {
-            $params[':id'] = $_POST['id_record'];
+            $p[':id'] = $_POST['id_record'];
             $sql = "UPDATE visitatori SET nome=:n, cognome=:c, codice_fiscale=:cf, data_nascita=:d, luogo_nascita=:l, indirizzo=:i, recapito=:r, sesso=:s WHERE id=:id";
+            $red = "index.php?updated=".$_POST['id_record'];
         } else {
             $sql = "INSERT INTO visitatori (nome, cognome, codice_fiscale, data_nascita, luogo_nascita, indirizzo, recapito, sesso) VALUES (:n,:c,:cf,:d,:l,:i,:r,:s)";
+            $red = "index.php?new=1";
         }
-        $pdo->prepare($sql)->execute($params);
-        header("Location: index.php"); exit;
+        $pdo->prepare($sql)->execute($p);
+        header("Location: $red"); exit;
     }
-
     $totale = $pdo->query("SELECT COUNT(*) FROM visitatori")->fetchColumn() ?: 0;
     $uomini = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='M'")->fetchColumn() ?: 0;
     $donne = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='F'")->fetchColumn() ?: 0;
-
 } catch (PDOException $e) { $db_error = "Errore Database"; }
 ?>
 <!DOCTYPE html>
@@ -68,7 +59,7 @@ try {
         :root { --accent: #6610f2; --sidebar: #1a1a2e; --bg-light: #f4f7fe; }
         body { background-color: var(--bg-light); font-family: 'Inter', sans-serif; }
         .sidebar { background: var(--sidebar); min-height: 100vh; padding: 2rem; color: #fff; position: sticky; top: 0; }
-        .stat-card { border: none; border-radius: 15px; color: white; transition: 0.3s; box-shadow: 0 4px 15px rgba(102, 16, 242, 0.1); }
+        .stat-card { border: none; border-radius: 15px; color: white; transition: 0.3s; box-shadow: 0 4px 15px rgba(102,16,242,0.1); }
         .card-totale { background: linear-gradient(135deg, #6610f2 0%, #3d0891 100%); }
         .card-uomini { background: linear-gradient(135deg, #6f42c1 0%, #4b2ea2 100%); }
         .card-donne { background: linear-gradient(135deg, #8553e8 0%, #5a2bb1 100%); }
@@ -78,30 +69,23 @@ try {
         .cf-box { background: #1a1a2e; border-radius: 12px; padding: 15px; color: #fff; text-align: center; }
         .cf-text { font-family: monospace; font-size: 1.2rem; font-weight: bold; background: transparent; border: none; color: #8553e8; width: 100%; text-align: center; }
         .footer-sig { position: absolute; bottom: 20px; font-size: 0.7rem; opacity: 0.4; width: 80%; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
-        .table thead th { vertical-align: middle; border-bottom: 2px solid #f0f0f0; padding: 12px 8px; }
-        .table tbody td { vertical-align: middle; padding: 12px 8px; }
-        .azioni-col { width: 100px; text-align: center !important; }
-        .btn-group-custom { display: flex; gap: 5px; justify-content: center; }
-        @media print {
-            .sidebar, .btn-actions, #form-col, .azioni-col { display: none !important; }
-            .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
-            body { background: white !important; }
-            .main-card { box-shadow: none !important; border: 1px solid #eee; }
-        }
+        .eta-badge { background: #e9ecef; color: #6610f2; font-weight: bold; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; }
+        .highlight-new { animation: flashRow 2s ease-out; background-color: rgba(102, 16, 242, 0.05) !important; }
+        .grid-header { font-weight: 800; color: #5a6268; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 10px; }
+        .grid-row { padding: 15px 0; border-bottom: 1px solid #f8f8f8; transition: background 0.2s; }
+        .grid-row:hover { background: #fafafa; }
+        @keyframes flashRow { 0% { background-color: rgba(102, 16, 242, 0.2); } 100% { background-color: transparent; } }
+        @media print { .sidebar, .btn-actions, #form-col, .search-box { display: none !important; } .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; } }
     </style>
 </head>
 <body>
 <div class="container-fluid p-0 d-flex">
     <div class="sidebar d-none d-lg-block" style="width: 280px;">
         <h4 class="fw-bold mb-5"><i class="bi bi-shield-check text-primary"></i> SmartReg</h4>
-        <div class="mb-4">
-            <small class="text-muted d-block text-uppercase small">Accesso</small>
-            <span class="fw-bold"><?php echo $ruolo_reale; ?></span>
-        </div>
+        <div class="mb-4"><small class="text-muted d-block text-uppercase small">Accesso</small><span class="fw-bold"><?php echo $ruolo_reale; ?></span></div>
         <a href="?logout=1" class="text-danger text-decoration-none mt-5 d-block small fw-bold"><i class="bi bi-power"></i> LOGOUT</a>
         <div class="footer-sig">System Architect: <strong><?php echo $supervisore; ?></strong><br>Rel: <?php echo $versione_software; ?></div>
     </div>
-
     <div class="flex-grow-1 p-4">
         <div class="d-flex justify-content-between align-items-center mb-4 btn-actions">
             <h2 class="fw-bold m-0">Registro Visitatori</h2>
@@ -110,17 +94,15 @@ try {
                 <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-outline-primary rounded-pill px-4 btn-sm fw-bold">EXCEL</a><?php endif; ?>
             </div>
         </div>
-
         <div class="row g-3 mb-4 btn-actions">
             <div class="col-md-4"><div class="card stat-card card-totale p-3"><small class="opacity-75 fw-bold">TOTALE</small><h3 class="fw-bold m-0"><?php echo $totale; ?></h3></div></div>
             <div class="col-md-4"><div class="card stat-card card-uomini p-3"><small class="opacity-75 fw-bold">UOMINI</small><h3 class="fw-bold m-0"><?php echo $uomini; ?></h3></div></div>
             <div class="col-md-4"><div class="card stat-card card-donne p-3"><small class="opacity-75 fw-bold">DONNE</small><h3 class="fw-bold m-0"><?php echo $donne; ?></h3></div></div>
         </div>
-
         <div class="row g-4">
-            <div class="col-lg-4" id="form-col">
+            <div id="form-col" class="col-lg-4">
                 <div class="card main-card">
-                    <h5 class="fw-bold mb-4" id="formTitle">Anagrafica</h5>
+                    <h5 id="formTitle" class="fw-bold mb-4">Anagrafica</h5>
                     <form method="POST">
                         <input type="hidden" name="id_record" id="id_record">
                         <div class="mb-3"><label class="label-custom">Nome</label><input type="text" name="nuovo_nome" id="nome" class="form-control input-custom" required></div>
@@ -133,63 +115,69 @@ try {
                         <div class="mb-3"><label class="label-custom">Indirizzo</label><input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom"></div>
                         <div class="mb-3"><label class="label-custom">Telefono</label><input type="text" name="recapito" id="recapito" class="form-control input-custom"></div>
                         <div class="cf-box mb-4"><small class="label-custom text-white opacity-50">Codice Fiscale</small><input type="text" name="nuovo_cf" id="cf_output" class="cf-text" readonly></div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm" style="background: var(--accent); border:none;">SALVA NEL REGISTRO</button>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 rounded-3 shadow-sm" style="background:var(--accent); border:none;">SALVA NEL REGISTRO</button>
                     </form>
                 </div>
             </div>
-
             <div class="col-lg-8">
                 <div class="card main-card">
-                    <h5 class="fw-bold mb-4 text-muted small">LISTA ISCRITTI</h5>
-                    <div class="table-responsive">
-                        <table class="table align-middle">
-                            <thead class="table-light">
-                                <tr class="label-custom">
-                                    <th>Utente / CF</th>
-                                    <th>Contatto / Luogo</th>
-                                    <th class="azioni-col">Azioni</th>
-                                </tr>
-                            </thead>
-                            <tbody class="small">
-                                <?php 
-                                $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
-                                while($v = $st->fetch()) {
-                                    $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
-                                    $p_nome = $v['nome'] . ' ' . $v['cognome'];
-                                    echo "<tr>
-                                        <td><strong>{$v['nome']} {$v['cognome']}</strong><br><span class='text-primary font-monospace'>{$v['codice_fiscale']}</span></td>
-                                        <td><i class='bi bi-telephone'></i> {$v['recapito']}<br><span class='text-muted'>{$v['indirizzo']} ({$v['luogo_nascita']})</span></td>
-                                        <td class='azioni-col'>
-                                            <div class='btn-group-custom'>
-                                                <button onclick='modificaRecord($v_json)' class='btn btn-sm btn-light border'><i class='bi bi-pencil'></i></button>
-                                                <button onclick='confermaElimina({$v['id']}, \"$p_nome\")' class='btn btn-sm btn-light border text-danger'><i class='bi bi-trash'></i></button>
-                                            </div>
-                                        </td>
-                                    </tr>";
-                                }
-                                ?>
-                            </tbody>
-                        </table>
+                    <div class="d-flex justify-content-between align-items-center mb-4 search-box">
+                        <h5 class="fw-bold text-muted small m-0">LISTA ISCRITTI</h5>
+                        <input type="text" id="liveSearch" class="form-control form-control-sm rounded-pill w-50" placeholder="🔍 Cerca per nome o CF...">
+                    </div>
+                    
+                    <div class="container-fluid px-0">
+                        <div class="row grid-header mx-0">
+                            <div class="col-5">UTENTE / CF</div>
+                            <div class="col-4">CONTATTO</div>
+                            <div class="col-3 text-end pe-0">AZIONI</div>
+                        </div>
+                        
+                        <div id="grid-body">
+                            <?php $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+                            while($v = $st->fetch()) {
+                                $v_j = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
+                                $eta = calcolaEta($v['data_nascita']);
+                                $h = (isset($_GET['updated']) && $_GET['updated'] == $v['id']) ? 'highlight-new' : '';
+                                echo "<div class='row grid-row mx-0 align-items-center $h'>
+                                    <div class='col-5'>
+                                        <div class='fw-bold' style='color:#2d3436;'>{$v['nome']} {$v['cognome']} <span class='eta-badge'>$eta anni</span></div>
+                                        <div class='text-primary font-monospace' style='font-size:0.85rem;'>{$v['codice_fiscale']}</div>
+                                    </div>
+                                    <div class='col-4'>
+                                        <div class='small mb-1'><i class='bi bi-telephone me-2 opacity-50'></i>{$v['recapito']}</div>
+                                        <div class='text-muted' style='font-size:0.75rem; text-transform:uppercase;'>{$v['indirizzo']} ({$v['luogo_nascita']})</div>
+                                    </div>
+                                    <div class='col-3 text-end pe-0'>
+                                        <div class='btn-group border rounded bg-white shadow-sm overflow-hidden'>
+                                            <button onclick='modificaRecord($v_j)' class='btn btn-sm btn-white border-0 py-2 px-3'><i class='bi bi-pencil'></i></button>
+                                            <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-white border-0 border-start py-2 px-3 text-danger'><i class='bi bi-trash'></i></button>
+                                        </div>
+                                    </div>
+                                </div>";
+                            } ?>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
 <script>
 $(function() {
     let belfiore = "";
-
+    $("#liveSearch").on("keyup", function() {
+        let v = $(this).val().toLowerCase();
+        $(".grid-row").filter(function() { $(this).toggle($(this).text().toLowerCase().indexOf(v) > -1) });
+    });
     function calcolaControllo(cf15) {
         const d = {'0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23};
         const p = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25};
         let s=0; for(let i=0; i<15; i++) s += ((i+1)%2 !== 0) ? d[cf15[i]] : p[cf15[i]];
         return String.fromCharCode(65 + (s%26));
     }
-
     function generaCF() {
         const n=$("#nome").val(), c=$("#cognome").val(), dIn=$("#datepicker").val(), s=$("#sesso").val();
         if (n && c && dIn.length === 10 && belfiore) {
@@ -200,37 +188,15 @@ $(function() {
             $("#cf_output").val(cf.toUpperCase() + calcolaControllo(cf.toUpperCase()));
         }
     }
-
-    $("#datepicker").datepicker({ dateFormat: "dd/mm/yy", onSelect: generaCF });
-    $("#comune_input").autocomplete({ 
-        source: "cerca_comuni.php", 
-        select: function(e, ui) { $(this).val(ui.item.value); belfiore = ui.item.codice; generaCF(); return false; } 
-    });
-
+    $("#datepicker").datepicker({ dateFormat: "dd/mm/yy", changeMonth:true, changeYear:true, yearRange:"1920:2026", onSelect: generaCF });
+    $("#comune_input").autocomplete({ source: "cerca_comuni.php", select: function(e, ui) { $(this).val(ui.item.value); belfiore = ui.item.codice; generaCF(); return false; } });
     function getLetters(str, isName) {
         let s = str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, '');
         let c = s.replace(/[AEIOU]/g, ''); let v = s.replace(/[^AEIOU]/g, '');
         if (isName && c.length >= 4) return c[0] + c[2] + c[3];
         return (c + v + "XXX").substring(0, 3);
     }
-
-    window.confermaElimina = function(id, nome) {
-        Swal.fire({
-            title: 'Sei sicuro?',
-            text: "Vuoi eliminare " + nome + "?",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#6610f2',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Sì, elimina!',
-            cancelButtonText: 'Annulla'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                window.location.href = "?delete=" + id;
-            }
-        });
-    }
-
+    window.confermaElimina = function(id, n) { Swal.fire({ title: 'Elimina?', text: n, icon: 'warning', showCancelButton: true, confirmButtonColor: '#6610f2', confirmButtonText: 'Sì!' }).then((res) => { if (res.isConfirmed) window.location.href = "?delete=" + id; }); }
     window.modificaRecord = function(d) {
         $("#formTitle").text("Modifica Record"); $("#id_record").val(d.id);
         $("#nome").val(d.nome); $("#cognome").val(d.cognome); $("#sesso").val(d.sesso);
@@ -239,7 +205,6 @@ $(function() {
         $("#cf_output").val(d.codice_fiscale); $("#data_db").val(d.data_nascita);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-
     $("input, select").on("change keyup", generaCF);
 });
 </script>

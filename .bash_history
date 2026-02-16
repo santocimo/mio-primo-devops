@@ -230,3 +230,52 @@ sudo find / -name "admin.conf" 2>/dev/null
 sudo /usr/bin/kubeadm kubeconfig user --client-name santo > $HOME/.kube/config && sudo chown $(id -u):$(id -g) $HOME/.kube/config
 kubectl get nodes
 nano $HOME/.kube/config
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m
+git commit -m "Versione Finale CIMÒ V3.2: Ripristinati grafici, recapiti e stampa PDF"
+git push origin main
+git branch
+git push origin master
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Versione Finale CIMÒ V3.2: Ripristinati grafici e colori"
+git push origin master
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add index.php
+git commit -m "Fix allineamento tabella e patch anti-bot GitGuardian"
+git push origin master
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add index.php
+git commit -m "CIMÒ V3.3.1: Ripristinato popup SweetAlert2 e fix cancellazione"
+git push origin master
+./deploy.ps1
+Get-ExecutionPolicy -List
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
