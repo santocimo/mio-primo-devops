@@ -3,7 +3,7 @@ session_start();
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
-$versione_software = "V3.4.0 Pro";
+$versione_software = "V3.4.1 Pro";
 $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'password_segreta';
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
@@ -15,6 +15,7 @@ try {
         $n = new DateTime($data); $o = new DateTime();
         return $n->diff($o)->y;
     }
+    // EXCEL EXPORT
     if (isset($_GET['export_excel']) && $_SESSION['user_role'] == 'admin') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
@@ -24,10 +25,12 @@ try {
         while ($r = $rs->fetch()) fputcsv($out, $r);
         exit;
     }
+    // ELIMINAZIONE
     if (isset($_GET['delete'])) {
         $pdo->prepare("DELETE FROM visitatori WHERE id = ?")->execute([$_GET['delete']]);
         header("Location: index.php"); exit;
     }
+    // SALVATAGGIO / EDIT
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuovo_cf'])) {
         $p = [':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), ':r' => $_POST['recapito'], ':s' => $_POST['sesso']];
         if (!empty($_POST['id_record'])) {
@@ -72,10 +75,19 @@ try {
         .eta-badge { background: #e9ecef; color: #6610f2; font-weight: bold; padding: 2px 6px; border-radius: 6px; font-size: 0.75rem; margin-left: 5px; }
         .highlight-new { animation: flashRow 2s ease-out; background-color: rgba(102, 16, 242, 0.05) !important; }
         .grid-header { font-weight: 800; color: #5a6268; text-transform: uppercase; font-size: 0.75rem; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 10px; }
-        .grid-row { padding: 15px 0; border-bottom: 1px solid #f8f8f8; transition: background 0.2s; }
-        .grid-row:hover { background: #fafafa; }
-        @keyframes flashRow { 0% { background-color: rgba(102, 16, 242, 0.2); } 100% { background-color: transparent; } }
-        @media print { .sidebar, .btn-actions, #form-col, .search-box { display: none !important; } .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; } }
+        .grid-row { padding: 15px 0; border-bottom: 1px solid #f8f8f8; }
+        
+        /* FIX PDF / PRINT */
+        @media print { 
+            .sidebar, .btn-actions, #form-col, .search-box, .azioni-col { display: none !important; } 
+            .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; max-width: 100% !important; }
+            .grid-header .col-5 { width: 50% !important; }
+            .grid-header .col-4 { width: 50% !important; }
+            .grid-row .col-5 { width: 50% !important; }
+            .grid-row .col-4 { width: 50% !important; }
+            body { background: white; }
+            .main-card { box-shadow: none; padding: 0; }
+        }
     </style>
 </head>
 <body>
@@ -123,14 +135,14 @@ try {
                 <div class="card main-card">
                     <div class="d-flex justify-content-between align-items-center mb-4 search-box">
                         <h5 class="fw-bold text-muted small m-0">LISTA ISCRITTI</h5>
-                        <input type="text" id="liveSearch" class="form-control form-control-sm rounded-pill w-50" placeholder="🔍 Cerca per nome o CF...">
+                        <input type="text" id="liveSearch" class="form-control form-control-sm rounded-pill w-50" placeholder="🔍 Cerca...">
                     </div>
                     
                     <div class="container-fluid px-0">
                         <div class="row grid-header mx-0">
                             <div class="col-5">UTENTE / CF</div>
                             <div class="col-4">CONTATTO</div>
-                            <div class="col-3 text-end pe-0">AZIONI</div>
+                            <div class="col-3 text-end pe-0 azioni-col">AZIONI</div>
                         </div>
                         
                         <div id="grid-body">
@@ -148,7 +160,7 @@ try {
                                         <div class='small mb-1'><i class='bi bi-telephone me-2 opacity-50'></i>{$v['recapito']}</div>
                                         <div class='text-muted' style='font-size:0.75rem; text-transform:uppercase;'>{$v['indirizzo']} ({$v['luogo_nascita']})</div>
                                     </div>
-                                    <div class='col-3 text-end pe-0'>
+                                    <div class='col-3 text-end pe-0 azioni-col'>
                                         <div class='btn-group border rounded bg-white shadow-sm overflow-hidden'>
                                             <button onclick='modificaRecord($v_j)' class='btn btn-sm btn-white border-0 py-2 px-3'><i class='bi bi-pencil'></i></button>
                                             <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-white border-0 border-start py-2 px-3 text-danger'><i class='bi bi-trash'></i></button>
