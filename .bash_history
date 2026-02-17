@@ -279,3 +279,23 @@ docker build -t smartreg-app:v2 .
 kubectl delete pod -l app=web-automatico
 docker build -t smartreg-app:v2 .
 kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix layout colonne registro CIMÒ"
+git push
+kubectl delete pod -l app=web-automaticogit add .
+git commit -m "Fix layout e aggiunta deploy script per CIMÒ"
+git push --set-upstream origin master
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automaticogit add .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix PDF: rimossa colonna azioni in stampa per CIMÒ"
+git push
