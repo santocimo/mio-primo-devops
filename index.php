@@ -3,7 +3,7 @@ session_start();
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
-$versione_software = "V3.5.0 Premium";
+$versione_software = "V3.5.1 Ultra";
 $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'password_segreta';
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
@@ -40,105 +40,95 @@ try {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>SmartReg Premium | <?php echo $supervisore; ?></title>
+    <title>SmartReg Ultra | <?php echo $supervisore; ?></title>
     <link rel="manifest" href="manifest.json">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
-        :root { --accent: #6366f1; --accent-dark: #4f46e5; --sidebar: #0f172a; --bg: #f8fafc; }
+        :root { --viola-deep: #4338ca; --viola-bright: #7c3aed; --bg: #fdfdff; }
         body { background-color: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
         
-        /* Sidebar elegante */
-        .sidebar { background: var(--sidebar); min-height: 100vh; padding: 2rem; color: #fff; position: sticky; top: 0; box-shadow: 10px 0 30px rgba(0,0,0,0.05); }
-        .sidebar-brand { font-weight: 800; letter-spacing: -1px; font-size: 1.5rem; margin-bottom: 3rem; display: block; background: linear-gradient(to right, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .sidebar { background: #0f172a; min-height: 100vh; padding: 2.5rem 1.5rem; color: #fff; position: sticky; top: 0; }
+        .sidebar-brand { font-weight: 800; font-size: 1.6rem; background: linear-gradient(45deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 3rem; display: block; }
         
-        /* Card Statistiche Ammalianti */
-        .stat-card { border: none; border-radius: 20px; padding: 1.2rem; transition: transform 0.3s; position: relative; overflow: hidden; }
-        .stat-card:hover { transform: translateY(-5px); }
-        .card-total { background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%); color: white; }
-        .card-male { background: #fff; border: 1px solid #e2e8f0; }
-        .card-female { background: #fff; border: 1px solid #e2e8f0; }
-        .stat-val { font-size: 1.5rem; font-weight: 800; display: block; }
-        .stat-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 700; opacity: 0.8; letter-spacing: 1px; }
+        /* Dashboard Header */
+        .glass-header { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%); border-radius: 24px; padding: 2rem; color: white; box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.2); margin-bottom: 2rem; }
+        
+        /* Stat Cards con icone grandi */
+        .stat-card-white { background: #fff; border: none; border-radius: 20px; padding: 1.5rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); border-bottom: 4px solid #e2e8f0; transition: 0.3s; }
+        .stat-card-white:hover { transform: translateY(-5px); border-bottom-color: var(--viola-bright); }
+        .icon-box { width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; margin-bottom: 1rem; }
+        
+        /* Form & Inputs */
+        .main-card { background: #fff; border: none; border-radius: 28px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); padding: 2rem; }
+        .input-custom { border: 2px solid #f1f5f9; border-radius: 14px; padding: 0.8rem; background: #f8fafc; font-size: 0.95rem; transition: all 0.2s ease; }
+        .input-custom:focus { border-color: var(--viola-bright); background: #fff; box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.1); outline: none; }
+        
+        /* Bottoni */
+        .btn-viola { background: linear-gradient(135deg, var(--viola-deep) 0%, var(--viola-bright) 100%); border: none; border-radius: 16px; font-weight: 800; padding: 1rem; color: white; transition: 0.3s; box-shadow: 0 10px 15px -3px rgba(124, 58, 237, 0.4); }
+        .btn-viola:hover { transform: translateY(-2px); box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.5); color: white; }
+        
+        /* Lista Row Style */
+        .grid-row { background: #fff; border-left: 5px solid transparent; padding: 1.2rem; margin-bottom: 0.8rem; border-radius: 16px; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); }
+        .grid-row:hover { border-left-color: var(--viola-bright); background: #fdfdff; transform: scale(1.01); }
+        .cf-tag { background: #faf5ff; color: #7e22ce; font-family: 'Monaco', monospace; padding: 5px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; border: 1px solid #f3e8ff; }
+        
+        .cf-display-box { background: #1e293b; border-radius: 16px; padding: 20px; text-align: center; color: #a78bfa; margin: 1.5rem 0; border: 1px solid rgba(167, 139, 250, 0.2); }
 
-        /* Pulsanti e Input */
-        .btn-premium { background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dark) 100%); border: none; border-radius: 12px; font-weight: 700; padding: 0.8rem; box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3); transition: 0.3s; }
-        .btn-premium:hover { transform: scale(1.02); opacity: 0.9; }
-        .btn-pdf { background: #fff; border: 1px solid #e2e8f0; color: #1e293b; border-radius: 12px; font-weight: 700; transition: 0.3s; }
-        .btn-pdf:hover { background: #f1f5f9; }
-        
-        .main-card { background: #fff; border: none; border-radius: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.05); padding: 2rem; }
-        .input-custom { border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.75rem; background: #f8fafc; font-size: 0.9rem; transition: 0.2s; }
-        .input-custom:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1); background: #fff; }
-
-        /* Lista Iscritti */
-        .grid-header { font-weight: 700; color: #64748b; text-transform: uppercase; font-size: 0.7rem; letter-spacing: 1px; padding: 1rem 0; }
-        .grid-row { padding: 1.2rem 0; border-bottom: 1px solid #f1f5f9; transition: 0.2s; border-radius: 12px; margin-bottom: 5px; }
-        .grid-row:hover { background: #f1f5f9; }
-        
-        .cf-badge { background: #eef2ff; color: #4338ca; font-family: 'Monaco', monospace; padding: 4px 8px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; }
-        
-        @media (max-width: 991px) { .sidebar { display: none; } .main-card { padding: 1.2rem; } }
-        @media print { .sidebar, .btn-actions, #form-col, .search-box, .azioni-col { display: none !important; } .col-lg-8 { width: 100% !important; flex: 0 0 100% !important; } }
+        @media (max-width: 991px) { .sidebar { display: none; } .glass-header { padding: 1.5rem; } }
     </style>
 </head>
 <body>
 <div class="container-fluid p-0 d-flex">
     <div class="sidebar" style="width: 260px;">
         <span class="sidebar-brand">SmartReg.</span>
-        <div class="mb-5">
-            <small class="text-muted d-block text-uppercase mb-1" style="font-size: 0.6rem; letter-spacing: 1px;">Operatore Corrente</small>
-            <div class="d-flex align-items-center">
-                <div class="bg-primary rounded-circle me-2" style="width:10px; height:10px;"></div>
-                <span class="fw-bold small text-white"><?php echo $ruolo_reale; ?></span>
-            </div>
+        <div class="nav flex-column gap-3">
+            <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-house-door me-2"></i> Dashboard</a>
+            <a href="?logout=1" class="nav-link text-danger p-0 small fw-bold mt-4"><i class="bi bi-power me-2"></i> Logout</a>
         </div>
-        <nav class="nav flex-column gap-2">
-            <a href="index.php" class="nav-link text-white opacity-75 small p-0"><i class="bi bi-grid-1x2 me-2"></i> Dashboard</a>
-            <a href="?logout=1" class="nav-link text-danger small p-0 mt-4 fw-bold"><i class="bi bi-box-arrow-left me-2"></i> ESCI</a>
-        </nav>
-        <div class="footer-sig" style="bottom: 30px; opacity: 0.3;">
-            <small>Arch: <strong><?php echo $supervisore; ?></strong></small><br>
-            <small><?php echo $versione_software; ?></small>
+        <div class="position-absolute bottom-0 mb-4 opacity-25 small">
+            Architect: <strong><?php echo $supervisore; ?></strong><br><?php echo $versione_software; ?>
         </div>
     </div>
 
-    <div class="flex-grow-1 p-3 p-md-5">
-        <div class="d-flex justify-content-between align-items-end mb-5 btn-actions">
+    <div class="flex-grow-1 p-3 p-md-4">
+        <div class="glass-header d-flex justify-content-between align-items-center">
             <div>
-                <h1 class="fw-800 h3 m-0">Registro <span class="text-primary">CIMÒ</span></h1>
-                <p class="text-muted small m-0">Gestione iscritti e anagrafiche digitali</p>
+                <h2 class="fw-800 m-0">Registro <span style="color: #a78bfa;"><?php echo $supervisore; ?></span></h2>
+                <p class="m-0 opacity-75 small">Sistema di gestione anagrafica centralizzato</p>
             </div>
             <div class="d-flex gap-2">
-                <button onclick="window.print()" class="btn btn-pdf btn-sm px-3"><i class="bi bi-file-earmark-pdf me-2"></i>Stampa</button>
+                <button onclick="window.print()" class="btn btn-light btn-sm rounded-pill px-3 fw-bold"><i class="bi bi-printer me-1"></i> PDF</button>
                 <?php if($ruolo_reale == 'ADMIN'): ?>
-                <a href="?export_excel=1" class="btn btn-pdf btn-sm px-3"><i class="bi bi-download me-2"></i>Excel</a>
+                <a href="?export_excel=1" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold">EXCEL</a>
                 <?php endif; ?>
             </div>
         </div>
 
-        <div class="row g-3 mb-5 btn-actions">
+        <div class="row g-3 mb-4 btn-actions">
             <div class="col-4">
-                <div class="stat-card card-total">
-                    <span class="stat-label">Totale Iscritti</span>
+                <div class="stat-card-white">
+                    <div class="icon-box bg-primary bg-opacity-10 text-primary"><i class="bi bi-people-fill"></i></div>
                     <span class="stat-val"><?php echo $totale; ?></span>
+                    <span class="text-muted small fw-bold">TOTALE ISCRITTI</span>
                 </div>
             </div>
             <div class="col-4">
-                <div class="stat-card card-male">
-                    <span class="stat-label text-primary">Uomini</span>
-                    <span class="stat-val text-primary"><i class="bi bi-gender-male me-1"></i><?php echo $uomini; ?></span>
+                <div class="stat-card-white">
+                    <div class="icon-box bg-info bg-opacity-10 text-info"><i class="bi bi-gender-male"></i></div>
+                    <span class="stat-val"><?php echo $uomini; ?></span>
+                    <span class="text-muted small fw-bold">UOMINI</span>
                 </div>
             </div>
             <div class="col-4">
-                <div class="stat-card card-female">
-                    <span class="stat-label text-danger">Donne</span>
-                    <span class="stat-val text-danger"><i class="bi bi-gender-female me-1"></i><?php echo $donne; ?></span>
+                <div class="stat-card-white">
+                    <div class="icon-box bg-danger bg-opacity-10 text-danger"><i class="bi bi-gender-female"></i></div>
+                    <span class="stat-val"><?php echo $donne; ?></span>
+                    <span class="text-muted small fw-bold">DONNE</span>
                 </div>
             </div>
         </div>
@@ -146,68 +136,61 @@ try {
         <div class="row g-4">
             <div id="form-col" class="col-lg-4">
                 <div class="card main-card">
-                    <h5 id="formTitle" class="fw-bold mb-4">Nuova Anagrafica</h5>
+                    <h5 id="formTitle" class="fw-800 mb-4 text-indigo-900">Anagrafica</h5>
                     <form method="POST">
                         <input type="hidden" name="id_record" id="id_record">
                         <div class="mb-3">
-                            <label class="label-custom">Nome e Cognome</label>
-                            <div class="row g-2">
-                                <div class="col-6"><input type="text" name="nuovo_nome" id="nome" class="form-control input-custom" placeholder="Nome" required></div>
-                                <div class="col-6"><input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" placeholder="Cognome" required></div>
-                            </div>
+                            <label class="small fw-800 text-muted mb-2 d-block">NOMINATIVO</label>
+                            <input type="text" name="nuovo_nome" id="nome" class="form-control input-custom mb-2" placeholder="Nome" required>
+                            <input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" placeholder="Cognome" required>
                         </div>
                         <div class="row g-2 mb-3">
-                            <div class="col-7"><label class="label-custom">Data di Nascita</label><input type="text" id="datepicker" class="form-control input-custom" placeholder="GG/MM/AAAA" readonly required><input type="hidden" name="data_nascita_db" id="data_db"></div>
-                            <div class="col-5"><label class="label-custom">Genere</label><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">Uomo</option><option value="F">Donna</option></select></div>
+                            <div class="col-7"><label class="small fw-800 text-muted mb-2 d-block">NASCITA</label><input type="text" id="datepicker" class="form-control input-custom" placeholder="GG/MM/AAAA" readonly required><input type="hidden" name="data_nascita_db" id="data_db"></div>
+                            <div class="col-5"><label class="small fw-800 text-muted mb-2 d-block">GENERE</label><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">M</option><option value="F">F</option></select></div>
                         </div>
-                        <div class="mb-3"><label class="label-custom">Comune e Indirizzo</label>
-                            <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Cerca Comune...">
-                            <input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom" placeholder="Via/Piazza, Civico">
+                        <div class="mb-3">
+                            <label class="small fw-800 text-muted mb-2 d-block">RECAPITI</label>
+                            <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Comune di nascita">
+                            <input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom mb-2" placeholder="Indirizzo">
+                            <input type="text" name="recapito" id="recapito" class="form-control input-custom" placeholder="Telefono">
                         </div>
-                        <div class="mb-4"><label class="label-custom">Contatto Telefonico</label><input type="text" name="recapito" id="recapito" class="form-control input-custom" placeholder="+39 3XX..."></div>
-                        <div class="cf-box mb-4">
-                            <small class="stat-label d-block mb-2" style="color: #94a3b8">Codice Fiscale Calcolato</small>
-                            <input type="text" name="nuovo_cf" id="cf_output" class="cf-text" style="color: #6366f1; font-size: 1.1rem;" readonly>
+                        <div class="cf-display-box">
+                            <small class="d-block opacity-50 mb-1 fw-bold">CODICE FISCALE</small>
+                            <input type="text" name="nuovo_cf" id="cf_output" class="cf-text w-100 border-0 bg-transparent text-center fw-bold" readonly style="color: inherit; font-size: 1.2rem; letter-spacing: 2px;">
                         </div>
-                        <button type="submit" class="btn btn-premium w-100 text-white shadow-lg">SALVA REGISTRO</button>
+                        <button type="submit" class="btn btn-viola w-100">SALVA DATI</button>
                     </form>
                 </div>
             </div>
 
             <div class="col-lg-8">
-                <div class="card main-card">
-                    <div class="d-flex justify-content-between align-items-center mb-4 search-box">
-                        <h5 class="fw-bold m-0" style="font-size: 0.9rem;">ELENCO ISCRITTI</h5>
-                        <input type="text" id="liveSearch" class="form-control form-control-sm border-0 bg-light rounded-pill px-3 w-50" placeholder="🔍 Cerca per nome o CF...">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="fw-800 m-0">ELENCO DATABASE</h6>
+                    <div class="position-relative w-50">
+                        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"></i>
+                        <input type="text" id="liveSearch" class="form-control border-0 shadow-sm rounded-pill ps-5 py-2 small" placeholder="Cerca...">
                     </div>
-                    <div class="container-fluid px-0">
-                        <div class="row grid-header mx-0 d-none d-md-flex">
-                            <div class="col-5">Dati Anagrafici</div>
-                            <div class="col-4">Recapito & Indirizzo</div>
-                            <div class="col-3 text-end">Operazioni</div>
-                        </div>
-                        <div id="grid-body">
-                            <?php $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
-                            while($v = $st->fetch()) {
-                                $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
-                                $h = (isset($_GET['updated']) && $_GET['updated'] == $v['id']) ? 'highlight-new' : '';
-                                echo "<div class='row grid-row mx-0 align-items-center $h'>
-                                    <div class='col-7 col-md-5'>
-                                        <div class='fw-bold' style='font-size: 0.9rem;'>{$v['nome']} {$v['cognome']}</div>
-                                        <span class='cf-badge'>{$v['codice_fiscale']}</span>
-                                    </div>
-                                    <div class='col-md-4 d-none d-md-block'>
-                                        <div class='small fw-600'><i class='bi bi-phone me-1 text-muted'></i>{$v['recapito']}</div>
-                                        <div class='text-muted' style='font-size: 0.7rem;'>{$v['indirizzo']} - {$v['luogo_nascita']}</div>
-                                    </div>
-                                    <div class='col-5 col-md-3 text-end azioni-col'>
-                                        <button onclick='modificaRecord($v_json)' class='btn btn-sm p-2 text-primary bg-light border-0 rounded-circle me-1'><i class='bi bi-pencil-fill'></i></button>
-                                        <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm p-2 text-danger bg-light border-0 rounded-circle'><i class='bi bi-trash3-fill'></i></button>
-                                    </div>
-                                </div>";
-                            } ?>
-                        </div>
-                    </div>
+                </div>
+                <div id="grid-body">
+                    <?php $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+                    while($v = $st->fetch()) {
+                        $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
+                        $h = (isset($_GET['updated']) && $_GET['updated'] == $v['id']) ? 'style="border-left-color: #10b981;"' : '';
+                        echo "<div class='grid-row d-flex justify-content-between align-items-center' $h>
+                            <div>
+                                <div class='fw-800' style='font-size: 1rem;'>{$v['nome']} {$v['cognome']}</div>
+                                <div class='mt-1'><span class='cf-tag'>{$v['codice_fiscale']}</span></div>
+                                <div class='text-muted small mt-2'><i class='bi bi-geo-alt me-1'></i>{$v['indirizzo']} - {$v['luogo_nascita']}</div>
+                            </div>
+                            <div class='text-end'>
+                                <div class='fw-bold small mb-2'><i class='bi bi-phone me-1'></i>{$v['recapito']}</div>
+                                <div class='azioni-col'>
+                                    <button onclick='modificaRecord($v_json)' class='btn btn-sm btn-light rounded-pill px-3'><i class='bi bi-pencil-fill text-primary'></i></button>
+                                    <button onclick='confermaElimina({$v['id']}, \"{$v['nome']} {$v['cognome']}\")' class='btn btn-sm btn-light rounded-pill px-3'><i class='bi bi-trash3-fill text-danger'></i></button>
+                                </div>
+                            </div>
+                        </div>";
+                    } ?>
                 </div>
             </div>
         </div>
@@ -243,11 +226,8 @@ $(function() {
     }
 
     $("#datepicker").datepicker({ dateFormat: "dd/mm/yy", changeMonth:true, changeYear:true, yearRange:"1920:2026", onSelect: generaCF });
-    $("#comune_input").autocomplete({ 
-        source: "cerca_comuni.php", 
-        select: function(e, ui) { $(this).val(ui.item.value); belfiore = ui.item.codice; generaCF(); return false; } 
-    });
-
+    $("#comune_input").autocomplete({ source: "cerca_comuni.php", select: function(e, ui) { $(this).val(ui.item.value); belfiore = ui.item.codice; generaCF(); return false; } });
+    
     function getLetters(str, isName) {
         let s = str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, '');
         let c = s.replace(/[AEIOU]/g, ''); let v = s.replace(/[^AEIOU]/g, '');
@@ -256,18 +236,17 @@ $(function() {
     }
 
     window.confermaElimina = function(id, n) { 
-        Swal.fire({ title: 'Rimuovere iscritto?', text: n, icon: 'warning', showCancelButton: true, confirmButtonColor: '#4f46e5', cancelButtonText: 'Annulla', confirmButtonText: 'Elimina Ora' }).then((res) => { if (res.isConfirmed) window.location.href = "?delete=" + id; }); 
+        Swal.fire({ title: 'Sicuro di eliminare?', text: n, icon: 'warning', showCancelButton: true, confirmButtonColor: '#7c3aed', confirmButtonText: 'Sì, elimina', cancelButtonText: 'No' }).then((res) => { if (res.isConfirmed) window.location.href = "?delete=" + id; }); 
     }
 
     window.modificaRecord = function(d) {
-        $("#formTitle").text("Modifica Record"); $("#id_record").val(d.id);
+        $("#formTitle").text("Modifica"); $("#id_record").val(d.id);
         $("#nome").val(d.nome); $("#cognome").val(d.cognome); $("#sesso").val(d.sesso);
         $("#comune_input").val(d.luogo_nascita); $("#indirizzo").val(d.indirizzo); $("#recapito").val(d.recapito);
         let dt = d.data_nascita.split('-'); $("#datepicker").val(dt[2]+'/'+dt[1]+'/'+dt[0]);
         $("#cf_output").val(d.codice_fiscale); $("#data_db").val(d.data_nascita);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    
     $("input, select").on("change keyup", generaCF);
 });
 </script>
