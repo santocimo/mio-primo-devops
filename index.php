@@ -237,7 +237,7 @@ $(function() {
             'cf.label':'CODICE FISCALE', 'cf.exists':'GIÀ IN ARCHIVIO',
             'btn.save':'SALVA', 'heading.registered':'ISCRITTI',
             'sex.male':'Maschio', 'sex.female':'Femmina',
-            'confirm.delete.title':'Elimina?', 'confirm.delete.confirm':'Elimina', 'confirm.cancel':'Annulla'
+            'confirm.delete.title':'Elimina?', 'confirm.delete.confirm':'Elimina', 'confirm.cancel':'Annulla', 'nav.exit':'Esci'
         },
         en: {
             'title.app':'Digital Registry', 'subtitle.app':'Professional registry management',
@@ -248,7 +248,7 @@ $(function() {
             'cf.label':'TAX CODE', 'cf.exists':'ALREADY IN ARCHIVE',
             'btn.save':'SAVE', 'heading.registered':'REGISTERED',
             'sex.male':'Male', 'sex.female':'Female',
-            'confirm.delete.title':'Delete?', 'confirm.delete.confirm':'Delete', 'confirm.cancel':'Cancel'
+            'confirm.delete.title':'Delete?', 'confirm.delete.confirm':'Delete', 'confirm.cancel':'Cancel', 'nav.exit':'Exit'
         }
     };
     let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'it');
