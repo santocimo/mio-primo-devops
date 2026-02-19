@@ -1,5 +1,18 @@
 <?php
 session_start();
+// Handle logout request: clear session and redirect to login
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    if (ini_get('session.use_cookies')) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params['path'], $params['domain'], $params['secure'], $params['httponly']
+        );
+    }
+    session_destroy();
+    header('Location: login.php');
+    exit;
+}
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
@@ -42,7 +55,7 @@ $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'passwor
 
     function forzaMaiuscolo($str) { return mb_convert_case($str, MB_CASE_UPPER, "UTF-8"); }
     
-    if (isset($_GET['export_excel']) && $_SESSION['user_role'] == 'admin') {
+    if (isset($_GET['export_excel']) && $ruolo_reale == 'ADMIN') {
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
         $out = fopen('php://output', 'w');
@@ -158,21 +171,26 @@ $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'passwor
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        :root { --viola-deep: #4338ca; --viola-bright: #7c3aed; --bg: #f8fafc; }
-        body { background-color: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
-        .sidebar { background: #0f172a; min-height: 100vh; padding: 2.5rem 1.5rem; color: #fff; position: sticky; top: 0; }
-        .sidebar-brand { font-weight: 800; font-size: 1.6rem; background: linear-gradient(45deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 3rem; display: block; }
-        .glass-header { background: linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%); border-radius: 24px; padding: 2rem; color: white; box-shadow: 0 20px 25px -5px rgba(124, 58, 237, 0.3); margin-bottom: 2rem; }
-        .stat-card-white { background: #fff; border: none; border-radius: 20px; padding: 1.2rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.04); border-bottom: 4px solid #e2e8f0; height: 100%; }
+        :root { --viola-deep: #4338ca; --viola-bright: #7c3aed; --bg: linear-gradient(180deg,#f1f5f9,#f8fafc); }
+        body { background: var(--bg); font-family: 'Plus Jakarta Sans', sans-serif; color: #1e293b; }
+        .sidebar { background: linear-gradient(180deg,#0b1220 0%, #111827 100%); min-height: 100vh; padding: 2.5rem 1.5rem; color: #fff; position: sticky; top: 0; box-shadow: 6px 0 30px rgba(2,6,23,0.12); }
+        .sidebar-brand { font-weight: 900; font-size: 1.8rem; background: linear-gradient(45deg, #a78bfa, #f472b6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 2.6rem; display: block; letter-spacing: -0.6px; text-shadow: 0 6px 18px rgba(124,58,237,0.06); }
+        .glass-header { background: linear-gradient(135deg, rgba(76,29,149,0.98) 0%, rgba(124,58,237,0.98) 100%); border-radius: 24px; padding: 2.6rem; color: white; box-shadow: 0 26px 60px -12px rgba(76,29,149,0.35); margin-bottom: 2rem; backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.04); }
+        .stat-card-white { background: linear-gradient(180deg,#ffffff 0%, #fbfbff 100%); border: none; border-radius: 20px; padding: 1.2rem; box-shadow: 0 12px 30px -10px rgba(16,24,40,0.06); border-bottom: 4px solid rgba(226,232,240,0.6); height: 100%; }
         .stat-val { font-size: 1.4rem; font-weight: 800; display: block; }
         .main-card { background: #fff; border: none; border-radius: 28px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.05); padding: 2rem; }
-        .input-custom { border: 2px solid #f1f5f9; border-radius: 14px; padding: 0.8rem; background: #f8fafc; font-size: 0.95rem; }
-        .input-custom:focus { border-color: var(--viola-bright); background: #fff; outline: none; }
-        .btn-viola { background: linear-gradient(135deg, var(--viola-deep) 0%, var(--viola-bright) 100%); border: none; border-radius: 16px; font-weight: 800; padding: 1rem; color: white; }
-        .grid-row { background: #fff; border-left: 5px solid transparent; padding: 1.2rem; margin-bottom: 0.8rem; border-radius: 16px; transition: 0.2s; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02); display: flex !important; }
-        .grid-row:hover { border-left-color: var(--viola-bright); transform: scale(1.01); }
+        .input-custom { border: 1px solid rgba(15,23,42,0.06); border-radius: 12px; padding: 0.9rem 1rem; background: linear-gradient(180deg,#fff 0%, #fbfdff 100%); font-size: 0.95rem; box-shadow: inset 0 1px 0 rgba(255,255,255,0.6), 0 6px 18px rgba(16,24,40,0.03); transition: box-shadow 180ms ease, transform 120ms ease, border-color 140ms ease; }
+        .input-custom::placeholder { color: #94a3b8; }
+        .input-custom:focus { border-color: rgba(124,58,237,0.9); background: #fff; outline: none; box-shadow: 0 8px 30px rgba(124,58,237,0.08); transform: translateY(-1px); }
+        .btn-viola { background: linear-gradient(135deg, var(--viola-deep) 0%, var(--viola-bright) 100%); border: none; border-radius: 16px; font-weight: 900; padding: 0.95rem 1.1rem; color: white; box-shadow: 0 10px 36px rgba(124,58,237,0.20); transition: transform 0.12s ease, box-shadow 0.12s ease; font-size: 0.98rem; }
+        .btn-viola:hover { transform: translateY(-3px); box-shadow: 0 20px 48px rgba(124,58,237,0.26); }
+        .grid-row { background: #fff; border-left: 5px solid transparent; padding: 1.2rem; margin-bottom: 0.8rem; border-radius: 16px; transition: 0.18s ease; box-shadow: 0 6px 20px -12px rgba(16,24,40,0.06); display: flex !important; }
+        .grid-row:hover { border-left-color: var(--viola-bright); transform: translateY(-3px); box-shadow: 0 18px 40px -16px rgba(16,24,40,0.08); }
         .cf-tag { background: #faf5ff; color: #7e22ce; font-family: 'Monaco', monospace; padding: 5px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; border: 1px solid #f3e8ff; }
-        .cf-display-box { background: #1e293b; border-radius: 16px; padding: 20px; text-align: center; color: #a78bfa; margin: 1.5rem 0; border: 2px solid transparent; }
+        .cf-display-box { background: linear-gradient(180deg,#0f172a 0%, #111827 100%); border-radius: 16px; padding: 18px; text-align: center; color: #e9d5ff; margin: 1.5rem 0; border: 1px solid rgba(167,139,250,0.12); box-shadow: 0 8px 30px rgba(15,23,42,0.25) inset; }
+            /* Make search input match the app's custom inputs */
+            .search-box .form-control { border: 1px solid rgba(15,23,42,0.06); border-radius: 999px; padding: 0.75rem 1rem; background: linear-gradient(180deg,#fff 0%, #fbfdff 100%); box-shadow: 0 6px 18px rgba(16,24,40,0.03); outline: none; }
+            .search-box .form-control:focus { border-color: rgba(124,58,237,0.9); box-shadow: 0 10px 30px rgba(124,58,237,0.06); }
         .cf-error-state { background: #fee2e2 !important; color: #ef4444 !important; border-color: #ef4444 !important; }
         @media print {
             .sidebar, .glass-header, #form-col, .search-box, .azioni-col, .btn-sm, .stat-row { display: none !important; }
@@ -188,7 +206,10 @@ $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'passwor
         <span class="sidebar-brand">SmartReg.</span>
         <div class="nav flex-column gap-3">
             <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
-            <?php if ($use_gym) {
+            <?php
+            // Show management links only to global admins (not bound to a gym)
+            $is_super_admin = (isset($_SESSION['admin_logged']) && isset($_SESSION['user_role']) && strtoupper($_SESSION['user_role']) === 'ADMIN' && !isset($_SESSION['gym_id']));
+            if ($use_gym && $is_super_admin) {
                 try {
                     $gyms = $pdo->query("SELECT id,name,slug FROM gyms ORDER BY name")->fetchAll();
                 } catch (Exception $e) { $gyms = []; }
@@ -200,6 +221,21 @@ $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'passwor
                         <option value="<?php echo (int)$g['id']; ?>" <?php if(isset($current_gym_id) && $current_gym_id == $g['id']) echo 'selected'; ?>><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+            <a href="gyms.php" class="nav-link text-white p-0 small fw-bold mt-2">Manage Gyms</a>
+            <a href="users.php" class="nav-link text-white p-0 small fw-bold mt-1">Manage Users</a>
+            <?php } elseif ($use_gym && isset($_SESSION['gym_id'])) {
+                // user is bound to a specific gym: show the gym name (no selector)
+                try {
+                    $gstmt = $pdo->prepare("SELECT name FROM gyms WHERE id = ? LIMIT 1");
+                    $gstmt->execute([$_SESSION['gym_id']]);
+                    $ginfo = $gstmt->fetch();
+                    $current_gym_name = $ginfo ? $ginfo['name'] : '';
+                } catch (Exception $e) { $current_gym_name = ''; }
+            ?>
+            <div class="mt-3">
+                <div class="small text-white opacity-75">Gym</div>
+                <div class="fw-bold text-white"><?php echo htmlspecialchars($current_gym_name, ENT_QUOTES); ?></div>
             </div>
             <?php } ?>
             <a href="?logout=1" class="nav-link text-danger p-0 small fw-bold mt-4"><i class="bi bi-power me-2"></i> <span data-i18n="nav.exit">Esci</span></a>

@@ -18,6 +18,17 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+      :root { --viola-deep: #4338ca; --viola-bright: #7c3aed; }
+      body { font-family: 'Plus Jakarta Sans', sans-serif; background: linear-gradient(180deg,#f1f5f9,#f8fafc); color:#0f172a; }
+      .container { max-width: 980px; }
+      .btn-viola { background: linear-gradient(135deg, var(--viola-deep), var(--viola-bright)); color: #fff; border: none; box-shadow: 0 10px 30px rgba(124,58,237,0.12); border-radius: 12px; font-weight:700; }
+      .btn-viola:hover { transform: translateY(-2px); }
+      .main-table { background:#fff; border-radius:12px; box-shadow: 0 12px 30px rgba(2,6,23,0.04); }
+      .modal-content { border-radius:12px; overflow:hidden; }
+      .form-control { border-radius:10px; }
+    </style>
 </head>
 <body class="p-4">
 <div class="container">
@@ -25,11 +36,11 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
         <h3>Gym Management</h3>
         <div>
             <a href="index.php" class="btn btn-secondary">Back</a>
-            <button id="btnNew" class="btn btn-primary">New Gym</button>
+        <button id="btnNew" class="btn btn-viola">New Gym</button>
         </div>
     </div>
 
-    <table class="table table-striped">
+    <table class="table table-striped main-table">
         <thead><tr><th>#</th><th>Name</th><th>Slug</th><th>Created</th><th>Actions</th></tr></thead>
         <tbody id="gymList">
         <?php foreach($gyms as $g): ?>
@@ -51,7 +62,7 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
 <!-- Modal -->
 <div class="modal fade" id="gymModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog">
-    <div class="modal-content">
+        <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Gym</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -72,7 +83,7 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        <button type="button" id="saveGym" class="btn btn-primary">Save</button>
+        <button type="button" id="saveGym" class="btn btn-viola">Save</button>
       </div>
     </div>
   </div>
