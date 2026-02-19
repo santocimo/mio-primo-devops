@@ -138,53 +138,57 @@ try {
     <div class="flex-grow-1 p-3 p-md-4">
         <div class="glass-header d-flex justify-content-between align-items-center">
             <div>
-                <h2 class="fw-800 m-0">Registro Digitale</h2>
-                <p class="m-0 opacity-75 small">Gestione professionale anagrafiche</p>
+                    <h2 class="fw-800 m-0" data-i18n="title.app">Registro Digitale</h2>
+                    <p class="m-0 opacity-75 small" data-i18n="subtitle.app">Gestione professionale anagrafiche</p>
             </div>
-            <div class="d-flex gap-2">
-                <button onclick="window.print()" class="btn btn-light btn-sm rounded-pill px-3 fw-bold">PDF</button>
-                <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold">EXCEL</a><?php endif; ?>
-            </div>
+                <div class="d-flex gap-2 align-items-center">
+                    <select id="languageSelect" class="form-select form-select-sm" style="width:90px;">
+                        <option value="it">IT</option>
+                        <option value="en">EN</option>
+                    </select>
+                    <button onclick="window.print()" class="btn btn-light btn-sm rounded-pill px-3 fw-bold" data-i18n="btn.pdf">PDF</button>
+                    <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold" data-i18n="btn.excel">EXCEL</a><?php endif; ?>
+                </div>
         </div>
 
         <div class="row g-3 mb-4 stat-row">
-            <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1">TOTALE</span><span class="stat-val text-primary"><?php echo $totale; ?></span></div></div>
-            <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1">UOMINI</span><span class="stat-val text-info"><?php echo $uomini; ?></span></div></div>
-            <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1">DONNE</span><span class="stat-val text-danger"><?php echo $donne; ?></span></div></div>
+              <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1" data-i18n="stat.total">TOTALE</span><span class="stat-val text-primary"><?php echo $totale; ?></span></div></div>
+              <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1" data-i18n="stat.male">UOMINI</span><span class="stat-val text-info"><?php echo $uomini; ?></span></div></div>
+              <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1" data-i18n="stat.female">DONNE</span><span class="stat-val text-danger"><?php echo $donne; ?></span></div></div>
         </div>
 
         <div class="row g-4">
             <div id="form-col" class="col-lg-4">
                 <div class="card main-card">
-                    <h5 id="formTitle" class="fw-800 mb-4">Anagrafica</h5>
+                    <h5 id="formTitle" class="fw-800 mb-4" data-i18n="form.title">Anagrafica</h5>
                     <form method="POST" id="mainForm">
                         <input type="hidden" name="id_record" id="id_record">
                         <div class="mb-3">
-                            <input type="text" name="nuovo_nome" id="nome" class="form-control input-custom mb-2" placeholder="Nome" required>
-                            <input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" placeholder="Cognome" required>
+                            <input type="text" name="nuovo_nome" id="nome" class="form-control input-custom mb-2" placeholder="Nome" required data-i18n-placeholder="ph.name">
+                            <input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" placeholder="Cognome" required data-i18n-placeholder="ph.surname">
                         </div>
                         <div class="row g-2 mb-3">
-                            <div class="col-7"><input type="text" id="datepicker" class="form-control input-custom" placeholder="Data Nascita" readonly required><input type="hidden" name="data_nascita_db" id="data_db"></div>
-                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
+                            <div class="col-7"><input type="text" id="datepicker" class="form-control input-custom" placeholder="Data Nascita" readonly required data-i18n-placeholder="ph.dob"><input type="hidden" name="data_nascita_db" id="data_db"></div>
+                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="M" data-i18n="sex.male">Maschio</option><option value="F" data-i18n="sex.female">Femmina</option></select></div>
                         </div>
                         <div class="mb-3">
-                            <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Comune di nascita">
-                            <input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom mb-2" placeholder="Indirizzo">
-                            <input type="text" name="recapito" id="recapito" class="form-control input-custom" placeholder="Telefono">
+                            <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Comune di nascita" data-i18n-placeholder="ph.birthplace">
+                            <input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom mb-2" placeholder="Indirizzo" data-i18n-placeholder="ph.address">
+                            <input type="text" name="recapito" id="recapito" class="form-control input-custom" placeholder="Telefono" data-i18n-placeholder="ph.phone">
                         </div>
                         <div class="cf-display-box" id="cf_box_ui">
-                            <small class="d-block opacity-50 mb-1 fw-bold" id="cf_label">CODICE FISCALE</small>
+                            <small class="d-block opacity-50 mb-1 fw-bold" id="cf_label" data-i18n="cf.label">CODICE FISCALE</small>
                             <input type="text" name="nuovo_cf" id="cf_output" class="w-100 border-0 bg-transparent text-center fw-bold" readonly style="color: inherit; font-size: 1.2rem; letter-spacing: 2px;">
                         </div>
-                        <button type="submit" id="submitBtn" class="btn btn-viola w-100">SALVA</button>
+                        <button type="submit" id="submitBtn" class="btn btn-viola w-100" data-i18n="btn.save">SALVA</button>
                     </form>
                 </div>
             </div>
 
             <div class="col-lg-8">
                 <div class="d-flex justify-content-between align-items-center mb-3 search-box">
-                    <h6 class="fw-800 m-0">ISCRITTI</h6>
-                    <input type="text" id="liveSearch" class="form-control border-0 shadow-sm rounded-pill w-50 ps-3" placeholder="🔍 Cerca...">
+                    <h6 class="fw-800 m-0" data-i18n="heading.registered">ISCRITTI</h6>
+                    <input type="text" id="liveSearch" class="form-control border-0 shadow-sm rounded-pill w-50 ps-3" placeholder="🔍 Cerca..." data-i18n-placeholder="ph.search">
                 </div>
                 <div id="grid-body">
                     <?php
@@ -222,6 +226,49 @@ try {
 $(function() {
     let belfiore = "";
 
+    // --- i18n definitions and helper ---
+    const i18n = {
+        it: {
+            'title.app':'Registro Digitale', 'subtitle.app':'Gestione professionale anagrafiche',
+            'btn.pdf':'PDF', 'btn.excel':'EXCEL',
+            'stat.total':'TOTALE', 'stat.male':'UOMINI', 'stat.female':'DONNE',
+            'form.title':'Anagrafica', 'form.edit':'Modifica',
+            'ph.name':'Nome', 'ph.surname':'Cognome', 'ph.dob':'Data Nascita', 'ph.birthplace':'Comune di nascita', 'ph.address':'Indirizzo', 'ph.phone':'Telefono', 'ph.search':'🔍 Cerca...',
+            'cf.label':'CODICE FISCALE', 'cf.exists':'GIÀ IN ARCHIVIO',
+            'btn.save':'SALVA', 'heading.registered':'ISCRITTI',
+            'sex.male':'Maschio', 'sex.female':'Femmina',
+            'confirm.delete.title':'Elimina?', 'confirm.delete.confirm':'Elimina', 'confirm.cancel':'Annulla'
+        },
+        en: {
+            'title.app':'Digital Registry', 'subtitle.app':'Professional registry management',
+            'btn.pdf':'PDF', 'btn.excel':'EXCEL',
+            'stat.total':'TOTAL', 'stat.male':'MALE', 'stat.female':'FEMALE',
+            'form.title':'Record', 'form.edit':'Edit',
+            'ph.name':'First name', 'ph.surname':'Last name', 'ph.dob':'Date of birth', 'ph.birthplace':'Place of birth', 'ph.address':'Address', 'ph.phone':'Phone', 'ph.search':'🔍 Search...',
+            'cf.label':'TAX CODE', 'cf.exists':'ALREADY IN ARCHIVE',
+            'btn.save':'SAVE', 'heading.registered':'REGISTERED',
+            'sex.male':'Male', 'sex.female':'Female',
+            'confirm.delete.title':'Delete?', 'confirm.delete.confirm':'Delete', 'confirm.cancel':'Cancel'
+        }
+    };
+    let currentLang = localStorage.getItem('lang') || (navigator.language && navigator.language.startsWith('en') ? 'en' : 'it');
+
+    function t(key) { return (i18n[currentLang] && i18n[currentLang][key]) ? i18n[currentLang][key] : key; }
+
+    function applyLang(lang) {
+        currentLang = lang;
+        localStorage.setItem('lang', lang);
+        document.querySelectorAll('[data-i18n]').forEach(el => { const k = el.getAttribute('data-i18n'); if(i18n[lang] && i18n[lang][k]) el.textContent = i18n[lang][k]; });
+        document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { const k = el.getAttribute('data-i18n-placeholder'); if(i18n[lang] && i18n[lang][k]) el.setAttribute('placeholder', i18n[lang][k]); });
+        // update option labels in selects
+        document.querySelectorAll('option[data-i18n]').forEach(opt => { const k = opt.getAttribute('data-i18n'); if(i18n[lang] && i18n[lang][k]) opt.textContent = i18n[lang][k]; });
+        // update sweetalert button defaults where used dynamically
+    }
+
+    // initialize language selector
+    const langSel = document.getElementById('languageSelect'); if(langSel){ langSel.value = currentLang; langSel.addEventListener('change', function(){ applyLang(this.value); }); }
+    applyLang(currentLang);
+
     // --- NUOVA LIVE SEARCH (server-backed, debounced) ---
     let searchTimer;
     $("#liveSearch").on("input", function() {
@@ -246,11 +293,11 @@ $(function() {
             $.getJSON("?check_cf=" + cf + "&exclude_id=" + ($("#id_record").val() || 0), function(data) {
                 if(data.exists) {
                     $("#cf_box_ui").addClass("cf-error-state");
-                    $("#cf_label").text("GIÀ IN ARCHIVIO");
+                    $("#cf_label").text(t('cf.exists'));
                     $("#submitBtn").prop("disabled", true);
                 } else {
                     $("#cf_box_ui").removeClass("cf-error-state");
-                    $("#cf_label").text("CODICE FISCALE");
+                    $("#cf_label").text(t('cf.label'));
                     $("#submitBtn").prop("disabled", false);
                 }
             });
@@ -281,11 +328,11 @@ $(function() {
     $("#comune_input").autocomplete({ source: "cerca_comuni.php", select: function(e, ui) { $(this).val(ui.item.value); belfiore = ui.item.codice; generaCF(); return false; } });
     
     window.confermaElimina = function(id, n) { 
-        Swal.fire({ title: 'Elimina?', text: n, icon: 'warning', showCancelButton: true, confirmButtonColor: '#7c3aed', confirmButtonText: 'Elimina' }).then((r) => { if (r.isConfirmed) window.location.href="?delete="+id; }); 
+        Swal.fire({ title: t('confirm.delete.title'), text: n, icon: 'warning', showCancelButton: true, confirmButtonColor: '#7c3aed', confirmButtonText: t('confirm.delete.confirm'), cancelButtonText: t('confirm.cancel') }).then((r) => { if (r.isConfirmed) window.location.href="?delete="+id; }); 
     }
 
     window.modificaRecord = function(d) {
-        $("#formTitle").text("Modifica"); $("#id_record").val(d.id);
+        $("#formTitle").text(t('form.edit')); $("#id_record").val(d.id);
         $("#nome").val(d.nome); $("#cognome").val(d.cognome); $("#sesso").val(d.sesso);
         $("#comune_input").val(d.luogo_nascita); $("#indirizzo").val(d.indirizzo); $("#recapito").val(d.recapito);
         let dt = d.data_nascita.split('-'); $("#datepicker").val(dt[2]+'/'+dt[1]+'/'+dt[0]);
