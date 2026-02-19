@@ -126,11 +126,11 @@ try {
 </head>
 <body>
 <div class="container-fluid p-0 d-flex">
-    <div class="sidebar" style="width: 260px;">
+        <div class="sidebar" style="width: 260px;">
         <span class="sidebar-brand">SmartReg.</span>
         <div class="nav flex-column gap-3">
             <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> Dashboard</a>
-            <a href="?logout=1" class="nav-link text-danger p-0 small fw-bold mt-4"><i class="bi bi-power me-2"></i> Esci</a>
+            <a href="?logout=1" class="nav-link text-danger p-0 small fw-bold mt-4"><i class="bi bi-power me-2"></i> <span data-i18n="nav.exit">Esci</span></a>
         </div>
         <div class="position-absolute bottom-0 mb-4 opacity-25 small">Architect: <strong><?php echo $supervisore; ?></strong></div>
     </div>
