@@ -375,3 +375,54 @@ kubectl delete pod -l app=web-automatico
 git add index.php
 git commit -m "Fix ricerca live e rimozione nome dal titolo"
 git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix genere mascile e femminile"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix per versione in Inglese"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix per versione in Inglese"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix per versione in Inglese 2"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git commit -m "Fix per versione con palestre multiple"
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git commit -m "Fix per versione con palestre multiple"
+git add .
+git commit -m "Fix per versione con palestre multiple"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix per versione con palestre multiple e configurate"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix per versione con grafica migliorata"
+git push

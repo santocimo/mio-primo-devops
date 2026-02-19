@@ -3,14 +3,10 @@
 header('Content-Type: application/json');
 
 // Parametri di connessione (Assicurati che siano identici a index.php)
-$host = 'database-santo';
-$db   = 'mio_database';
-$user = 'root';
-$pass = 'password_segreta';
-
+require_once __DIR__ . '/db.php';
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
-    
+    $pdo = getPDO();
+
     $term = isset($_GET['term']) ? $_GET['term'] : '';
     
     if (strlen($term) >= 2) {

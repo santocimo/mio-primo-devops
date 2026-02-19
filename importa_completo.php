@@ -1,14 +1,9 @@
 <?php
 // importa_completo.php
 set_time_limit(0); // Impedisce al server di bloccarsi per il caricamento lungo
-$host = 'database-santo';
-$db   = 'mio_database';
-$user = 'root';
-$pass = 'password_segreta';
-
+require_once __DIR__ . '/db.php';
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $pdo = getPDO();
 
     // 1. Pulizia/Creazione Tabella
     $pdo->exec("DROP TABLE IF EXISTS comuni");

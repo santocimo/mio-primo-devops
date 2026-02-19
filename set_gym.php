@@ -1,7 +1,8 @@
 <?php
-session_start();
+require_once __DIR__ . '/inc/security.php';
 header('Content-Type: application/json');
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') { echo json_encode(['ok'=>false,'error'=>'invalid_method']); exit; }
+if (empty($_POST['csrf']) || !verify_csrf($_POST['csrf'])) { echo json_encode(['ok'=>false,'error'=>'csrf']); exit; }
 if (!isset($_POST['gym_id'])) { echo json_encode(['ok'=>false,'error'=>'missing_gym_id']); exit; }
 $gid = (int)$_POST['gym_id'];
 require_once __DIR__ . '/db.php';

@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/db.php';
-session_start();
+require_once __DIR__ . '/inc/security.php';
 if (!isset($_SESSION['admin_logged']) || strtoupper($_SESSION['user_role']) !== 'ADMIN') {
     header('HTTP/1.1 403 Forbidden');
     echo "Access denied";
@@ -16,6 +16,8 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Manage Gyms</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- DataTables (Bootstrap 5) -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
@@ -26,9 +28,13 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
       .btn-viola { background: linear-gradient(135deg, var(--viola-deep), var(--viola-bright)); color: #fff; border: none; box-shadow: 0 10px 30px rgba(124,58,237,0.12); border-radius: 12px; font-weight:700; }
       .btn-viola:hover { transform: translateY(-2px); }
       .main-table { background:#fff; border-radius:12px; box-shadow: 0 12px 30px rgba(2,6,23,0.04); }
+      .main-table thead th { background: linear-gradient(90deg, var(--viola-deep), var(--viola-bright)); color: #fff; border: 0; }
+      .main-table thead tr { border-top-left-radius:12px; border-top-right-radius:12px; }
+      .main-table tbody tr:hover { transform: translateX(4px); transition: transform .12s ease; }
       .modal-content { border-radius:12px; overflow:hidden; }
       .form-control { border-radius:10px; }
     </style>
+  <meta name="csrf-token" content="<?php echo htmlspecialchars($_SESSION['csrf_token'] ?? '', ENT_QUOTES); ?>">
 </head>
 <body class="p-4">
 <div class="container">
@@ -40,22 +46,23 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
         </div>
     </div>
 
-    <table class="table table-striped main-table">
-        <thead><tr><th>#</th><th>Name</th><th>Slug</th><th>Created</th><th>Actions</th></tr></thead>
-        <tbody id="gymList">
-        <?php foreach($gyms as $g): ?>
-            <tr data-id="<?php echo (int)$g['id']; ?>">
-                <td><?php echo (int)$g['id']; ?></td>
-                <td><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></td>
-                <td><?php echo htmlspecialchars($g['slug'], ENT_QUOTES); ?></td>
-                <td><?php echo htmlspecialchars($g['created_at'], ENT_QUOTES); ?></td>
-                <td>
-                    <button class="btn btn-sm btn-outline-primary btn-edit">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger btn-delete">Delete</button>
-                </td>
-            </tr>
-        <?php endforeach; ?>
-        </tbody>
+    <table class="table table-hover align-middle main-table">
+      <thead>
+        <tr class="text-muted small"><th>Name</th><th>Slug</th><th>Created</th><th>Actions</th></tr>
+      </thead>
+      <tbody id="gymList">
+      <?php foreach($gyms as $g): ?>
+        <tr data-id="<?php echo (int)$g['id']; ?>">
+          <td><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></td>
+          <td><?php echo htmlspecialchars($g['slug'], ENT_QUOTES); ?></td>
+          <td><?php echo $g['created_at'] ? htmlspecialchars(date('Y-m-d', strtotime($g['created_at'])), ENT_QUOTES) : '-'; ?></td>
+          <td>
+            <button class="btn btn-sm btn-outline-primary btn-edit">Edit</button>
+            <button class="btn btn-sm btn-outline-danger btn-delete">Delete</button>
+          </td>
+        </tr>
+      <?php endforeach; ?>
+      </tbody>
     </table>
 </div>
 
@@ -70,6 +77,7 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
       <div class="modal-body">
         <form id="gymForm">
           <input type="hidden" name="id" id="gym_id">
+          <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
           <div class="mb-3">
             <label class="form-label">Name</label>
             <input class="form-control" name="name" id="gym_name" required>
@@ -90,6 +98,9 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 <script>
 $(function(){
     const modalEl = document.getElementById('gymModal');
@@ -98,12 +109,12 @@ $(function(){
     $('#btnNew').on('click', function(){ $('#gym_id').val(''); $('#gym_name').val(''); $('#gym_slug').val(''); bsModal.show(); });
 
     $(document).on('click', '.btn-edit', function(){
-        const tr = $(this).closest('tr');
-        const id = tr.data('id');
-        $('#gym_id').val(id);
-        $('#gym_name').val(tr.children().eq(1).text().trim());
-        $('#gym_slug').val(tr.children().eq(2).text().trim());
-        bsModal.show();
+      const tr = $(this).closest('tr');
+      const id = tr.data('id');
+      $('#gym_id').val(id);
+      $('#gym_name').val(tr.children().eq(0).text().trim());
+      $('#gym_slug').val(tr.children().eq(1).text().trim());
+      bsModal.show();
     });
 
     $('#saveGym').on('click', function(){
@@ -115,9 +126,19 @@ $(function(){
     });
 
     $(document).on('click', '.btn-delete', function(){
-        const tr = $(this).closest('tr');
-        const id = tr.data('id');
-        Swal.fire({title:'Delete gym?', text:tr.find('td').eq(1).text(), icon:'warning', showCancelButton:true}).then(r=>{ if(r.isConfirmed){ $.post('delete_gym.php',{id:id}, function(resp){ if(resp && resp.ok) location.reload(); else Swal.fire('Error', resp.error||'Unable to delete','error'); },'json'); } });
+      const tr = $(this).closest('tr');
+      const id = tr.data('id');
+      Swal.fire({title:'Delete gym?', text:tr.find('td').eq(0).text(), icon:'warning', showCancelButton:true}).then(r=>{ if(r.isConfirmed){ $.post('delete_gym.php',{id:id, csrf: $('meta[name="csrf-token"]').attr('content')}, function(resp){ if(resp && resp.ok) location.reload(); else Swal.fire('Error', resp.error||'Unable to delete','error'); },'json'); } });
+    });
+});
+</script>
+<script>
+$(document).ready(function(){
+    $('.main-table').DataTable({
+        responsive: true,
+        pageLength: 10,
+        lengthChange: false,
+        columnDefs: [{ orderable: false, targets: -1 }]
     });
 });
 </script>
