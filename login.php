@@ -33,12 +33,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Fallback (static credentials for legacy installs)
     if ($u === 'admin' && $p === 'admin123') {
+        // legacy super-admin (no gym binding)
         $_SESSION['user_role'] = 'ADMIN';
         $_SESSION['admin_logged'] = true;
-        $_SESSION['gym_id'] = 1;
         header("Location: index.php"); 
         exit;
     } elseif ($u === 'op' && $p === 'op123') {
+        // legacy operator bound to default gym 1
         $_SESSION['user_role'] = 'OPERATORE';
         $_SESSION['admin_logged'] = true;
         $_SESSION['gym_id'] = 1;
