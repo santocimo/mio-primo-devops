@@ -3,6 +3,8 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1); // Forza la visualizzazione degli errori per capire cosa succede
 session_start();
 
+require_once __DIR__ . '/db.php';
+
 if(isset($_SESSION['admin_logged'])) { 
     header("Location: index.php"); 
     exit; 
@@ -13,14 +15,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = $_POST['username'] ?? '';
     $p = $_POST['password'] ?? '';
 
+    // Try DB-backed users first
+    try {
+        $pdo = getPDO();
+        $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
+        $stmt->execute([$u]);
+        $user = $stmt->fetch();
+        if ($user && password_verify($p, $user['password_hash'])) {
+            $_SESSION['user_role'] = strtoupper($user['role']);
+            $_SESSION['admin_logged'] = true;
+            if (!empty($user['gym_id'])) $_SESSION['gym_id'] = (int)$user['gym_id'];
+            header("Location: index.php"); exit;
+        }
+    } catch (Exception $e) {
+        // ignore DB errors and fallback to static
+    }
+
+    // Fallback (static credentials for legacy installs)
     if ($u === 'admin' && $p === 'admin123') {
-        $_SESSION['user_role'] = 'admin';
+        $_SESSION['user_role'] = 'ADMIN';
         $_SESSION['admin_logged'] = true;
+        $_SESSION['gym_id'] = 1;
         header("Location: index.php"); 
         exit;
     } elseif ($u === 'op' && $p === 'op123') {
-        $_SESSION['user_role'] = 'operatore';
+        $_SESSION['user_role'] = 'OPERATORE';
         $_SESSION['admin_logged'] = true;
+        $_SESSION['gym_id'] = 1;
         header("Location: index.php"); 
         exit;
     } else {

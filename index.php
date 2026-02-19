@@ -6,17 +6,36 @@ $supervisore = "CIMÒ";
 $versione_software = "V3.5.6 Search-Fixed";
 $host = 'database-santo'; $db = 'mio_database'; $user = 'root'; $pass = 'password_segreta';
 
-try {
+    try {
     $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass, [
         PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
     ]);
 
-    if (isset($_GET['check_cf'])) {
+        // --- Tenant resolution ---
+        // Detect whether the visitatori table has a gym_id column; if not, stay backwards-compatible
+        $use_gym = false;
+        try {
+            $colCheck = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE table_schema = DATABASE() AND table_name = 'visitatori' AND column_name = 'gym_id'");
+            $colCheck->execute();
+            $use_gym = (bool)$colCheck->fetchColumn();
+        } catch (Exception $e) { $use_gym = false; }
+        if ($use_gym) {
+            $current_gym_id = isset($_SESSION['gym_id']) ? (int)$_SESSION['gym_id'] : 1;
+        } else {
+            $current_gym_id = null;
+        }
+
+        if (isset($_GET['check_cf'])) {
         $cf_da_controllare = strtoupper($_GET['check_cf']);
         $escludi_id = $_GET['exclude_id'] ?? 0;
-        $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE codice_fiscale = ? AND id != ?");
-        $stmt->execute([$cf_da_controllare, $escludi_id]);
+        if ($use_gym) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE codice_fiscale = ? AND id != ? AND gym_id = ?");
+            $stmt->execute([$cf_da_controllare, $escludi_id, $current_gym_id]);
+        } else {
+            $stmt = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE codice_fiscale = ? AND id != ?");
+            $stmt->execute([$cf_da_controllare, $escludi_id]);
+        }
         echo json_encode(['exists' => $stmt->fetchColumn() > 0]);
         exit;
     }
@@ -28,39 +47,78 @@ try {
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
         $out = fopen('php://output', 'w');
         fputcsv($out, ['ID', 'NOME', 'COGNOME', 'CF', 'DATA NASCITA', 'COMUNE', 'INDIRIZZO', 'RECAPITO', 'SESSO']);
-        $rs = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+        if ($use_gym) {
+            $rs = $pdo->prepare("SELECT * FROM visitatori WHERE gym_id = ? ORDER BY id DESC");
+            $rs->execute([$current_gym_id]);
+        } else {
+            $rs = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+        }
         while ($r = $rs->fetch()) fputcsv($out, $r);
         exit;
     }
 
     if (isset($_GET['delete'])) {
-        $pdo->prepare("DELETE FROM visitatori WHERE id = ?")->execute([$_GET['delete']]);
+        if ($use_gym) {
+            $pdo->prepare("DELETE FROM visitatori WHERE id = ? AND gym_id = ?")->execute([$_GET['delete'], $current_gym_id]);
+        } else {
+            $pdo->prepare("DELETE FROM visitatori WHERE id = ?")->execute([$_GET['delete']]);
+        }
         header("Location: index.php"); exit;
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuovo_cf'])) {
-        $p = [':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), ':r' => $_POST['recapito'], ':s' => $_POST['sesso']];
+        $baseParams = [':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), ':r' => $_POST['recapito'], ':s' => $_POST['sesso']];
         if (!empty($_POST['id_record'])) {
-            $p[':id'] = $_POST['id_record'];
-            $sql = "UPDATE visitatori SET nome=:n, cognome=:c, codice_fiscale=:cf, data_nascita=:d, luogo_nascita=:l, indirizzo=:i, recapito=:r, sesso=:s WHERE id=:id";
+            $baseParams[':id'] = $_POST['id_record'];
+            if ($use_gym) {
+                $baseParams[':g'] = $current_gym_id;
+                $sql = "UPDATE visitatori SET nome=:n, cognome=:c, codice_fiscale=:cf, data_nascita=:d, luogo_nascita=:l, indirizzo=:i, recapito=:r, sesso=:s WHERE id=:id AND gym_id = :g";
+            } else {
+                $sql = "UPDATE visitatori SET nome=:n, cognome=:c, codice_fiscale=:cf, data_nascita=:d, luogo_nascita=:l, indirizzo=:i, recapito=:r, sesso=:s WHERE id=:id";
+            }
         } else {
-            $sql = "INSERT INTO visitatori (nome, cognome, codice_fiscale, data_nascita, luogo_nascita, indirizzo, recapito, sesso) VALUES (:n,:c,:cf,:d,:l,:i,:r,:s)";
+            if ($use_gym) {
+                $baseParams[':g'] = $current_gym_id;
+                $sql = "INSERT INTO visitatori (nome, cognome, codice_fiscale, data_nascita, luogo_nascita, indirizzo, recapito, sesso, gym_id) VALUES (:n,:c,:cf,:d,:l,:i,:r,:s,:g)";
+            } else {
+                $sql = "INSERT INTO visitatori (nome, cognome, codice_fiscale, data_nascita, luogo_nascita, indirizzo, recapito, sesso) VALUES (:n,:c,:cf,:d,:l,:i,:r,:s)";
+            }
         }
-        $pdo->prepare($sql)->execute($p);
+        $pdo->prepare($sql)->execute($baseParams);
         header("Location: index.php"); exit;
     }
-    $totale = $pdo->query("SELECT COUNT(*) FROM visitatori")->fetchColumn() ?: 0;
-    $uomini = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='M'")->fetchColumn() ?: 0;
-    $donne = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='F'")->fetchColumn() ?: 0;
+    if ($use_gym) {
+        $stTot = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE gym_id = ?"); $stTot->execute([$current_gym_id]);
+        $totale = $stTot->fetchColumn() ?: 0;
+        $stU = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE sesso='M' AND gym_id = ?"); $stU->execute([$current_gym_id]);
+        $uomini = $stU->fetchColumn() ?: 0;
+        $stD = $pdo->prepare("SELECT COUNT(*) FROM visitatori WHERE sesso='F' AND gym_id = ?"); $stD->execute([$current_gym_id]);
+        $donne = $stD->fetchColumn() ?: 0;
+    } else {
+        $totale = $pdo->query("SELECT COUNT(*) FROM visitatori")->fetchColumn() ?: 0;
+        $uomini = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='M'")->fetchColumn() ?: 0;
+        $donne = $pdo->query("SELECT COUNT(*) FROM visitatori WHERE sesso='F'")->fetchColumn() ?: 0;
+    }
     // Server-side search endpoint used by AJAX live search
     if (isset($_GET['search'])) {
         $q = trim($_GET['search']);
         if ($q === '') {
-            $rs = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+            if ($use_gym) {
+                $stmt = $pdo->prepare("SELECT * FROM visitatori WHERE gym_id = ? ORDER BY id DESC");
+                $stmt->execute([$current_gym_id]);
+            } else {
+                $stmt = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+            }
+            $rs = $stmt;
         } else {
             $like = "%" . $q . "%";
-            $stmt = $pdo->prepare("SELECT * FROM visitatori WHERE CONCAT_WS(' ', nome, cognome, codice_fiscale, luogo_nascita, indirizzo, recapito) LIKE ? ORDER BY id DESC");
-            $stmt->execute([$like]);
+            if ($use_gym) {
+                $stmt = $pdo->prepare("SELECT * FROM visitatori WHERE gym_id = ? AND CONCAT_WS(' ', nome, cognome, codice_fiscale, luogo_nascita, indirizzo, recapito) LIKE ? ORDER BY id DESC");
+                $stmt->execute([$current_gym_id, $like]);
+            } else {
+                $stmt = $pdo->prepare("SELECT * FROM visitatori WHERE CONCAT_WS(' ', nome, cognome, codice_fiscale, luogo_nascita, indirizzo, recapito) LIKE ? ORDER BY id DESC");
+                $stmt->execute([$like]);
+            }
             $rs = $stmt;
         }
         $out = '';
@@ -129,7 +187,21 @@ try {
         <div class="sidebar" style="width: 260px;">
         <span class="sidebar-brand">SmartReg.</span>
         <div class="nav flex-column gap-3">
-            <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> Dashboard</a>
+            <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+            <?php if ($use_gym) {
+                try {
+                    $gyms = $pdo->query("SELECT id,name,slug FROM gyms ORDER BY name")->fetchAll();
+                } catch (Exception $e) { $gyms = []; }
+            ?>
+            <div class="mt-3">
+                <label class="small text-white opacity-75">Gym</label>
+                <select id="gymSelect" class="form-select form-select-sm mt-1">
+                    <?php foreach($gyms as $g): ?>
+                        <option value="<?php echo (int)$g['id']; ?>" <?php if(isset($current_gym_id) && $current_gym_id == $g['id']) echo 'selected'; ?>><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <?php } ?>
             <a href="?logout=1" class="nav-link text-danger p-0 small fw-bold mt-4"><i class="bi bi-power me-2"></i> <span data-i18n="nav.exit">Esci</span></a>
         </div>
         <div class="position-absolute bottom-0 mb-4 opacity-25 small">Architect: <strong><?php echo $supervisore; ?></strong></div>
@@ -192,7 +264,8 @@ try {
                 </div>
                 <div id="grid-body">
                     <?php
-                    $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC");
+                    if ($use_gym) { $st = $pdo->prepare("SELECT * FROM visitatori WHERE gym_id = ? ORDER BY id DESC"); $st->execute([$current_gym_id]); }
+                    else { $st = $pdo->query("SELECT * FROM visitatori ORDER BY id DESC"); }
                     while($v = $st->fetch()) {
                         $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
                         $name = htmlspecialchars($v['nome'] . ' ' . $v['cognome'], ENT_QUOTES);
@@ -268,6 +341,14 @@ $(function() {
     // initialize language selector
     const langSel = document.getElementById('languageSelect'); if(langSel){ langSel.value = currentLang; langSel.addEventListener('change', function(){ applyLang(this.value); }); }
     applyLang(currentLang);
+
+    // gym selector change (set session gym and reload)
+    $(document).on('change', '#gymSelect', function() {
+        const gid = $(this).val();
+        $.post('set_gym.php', { gym_id: gid }, function(resp) {
+            if (resp && resp.ok) location.reload(); else alert('Unable to set gym');
+        }, 'json').fail(function(){ alert('Unable to set gym'); });
+    });
 
     // --- NUOVA LIVE SEARCH (server-backed, debounced) ---
     let searchTimer;
