@@ -165,7 +165,7 @@ try {
                         </div>
                         <div class="row g-2 mb-3">
                             <div class="col-7"><input type="text" id="datepicker" class="form-control input-custom" placeholder="Data Nascita" readonly required><input type="hidden" name="data_nascita_db" id="data_db"></div>
-                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">M</option><option value="F">F</option></select></div>
+                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="M">Maschio</option><option value="F">Femmina</option></select></div>
                         </div>
                         <div class="mb-3">
                             <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Comune di nascita">

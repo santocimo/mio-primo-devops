@@ -299,3 +299,79 @@ kubectl delete pod -l app=web-automatico
 git add .
 git commit -m "Fix PDF: rimossa colonna azioni in stampa per CIMÒ"
 git push
+docker build -t smartreg-app:v2 .
+git commit -m "Fix PDF: rimossa colonna azioni in stampa per CIMÒ"git add .; git commit -m "V3.4.2: Integrazione PWA iOS e ottimizzazione mobile"; git push; kubectl delete pod -l app=web-automatico
+kubectl delete pod -l app=web-automatico
+git commit -m "Fix PDF: rimossa colonna azioni in stampa per CIMÒ"git add .; git commit -m "V3.4.2: Integrazione PWA iOS e ottimizzazione mobile"; git push; 
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git commit -m "Fix PDF: aggiunto nuovamente indirizzo"
+git add .
+git commit -m "Fix PDF: aggiunto nuovamente indirizzo"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix PDF: aggiunto nuovamente popup di cancellazione"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix PDF: aggiunto nuova grafica"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git commit -m "Fix PDF: aggiunta nuova grafica"
+git add .
+git commit -m "Fix PDF: aggiunta nuova grafica"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix PDF: aggiunta nuova grafica"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add .
+git commit -m "Fix su grafica ed excel"
+git push
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+require 'config.php';
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+docker build -t smartreg-app:v2 .
+kubectl delete pod -l app=web-automatico
+git add index.php
+git commit -m "Fix ricerca live e rimozione nome dal titolo"
+git push
