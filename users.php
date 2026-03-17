@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/inc/security.php';
-if (!isset($_SESSION['admin_logged']) || strtoupper($_SESSION['user_role']) !== 'ADMIN' || isset($_SESSION['gym_id'])) {
+$role = isset($_SESSION['user_role']) ? trim(strtoupper($_SESSION['user_role'])) : '';
+$is_global_admin = isset($_SESSION['admin_logged']) && $role !== '' && (strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false);
+if (!$is_global_admin) {
     header('HTTP/1.1 403 Forbidden');
     echo "Access denied";
     exit;

@@ -206,7 +206,8 @@ try {
             <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
             <?php
             // Show management links only to global admins (not bound to a gym)
-            $is_super_admin = (isset($_SESSION['admin_logged']) && isset($_SESSION['user_role']) && strtoupper($_SESSION['user_role']) === 'ADMIN' && !isset($_SESSION['gym_id']));
+            $role = isset($_SESSION['user_role']) ? trim(strtoupper($_SESSION['user_role'])) : '';
+            $is_super_admin = (isset($_SESSION['admin_logged']) && $role !== '' && (strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false));
             if ($use_gym && $is_super_admin) {
                 try {
                     $gyms = $pdo->query("SELECT id,name,slug FROM gyms ORDER BY name")->fetchAll();
@@ -377,10 +378,16 @@ $(function() {
     applyLang(currentLang);
 
     // gym selector change (set session gym and reload)
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     $(document).on('change', '#gymSelect', function() {
         const gid = $(this).val();
-        $.post('set_gym.php', { gym_id: gid }, function(resp) {
-            if (resp && resp.ok) location.reload(); else alert('Unable to set gym');
+        $.post('set_gym.php', { gym_id: gid, csrf: csrfToken }, function(resp) {
+            if (resp && resp.ok) {
+                location.reload();
+            } else {
+                const msg = resp && resp.error ? resp.error : 'Unable to set gym';
+                alert('Unable to set gym: ' + msg);
+            }
         }, 'json').fail(function(){ alert('Unable to set gym'); });
     });
 

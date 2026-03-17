@@ -3,7 +3,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/inc/security.php';
 require_once __DIR__ . '/inc/validation.php';
 header('Content-Type: application/json');
-if (!isset($_SESSION['admin_logged']) || strtoupper($_SESSION['user_role']) !== 'ADMIN' || isset($_SESSION['gym_id'])) { echo json_encode(['ok'=>false,'error'=>'forbidden']); exit; }
+$role = isset($_SESSION['user_role']) ? trim(strtoupper($_SESSION['user_role'])) : '';
+$is_global_admin = isset($_SESSION['admin_logged']) && $role !== '' && (strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false);
+if (!$is_global_admin) { echo json_encode(['ok'=>false,'error'=>'forbidden']); exit; }
 if (empty($_POST['csrf']) || !verify_csrf($_POST['csrf'])) { echo json_encode(['ok'=>false,'error'=>'csrf']); exit; }
 try {
     $pdo = getPDO();
