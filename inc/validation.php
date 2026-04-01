@@ -19,4 +19,41 @@ function validate_gym_name(string $n): bool {
     return $len >= 2 && $len <= 150;
 }
 
+function validate_gym_category(string $c): bool {
+    $allowed = ['gym', 'pilates', 'yoga', 'wellness', 'studio', 'medical', 'real_estate'];
+    return in_array($c, $allowed, true);
+}
+
+function validate_business_type(string $c): bool {
+    $allowed = ['gym', 'pilates', 'yoga', 'wellness', 'studio', 'medical', 'real_estate'];
+    return in_array($c, $allowed, true);
+}
+
+function validate_service_name(string $n): bool {
+    $len = mb_strlen($n);
+    return $len >= 2 && $len <= 150;
+}
+
+function validate_service_category(string $c): bool {
+    $allowed = ['class', 'appointment', 'wellness', 'personal', 'event'];
+    return in_array($c, $allowed, true);
+}
+
+function validate_duration_minutes($value): bool {
+    return is_numeric($value) && (int)$value > 0 && (int)$value <= 1440;
+}
+
+function validate_capacity($value): bool {
+    return is_numeric($value) && (int)$value >= 1 && (int)$value <= 1000;
+}
+
+function validate_price($value): bool {
+    return $value === null || $value === '' || preg_match('/^\d{1,8}(?:\.\d{1,2})?$/', (string)$value);
+}
+
+function validate_status(string $status): bool {
+    $allowed = ['pending', 'confirmed', 'canceled'];
+    return in_array($status, $allowed, true);
+}
+
 ?>

@@ -18,6 +18,7 @@ $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']
 $supervisore = "CIMÒ";
 $versione_software = "V3.5.6 Search-Fixed";
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/inc/labels.php';
 
 try {
     $pdo = getPDO();
@@ -32,9 +33,21 @@ try {
         } catch (Exception $e) { $use_gym = false; }
         if ($use_gym) {
             $current_gym_id = isset($_SESSION['gym_id']) ? (int)$_SESSION['gym_id'] : 1;
+            try {
+                $typeStmt = $pdo->prepare("SELECT category FROM gyms WHERE id = ? LIMIT 1");
+                $typeStmt->execute([$current_gym_id]);
+                $current_business_type = $typeStmt->fetchColumn() ?: 'gym';
+            } catch (Exception $e) {
+                $current_business_type = 'gym';
+            }
         } else {
             $current_gym_id = null;
+            $current_business_type = 'gym';
         }
+        $business_label = getLocationEntityLabel($current_business_type);
+        $business_label_plural = getLocationEntityPluralLabel($current_business_type);
+        $person_label = getPersonLabel($current_business_type);
+        $person_label_plural = getPersonPluralLabel($current_business_type);
 
         if (isset($_GET['check_cf'])) {
         $cf_da_controllare = strtoupper($_GET['check_cf']);
@@ -204,6 +217,7 @@ try {
         <span class="sidebar-brand">SmartReg.</span>
         <div class="nav flex-column gap-3">
             <a href="index.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-grid-1x2 me-2"></i> <span data-i18n="nav.dashboard">Dashboard</span></a>
+            <a href="contacts.php" class="nav-link text-white p-0 small fw-bold"><i class="bi bi-people me-2"></i> Contacts</a>
             <?php
             // Show management links only to global admins (not bound to a gym)
             $role = isset($_SESSION['user_role']) ? trim(strtoupper($_SESSION['user_role'])) : '';
@@ -214,14 +228,17 @@ try {
                 } catch (Exception $e) { $gyms = []; }
             ?>
             <div class="mt-3">
-                <label class="small text-white opacity-75">Gym</label>
+                <label class="small text-white opacity-75">Location</label>
                 <select id="gymSelect" class="form-select form-select-sm mt-1">
                     <?php foreach($gyms as $g): ?>
                         <option value="<?php echo (int)$g['id']; ?>" <?php if(isset($current_gym_id) && $current_gym_id == $g['id']) echo 'selected'; ?>><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <a href="gyms.php" class="nav-link text-white p-0 small fw-bold mt-2">Manage Gyms</a>
+            <a href="gyms.php" class="nav-link text-white p-0 small fw-bold mt-2">Manage Locations</a>
+            <a href="services.php" class="nav-link text-white p-0 small fw-bold mt-2">Manage Services</a>
+            <a href="appointments.php" class="nav-link text-white p-0 small fw-bold mt-2">Manage Appointments</a>
+            <a href="settings.php" class="nav-link text-white p-0 small fw-bold mt-2">App Settings</a>
             <a href="users.php" class="nav-link text-white p-0 small fw-bold mt-1">Manage Users</a>
             <?php } elseif ($use_gym && isset($_SESSION['gym_id'])) {
                 // user is bound to a specific gym: show the gym name (no selector)
@@ -233,7 +250,7 @@ try {
                 } catch (Exception $e) { $current_gym_name = ''; }
             ?>
             <div class="mt-3">
-                <div class="small text-white opacity-75">Gym</div>
+                <div class="small text-white opacity-75"><?php echo htmlspecialchars($business_label, ENT_QUOTES); ?></div>
                 <div class="fw-bold text-white"><?php echo htmlspecialchars($current_gym_name, ENT_QUOTES); ?></div>
             </div>
             <?php } ?>
@@ -267,7 +284,7 @@ try {
         <div class="row g-4">
             <div id="form-col" class="col-lg-4">
                 <div class="card main-card">
-                    <h5 id="formTitle" class="fw-800 mb-4" data-i18n="form.title">Anagrafica</h5>
+                    <h5 id="formTitle" class="fw-800 mb-4"><?php echo htmlspecialchars($person_label, ENT_QUOTES); ?></h5>
                     <form method="POST" id="mainForm">
                         <input type="hidden" name="id_record" id="id_record">
                         <div class="mb-3">
@@ -294,7 +311,7 @@ try {
 
             <div class="col-lg-8">
                 <div class="d-flex justify-content-between align-items-center mb-3 search-box">
-                    <h6 class="fw-800 m-0" data-i18n="heading.registered">ISCRITTI</h6>
+                    <h6 class="fw-800 m-0"><?php echo htmlspecialchars($person_label_plural, ENT_QUOTES); ?></h6>
                     <input type="text" id="liveSearch" class="form-control border-0 shadow-sm rounded-pill w-50 ps-3" placeholder="🔍 Cerca..." data-i18n-placeholder="ph.search">
                 </div>
                 <div id="grid-body">

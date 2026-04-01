@@ -1,20 +1,21 @@
 <?php
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/inc/security.php';
+require_once __DIR__ . '/inc/labels.php';
 if (!isset($_SESSION['admin_logged']) || strtoupper($_SESSION['user_role']) !== 'ADMIN') {
     header('HTTP/1.1 403 Forbidden');
     echo "Access denied";
     exit;
 }
 $pdo = getPDO();
-$gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->fetchAll();
+$gyms = $pdo->query("SELECT id,name,slug,category,created_at FROM gyms ORDER BY name")->fetchAll();
 ?>
 <!doctype html>
 <html lang="it">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Manage Gyms</title>
+    <title>Manage Locations</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- DataTables (Bootstrap 5) -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
@@ -39,21 +40,22 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
 <body class="p-4">
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3>Gym Management</h3>
+        <h3>Location Management</h3>
         <div>
             <a href="index.php" class="btn btn-secondary">Back</a>
-        <button id="btnNew" class="btn btn-viola">New Gym</button>
+        <button id="btnNew" class="btn btn-viola">New Location</button>
         </div>
     </div>
 
     <table class="table table-hover align-middle main-table">
       <thead>
-        <tr class="text-muted small"><th>Name</th><th>Slug</th><th>Created</th><th>Actions</th></tr>
+        <tr class="text-muted small"><th>Name</th><th>Category</th><th>Slug</th><th>Created</th><th>Actions</th></tr>
       </thead>
       <tbody id="gymList">
       <?php foreach($gyms as $g): ?>
-        <tr data-id="<?php echo (int)$g['id']; ?>">
+        <tr data-id="<?php echo (int)$g['id']; ?>" data-category="<?php echo htmlspecialchars($g['category'] ?? 'gym', ENT_QUOTES); ?>">
           <td><?php echo htmlspecialchars($g['name'], ENT_QUOTES); ?></td>
+          <td><?php echo htmlspecialchars(getBusinessTypeLabel($g['category'] ?? 'gym'), ENT_QUOTES); ?></td>
           <td><?php echo htmlspecialchars($g['slug'], ENT_QUOTES); ?></td>
           <td><?php echo $g['created_at'] ? htmlspecialchars(date('Y-m-d', strtotime($g['created_at'])), ENT_QUOTES) : '-'; ?></td>
           <td>
@@ -71,7 +73,7 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
   <div class="modal-dialog">
         <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Gym</h5>
+        <h5 class="modal-title">Location</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
@@ -86,6 +88,19 @@ $gyms = $pdo->query("SELECT id,name,slug,created_at FROM gyms ORDER BY name")->f
             <label class="form-label">Slug</label>
             <input class="form-control" name="slug" id="gym_slug" required>
             <div class="form-text">Short identifier used in URLs.</div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Category</label>
+            <select class="form-select" name="category" id="gym_category" required>
+                <option value="gym">Gym</option>
+                <option value="pilates">Pilates</option>
+                <option value="yoga">Yoga</option>
+                <option value="wellness">Wellness</option>
+                <option value="studio">Studio</option>
+                <option value="medical">Medical Office</option>
+                <option value="real_estate">Real Estate Agency</option>
+            </select>
+            <div class="form-text">Choose the category of this location.</div>
           </div>
         </form>
       </div>
@@ -106,14 +121,15 @@ $(function(){
     const modalEl = document.getElementById('gymModal');
     const bsModal = new bootstrap.Modal(modalEl);
 
-    $('#btnNew').on('click', function(){ $('#gym_id').val(''); $('#gym_name').val(''); $('#gym_slug').val(''); bsModal.show(); });
+    $('#btnNew').on('click', function(){ $('#gym_id').val(''); $('#gym_name').val(''); $('#gym_slug').val(''); $('#gym_category').val('gym'); bsModal.show(); });
 
     $(document).on('click', '.btn-edit', function(){
       const tr = $(this).closest('tr');
       const id = tr.data('id');
       $('#gym_id').val(id);
       $('#gym_name').val(tr.children().eq(0).text().trim());
-      $('#gym_slug').val(tr.children().eq(1).text().trim());
+      $('#gym_category').val(tr.data('category') || 'gym');
+      $('#gym_slug').val(tr.children().eq(2).text().trim());
       bsModal.show();
     });
 
