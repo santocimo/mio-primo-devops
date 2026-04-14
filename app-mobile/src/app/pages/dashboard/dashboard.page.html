@@ -1,0 +1,57 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Dashboard</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="logout()">
+        <ion-icon name="log-out"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="dashboard-content">
+  <ion-refresher slot="fixed" (ionRefresh)="$event.target.complete()">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="dashboard-container">
+    <div class="greeting-section">
+      <h1>Ciao, {{ userName }}!</h1>
+      <p>Benvenuto in BusinessRegistry</p>
+    </div>
+
+    <div class="quick-actions">
+      <ion-card class="action-card" (click)="goToBookAppointment()">
+        <ion-card-content>
+          <ion-icon name="add-circle"></ion-icon>
+          <p>Prenota appuntamento</p>
+        </ion-card-content>
+      </ion-card>
+
+      <ion-card class="action-card" (click)="goToAppointments()">
+        <ion-card-content>
+          <ion-icon name="calendar"></ion-icon>
+          <p>Miei appuntamenti</p>
+        </ion-card-content>
+      </ion-card>
+    </div>
+
+    <div *ngIf="!loading" class="stats-section">
+      <h2>Prossimi appuntamenti</h2>
+      <ion-list *ngIf="upcomingAppointments.length > 0; else noAppointments">
+        <ion-item *ngFor="let apt of upcomingAppointments">
+          <ion-label>
+            <h3>Appuntamento #{{ apt.id }}</h3>
+            <p>{{ apt.appointment_date }}</p>
+          </ion-label>
+          <ion-badge slot="end">{{ apt.status }}</ion-badge>
+        </ion-item>
+      </ion-list>
+      <ng-template #noAppointments>
+        <p class="no-data">Nessun appuntamento in programma</p>
+      </ng-template>
+    </div>
+
+    <ion-skeleton-text *ngIf="loading" animated></ion-skeleton-text>
+  </div>
+</ion-content>

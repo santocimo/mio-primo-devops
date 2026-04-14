@@ -1,0 +1,73 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>Upgrade a Pro</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="paywall-content">
+  <div class="paywall-container">
+    <div class="header-section">
+      <h1>Sblocca tutte le funzioni</h1>
+      <p>Accedi a funzionalità avanzate e gestisci meglio la tua attività</p>
+    </div>
+
+    <div class="features-list">
+      <div class="feature-item">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>Gestione illimitata appuntamenti</span>
+      </div>
+      <div class="feature-item">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>Sincronizzazione in tempo reale</span>
+      </div>
+      <div class="feature-item">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>Statistiche avanzate</span>
+      </div>
+      <div class="feature-item">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>Supporto prioritario</span>
+      </div>
+      <div class="feature-item">
+        <ion-icon name="checkmark-circle"></ion-icon>
+        <span>Nessuna pubblicità</span>
+      </div>
+    </div>
+
+    <div class="pricing-section">
+      <div
+        *ngFor="let product of products"
+        class="pricing-card"
+        [class.selected]="selectedProductId === product.id"
+        (click)="selectedProductId = product.id"
+      >
+        <h3>{{ product.name }}</h3>
+        <p class="description">{{ product.description }}</p>
+        <div class="price">
+          <span class="amount">{{ product.price }}</span>
+          <span class="currency">{{ product.currency }}</span>
+          <span class="duration" *ngIf="product.duration === 'monthly'">/mese</span>
+          <span class="duration" *ngIf="product.duration === 'yearly'">/anno</span>
+        </div>
+        <ion-button
+          expand="block"
+          (click)="onPurchase(product.id)"
+          [disabled]="purchaseInProgress"
+          class="purchase-button"
+        >
+          Acquista ora
+        </ion-button>
+      </div>
+    </div>
+
+    <div class="restore-section">
+      <ion-button fill="clear" (click)="restorePurchases()">
+        Ripristina acquisti precedenti
+      </ion-button>
+    </div>
+
+    <div class="terms-text">
+      <p>Rinnovo automatico. Cancella in qualsiasi momento nelle impostazioni.</p>
+    </div>
+  </div>
+</ion-content>

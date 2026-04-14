@@ -1,0 +1,41 @@
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+    </ion-buttons>
+    <ion-title>I miei appuntamenti</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="appointments-content">
+  <div *ngIf="!loading" class="appointments-container">
+    <ion-list *ngIf="appointments.length > 0; else noAppointments">
+      <ion-item-sliding *ngFor="let apt of appointments">
+        <ion-item>
+          <ion-label>
+            <h3>Appuntamento #{{ apt.id }}</h3>
+            <p>{{ apt.appointment_date }} ore {{ apt.appointment_time }}</p>
+          </ion-label>
+          <ion-badge slot="end" [color]="apt.status === 'scheduled' ? 'success' : 'medium'">
+            {{ apt.status }}
+          </ion-badge>
+        </ion-item>
+        <ion-item-options side="end">
+          <ion-item-option color="danger" (click)="cancelAppointment(apt.id)">
+            <ion-icon name="trash" slot="icon-only"></ion-icon>
+          </ion-item-option>
+        </ion-item-options>
+      </ion-item-sliding>
+    </ion-list>
+
+    <ng-template #noAppointments>
+      <div class="no-data">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <h3>Nessun appuntamento</h3>
+        <p>Non hai ancora prenotato alcun appuntamento</p>
+      </div>
+    </ng-template>
+  </div>
+
+  <ion-skeleton-text *ngIf="loading" animated></ion-skeleton-text>
+</ion-content>
