@@ -6,6 +6,12 @@
  * This should be included at the start of every request.
  */
 
+// Guard against multiple initializations
+if (defined('APP_BOOTSTRAPPED')) {
+    return;
+}
+define('APP_BOOTSTRAPPED', true);
+
 // Define root path
 define('ROOT_PATH', __DIR__);
 
