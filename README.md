@@ -1,15 +1,46 @@
-# 🚀 Il mio Laboratorio DevOps
+# BusinessRegistry
 
-Benvenuti nel mio primo progetto di infrastruttura automatizzata! In questo repository sto imparando a gestire server e container come un vero professionista.
+A professional, secure business management system for gyms, salons, studios, and service-based businesses. Built with PHP 7.4+, featuring multi-location support, appointment management, and user role-based access control.
 
-## 🛠️ Tecnologie Utilizzate
-* **WSL2 (Ubuntu):** Il mio ambiente Linux su Windows.
-* **Docker & Docker Compose:** Per lanciare server in pochi secondi.
-* **Nginx:** Il web server che sta ospitando la mia pagina.
-* **Git:** Per il controllo della versione.
+## Features
 
-## 🚦 Come lanciare il progetto
-Per far partire il mio server, basta eseguire questo comando nel terminale:
+- **Multi-Location Management**: Support for multiple business locations/gyms with independent operations
+- **Appointment System**: Schedule and manage customer appointments across services
+- **Service Management**: Define and manage business services with pricing and capacity
+- **User Management**: Role-based access control (Admin, Manager, Operator)
+- **Secure Authentication**: Password hashing with bcrypt, CSRF protection, secure sessions
+- **Professional Logging**: Comprehensive error and activity logging
+- **Database Migrations**: Proper schema versioning and migration strategy
+- **RESTful API**: Organized request handling for appointments, services, users, and more
+- **Docker Ready**: Fully containerized with Docker Compose for easy deployment
+
+## Tech Stack
+
+- **Backend**: PHP 7.4+ with PDO for database access
+- **Database**: MySQL 5.7+ / MariaDB
+- **Containerization**: Docker & Docker Compose
+- **Testing**: PHPUnit 10.x
+- **Code Quality**: PHPStan, PHP CodeSniffer
+- **Web Server**: Nginx
+
+## Quick Start
+
+### Using Docker (Recommended)
 
 ```bash
-docker compose up -d
+# Copy environment template
+cp .env.example .env
+
+# Edit configuration (change database password!)
+nano .env
+
+# Start the application
+docker-compose up -d
+
+# Access application
+open http://localhost:8081
+```
+
+**Default Credentials**: Username: `admin`, Password: `admin123`
+
+⚠️ **Change these immediately in a production environment!**

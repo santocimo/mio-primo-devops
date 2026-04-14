@@ -1,19 +1,48 @@
-# VS Code Server (Il colpevole del blocco)
-.vscode-server/
-.vscode/
+# Environment and Configuration
+.env
+.env.local
+.env.*.local
+config_segreta.php
 
-# Database e Dati locali
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+*.sublime-project
+*.sublime-workspace
+
+# PHP
+vendor/
+composer.lock
+.phpunit.result.cache
+*.log
+
+# Database and Data
 db_data/
 mysql/
 *.sql
+!migrations/*.sql
+backups/
 
-# Logs e file temporanei
+# Logs
+logs/*.log
 *.log
-.DS_Store
-Thumbs.db
+
+# Cache and Temporary Files
+cache/*
+tmp/*
+temp/*
+uploads/*
 node_modules/
 
-# Credenziali e Ambiente
-config_segreta.php
-.env
+# Testing
+coverage/
+phpunit.xml
+
+# Docker
 .docker/
+docker/
