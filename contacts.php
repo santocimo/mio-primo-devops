@@ -2,11 +2,13 @@
 require_once __DIR__ . '/inc/security.php';
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/inc/labels.php';
+require_once __DIR__ . '/inc/subscription.php';
 
 if (!isset($_SESSION['admin_logged'])) {
     header('Location: login.php');
     exit;
 }
+require_subscription();
 
 $pdo = getPDO();
 $use_gym = false;
@@ -56,7 +58,9 @@ $contacts = $contacts->fetchAll();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?php echo htmlspecialchars($person_label_plural); ?> Management</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body class="bg-light">
@@ -152,7 +156,7 @@ $contacts = $contacts->fetchAll();
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Birth city</label>
-                            <input type="text" class="form-control" name="luogo_nascita" id="contact_luogo" required>
+                            <input type="text" class="form-control" name="luogo_nascita" id="contact_luogo" autocomplete="off" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Address</label>
@@ -187,7 +191,56 @@ $(function(){
     const modalEl = document.getElementById('contactModal');
     const bsModal = new bootstrap.Modal(modalEl);
 
+    let belfiore = "";
+
+    function calcolaControllo(cf15) {
+        const d = {'0':1,'1':0,'2':5,'3':7,'4':9,'5':13,'6':15,'7':17,'8':19,'9':21,'A':1,'B':0,'C':5,'D':7,'E':9,'F':13,'G':15,'H':17,'I':19,'J':21,'K':2,'L':4,'M':18,'N':20,'O':11,'P':3,'Q':6,'R':8,'S':12,'T':14,'U':16,'V':10,'W':22,'X':25,'Y':24,'Z':23};
+        const p = {'0':0,'1':1,'2':2,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8,'9':9,'A':0,'B':1,'C':2,'D':3,'E':4,'F':5,'G':6,'H':7,'I':8,'J':9,'K':10,'L':11,'M':12,'N':13,'O':14,'P':15,'Q':16,'R':17,'S':18,'T':19,'U':20,'V':21,'W':22,'X':23,'Y':24,'Z':25};
+        let s=0; for(let i=0; i<15; i++) s += ((i+1)%2 !== 0) ? d[cf15[i]] : p[cf15[i]];
+        return String.fromCharCode(65 + (s%26));
+    }
+
+    function getLetters(str, isName) {
+        let s = str.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Z]/g, '');
+        let c = s.replace(/[AEIOU]/g, ''); let v = s.replace(/[^AEIOU]/g, '');
+        if (isName && c.length >= 4) return c[0] + c[2] + c[3];
+        return (c + v + "XXX").substring(0, 3);
+    }
+
+    const mesiCF = ['A','B','C','D','E','H','L','M','P','R','S','T'];
+
+    function generaCF() {
+        const n = $('#contact_nome').val().trim();
+        const c = $('#contact_cognome').val().trim();
+        const dIn = $('#contact_data').val(); // formato YYYY-MM-DD
+        const s = $('#contact_sesso').val();
+        if (n && c && dIn && dIn.length === 10 && belfiore) {
+            const parts = dIn.split('-'); // [YYYY, MM, DD]
+            const anno = parts[0].slice(-2);
+            const mese = mesiCF[parseInt(parts[1]) - 1];
+            let gg = parseInt(parts[2]);
+            if (s === 'F') gg += 40;
+            let cf = getLetters(c, false) + getLetters(n, true) + anno + mese + gg.toString().padStart(2, '0') + belfiore;
+            cf = cf.toUpperCase();
+            const finale = cf + calcolaControllo(cf);
+            $('#contact_cf').val(finale);
+        }
+    }
+
+    $('#contact_luogo').autocomplete({
+        source: 'cerca_comuni.php',
+        select: function(e, ui) {
+            $(this).val(ui.item.value);
+            belfiore = ui.item.codice;
+            generaCF();
+            return false;
+        }
+    });
+
+    $('#contact_nome, #contact_cognome, #contact_data, #contact_sesso').on('change keyup', generaCF);
+
     $('#btnNew').on('click', function() {
+        belfiore = "";
         $('#contact_id').val('');
         $('#contactForm')[0].reset();
         bsModal.show();
@@ -195,6 +248,7 @@ $(function(){
 
     $(document).on('click', '.btn-edit', function() {
         const row = $(this).closest('tr');
+        belfiore = ""; // reset: l'utente dovrà riselezionare il comune se vuole ricalcolare
         $('#contact_id').val(row.data('id'));
         $('#contact_nome').val(row.data('nome'));
         $('#contact_cognome').val(row.data('cognome'));
@@ -213,10 +267,10 @@ $(function(){
             if (resp && resp.ok) {
                 location.reload();
             } else {
-                Swal.fire('Error', resp.error || 'Unable to save', 'error');
+                Swal.fire('Errore', resp.error || 'Impossibile salvare', 'error');
             }
         }, 'json').fail(function() {
-            Swal.fire('Error', 'Unable to save contact', 'error');
+            Swal.fire('Errore', 'Impossibile salvare il contatto', 'error');
         });
     });
 
@@ -224,17 +278,19 @@ $(function(){
         const row = $(this).closest('tr');
         const id = row.data('id');
         Swal.fire({
-            title: 'Delete record? ',
+            title: 'Eliminare?',
             text: row.find('td').first().text().trim(),
             icon: 'warning',
-            showCancelButton: true
+            showCancelButton: true,
+            confirmButtonText: 'Elimina',
+            cancelButtonText: 'Annulla'
         }).then(function(result) {
             if (result.isConfirmed) {
                 $.post('delete_contact.php', { id: id, csrf: '<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>' }, function(resp) {
                     if (resp && resp.ok) {
                         location.reload();
                     } else {
-                        Swal.fire('Error', resp.error || 'Unable to delete', 'error');
+                        Swal.fire('Errore', resp.error || 'Impossibile eliminare', 'error');
                     }
                 }, 'json');
             }

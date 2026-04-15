@@ -1,8 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router, CanActivate, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { PaymentService } from '../services/payment.service';
-import { SubscriptionStatus } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root',
@@ -10,7 +8,6 @@ import { SubscriptionStatus } from '../models/auth.model';
 export class AuthGuard implements CanActivate {
   constructor(
     private authService: AuthService,
-    private paymentService: PaymentService,
     private router: Router
   ) {}
 
@@ -27,14 +24,13 @@ export class AuthGuard implements CanActivate {
       return false;
     }
 
-    // Check subscription status
-    const authState = (this.authService as any).authState$?.getValue?.();
-    if (authState?.subscriptionStatus === SubscriptionStatus.NONE) {
-      // Reindirizza al paywall se l'utente non ha un abbonamento
-      this.router.navigate(['/paywall']);
-      return false;
+    // Permetti accesso se ha trial valido o abbonamento attivo
+    if (this.authService.hasAccess()) {
+      return true;
     }
 
-    return true;
+    // Trial scaduto o nessun abbonamento → paywall
+    this.router.navigate(['/paywall']);
+    return false;
   }
 }

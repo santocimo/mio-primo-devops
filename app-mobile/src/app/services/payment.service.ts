@@ -40,18 +40,18 @@ export class PaymentService {
     const mockProducts: Product[] = [
       {
         id: 'businessregistry_monthly',
-        name: 'Pro Monthly',
-        description: 'Accesso completo per 1 mese',
-        price: '4.99',
-        currency: 'EUR',
+        name: 'Piano Mensile',
+        description: 'Accesso completo, rinnovo mensile',
+        price: '4,99',
+        currency: '€',
         duration: 'monthly',
       },
       {
         id: 'businessregistry_yearly',
-        name: 'Pro Yearly',
-        description: 'Accesso completo per 1 anno (sconto 20%)',
-        price: '49.99',
-        currency: 'EUR',
+        name: 'Piano Annuale',
+        description: 'Accesso completo per 1 anno — risparmi il 17%',
+        price: '49,99',
+        currency: '€',
         duration: 'yearly',
       },
     ];

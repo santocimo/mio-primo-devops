@@ -26,6 +26,7 @@ export interface AuthState {
   user?: User;
   token?: string;
   subscriptionStatus?: SubscriptionStatus;
+  trialStartDate?: string;
 }
 
 export enum SubscriptionStatus {

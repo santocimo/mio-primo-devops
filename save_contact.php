@@ -39,7 +39,7 @@ $recapito = trim($_POST['recapito'] ?? '');
 $sesso = trim($_POST['sesso'] ?? '');
 
 if ($nome === '' || $cognome === '' || $codice_fiscale === '' || $data_nascita === '' || $luogo_nascita === '' || $indirizzo === '' || $sesso === '') {
-    echo json_encode(['ok' => false, 'error' => 'missing']);
+    echo json_encode(['ok' => false, 'error' => 'Compila tutti i campi obbligatori (incluso il codice fiscale)']);
     exit;
 }
 

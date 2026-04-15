@@ -1,0 +1,78 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Gestione Sedi</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openAdd()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="ion-padding" *ngIf="loading">
+    <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px" *ngFor="let i of [1,2,3]"></ion-skeleton-text>
+  </div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item *ngFor="let g of gyms" lines="full">
+      <ion-label>
+        <h2>{{ g.name }}</h2>
+        <p>{{ g.category }} &nbsp;·&nbsp; {{ g.slug }}</p>
+      </ion-label>
+      <ion-buttons slot="end">
+        <ion-button fill="clear" (click)="openEdit(g)">
+          <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="del(g)">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ion-item>
+  </ion-list>
+
+  <div class="ion-padding ion-text-center" *ngIf="!loading && gyms.length === 0">
+    <ion-icon name="business-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
+    <p>Nessuna sede</p>
+  </div>
+
+  <!-- Modal form -->
+  <ion-modal [isOpen]="showForm" (didDismiss)="closeForm()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ editingGym ? 'Modifica sede' : 'Nuova sede' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeForm()">Chiudi</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-item>
+          <ion-label position="stacked">Nome *</ion-label>
+          <ion-input [(ngModel)]="formData.name" placeholder="nome sede"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Slug</ion-label>
+          <ion-input [(ngModel)]="formData.slug" placeholder="auto-generato se vuoto"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Categoria *</ion-label>
+          <ion-select [(ngModel)]="formData.category" interface="popover">
+            <ion-select-option *ngFor="let c of categories" [value]="c">{{ c }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div class="ion-padding-top">
+          <ion-button expand="block" (click)="save()">Salva</ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

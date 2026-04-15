@@ -6,6 +6,7 @@ config_segreta.php
 
 # IDE and Editor
 .vscode/
+.vscode-server/
 .idea/
 *.swp
 *.swo

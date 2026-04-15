@@ -26,15 +26,24 @@ export class AuthService {
     if (stored) {
       try {
         const state = JSON.parse(stored) as AuthState;
+        // Ricalcola se il trial è ancora valido al reload
+        if (state.subscriptionStatus === SubscriptionStatus.TRIAL && state.trialStartDate) {
+          const days = this.calcTrialDaysRemaining(state.trialStartDate);
+          if (days <= 0) {
+            state.subscriptionStatus = SubscriptionStatus.EXPIRED;
+            localStorage.setItem('authState', JSON.stringify(state));
+          }
+        }
         this.authState$.next(state);
       } catch (e) {
         console.error('Errore nel caricamento dello stato auth:', e);
+        localStorage.removeItem('authState');
       }
     }
   }
 
   /**
-   * Effettua il login
+   * Effettua il login e gestisce trial/abbonamento
    */
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http
@@ -45,11 +54,40 @@ export class AuthService {
       .pipe(
         map((response) => {
           if (response.success && response.user && response.token) {
+            // Recupera lo stato precedente per preservare trial e abbonamento
+            const stored = localStorage.getItem('authState');
+            const prevState: Partial<AuthState> = stored ? JSON.parse(stored) : {};
+
+            // Admin non soggetto a trial/pagamento
+            const role = (response.user.role ?? '').toUpperCase();
+            const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
+
+            // Determina lo stato abbonamento
+            let subscriptionStatus = isAdmin
+              ? SubscriptionStatus.ACTIVE
+              : (prevState.subscriptionStatus ?? SubscriptionStatus.NONE);
+            let trialStartDate = isAdmin ? undefined : prevState.trialStartDate;
+
+            // Primo accesso: avvia il trial
+            if (!trialStartDate && subscriptionStatus !== SubscriptionStatus.ACTIVE) {
+              trialStartDate = new Date().toISOString();
+              subscriptionStatus = SubscriptionStatus.TRIAL;
+            }
+
+            // Se era in trial, verifica se è ancora valido
+            if (subscriptionStatus === SubscriptionStatus.TRIAL && trialStartDate) {
+              const trialDays = this.calcTrialDaysRemaining(trialStartDate);
+              if (trialDays <= 0) {
+                subscriptionStatus = SubscriptionStatus.EXPIRED;
+              }
+            }
+
             const newState: AuthState = {
               isLoggedIn: true,
               user: response.user,
               token: response.token,
-              subscriptionStatus: SubscriptionStatus.ACTIVE,
+              subscriptionStatus,
+              trialStartDate,
             };
             this.authState$.next(newState);
             localStorage.setItem('authState', JSON.stringify(newState));
@@ -115,5 +153,37 @@ export class AuthService {
     state.subscriptionStatus = status;
     this.authState$.next(state);
     localStorage.setItem('authState', JSON.stringify(state));
+  }
+
+  /**
+   * Calcola i giorni rimasti nel trial (0 se scaduto)
+   */
+  calcTrialDaysRemaining(trialStartDate: string): number {
+    const TRIAL_DAYS = 7;
+    const start = new Date(trialStartDate).getTime();
+    const now = Date.now();
+    const elapsed = Math.floor((now - start) / (1000 * 60 * 60 * 24));
+    return Math.max(0, TRIAL_DAYS - elapsed);
+  }
+
+  /**
+   * Giorni rimasti nel trial per l'utente corrente
+   */
+  getTrialDaysRemaining(): number {
+    const state = this.authState$.getValue();
+    if (!state.trialStartDate) return 0;
+    return this.calcTrialDaysRemaining(state.trialStartDate);
+  }
+
+  /**
+   * Controlla se l'utente ha accesso (trial attivo o abbonato)
+   */
+  hasAccess(): boolean {
+    const state = this.authState$.getValue();
+    if (state.subscriptionStatus === SubscriptionStatus.ACTIVE) return true;
+    if (state.subscriptionStatus === SubscriptionStatus.TRIAL) {
+      return this.getTrialDaysRemaining() > 0;
+    }
+    return false;
   }
 }

@@ -23,7 +23,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($user && password_verify($p, $user['password_hash'])) {
             $_SESSION['user_role'] = strtoupper($user['role']);
             $_SESSION['admin_logged'] = true;
+            $_SESSION['user_id'] = (int)$user['id'];
+            $_SESSION['username'] = $user['username'];
             if (!empty($user['gym_id'])) $_SESSION['gym_id'] = (int)$user['gym_id'];
+
+            // Gestione trial: se primo accesso, avvia il trial
+            $sub_status = $user['subscription_status'] ?? 'none';
+            if ($sub_status === 'none') {
+                // Primo accesso: avvia il trial
+                $pdo->prepare("UPDATE users SET trial_start_date = NOW(), subscription_status = 'trial' WHERE id = ?")
+                    ->execute([$user['id']]);
+                $sub_status = 'trial';
+                $_SESSION['trial_start_date'] = date('Y-m-d H:i:s');
+            } else {
+                $_SESSION['trial_start_date'] = $user['trial_start_date'] ?? null;
+            }
+            $_SESSION['subscription_status'] = $sub_status;
+            $_SESSION['subscription_expires_at'] = $user['subscription_expires_at'] ?? null;
+
             header("Location: index.php"); exit;
         }
     } catch (Exception $e) {
@@ -74,6 +91,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="password" name="password" class="input-custom" placeholder="Password" required>
             <button type="submit" class="btn btn-login">ACCEDI</button>
         </form>
+        <hr class="my-3">
+        <p class="text-muted small mb-0">Non hai un account? <a href="register.php" class="text-decoration-none fw-bold" style="color:#7c4dff">Registrati</a></p>
     </div>
 </body>
 </html>

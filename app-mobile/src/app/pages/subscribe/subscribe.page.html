@@ -1,0 +1,46 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="goBack()">
+        <ion-icon name="arrow-back"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+    <ion-title>Completa il pagamento</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="subscribe-content">
+  <div class="subscribe-container">
+
+    <div class="logo-area">SR</div>
+
+    <h2 class="title">Completa il pagamento</h2>
+    <div class="plan-badge">{{ planPrice }}</div>
+
+    <div class="demo-notice">
+      <ion-icon name="information-circle-outline"></ion-icon>
+      <div>
+        <strong>Demo:</strong> Il sistema di pagamento non è ancora attivo.<br>
+        Clicca "Attiva ora" per simulare il pagamento e attivare l'abbonamento.
+      </div>
+    </div>
+
+    <ion-button
+      expand="block"
+      class="btn-activate"
+      (click)="confirmPayment()"
+    >
+      Attiva ora
+    </ion-button>
+
+    <ion-button
+      fill="clear"
+      expand="block"
+      class="btn-back"
+      (click)="goBack()"
+    >
+      ← Torna alla scelta del piano
+    </ion-button>
+
+  </div>
+</ion-content>

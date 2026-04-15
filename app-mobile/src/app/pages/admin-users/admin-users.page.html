@@ -1,0 +1,90 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Gestione Utenti</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openAdd()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
+    <ion-refresher-content></ion-refresher-content>
+  </ion-refresher>
+
+  <div class="ion-padding" *ngIf="loading">
+    <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px" *ngFor="let i of [1,2,3]"></ion-skeleton-text>
+  </div>
+
+  <ion-list *ngIf="!loading">
+    <ion-item *ngFor="let u of users" lines="full">
+      <ion-label>
+        <h2>{{ u.username }}</h2>
+        <p>
+          <ion-badge [color]="roleLabel(u.role) === 'Admin' ? 'danger' : 'primary'">{{ roleLabel(u.role) }}</ion-badge>
+          &nbsp;
+          <span *ngIf="u.gym_id">Sede #{{ u.gym_id }}</span>
+        </p>
+      </ion-label>
+      <ion-buttons slot="end">
+        <ion-button fill="clear" (click)="openEdit(u)">
+          <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" color="danger" (click)="del(u)">
+          <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+        </ion-button>
+      </ion-buttons>
+    </ion-item>
+  </ion-list>
+
+  <div class="ion-padding ion-text-center" *ngIf="!loading && users.length === 0">
+    <ion-icon name="people-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
+    <p>Nessun utente</p>
+  </div>
+
+  <!-- Modal form -->
+  <ion-modal [isOpen]="showForm" (didDismiss)="closeForm()">
+    <ng-template>
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ editingUser ? 'Modifica utente' : 'Nuovo utente' }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeForm()">Chiudi</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-item>
+          <ion-label position="stacked">Username *</ion-label>
+          <ion-input [(ngModel)]="formData.username" placeholder="username"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Password {{ editingUser ? '(lascia vuoto per non cambiare)' : '*' }}</ion-label>
+          <ion-input type="password" [(ngModel)]="formData.password" placeholder="password"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Ruolo *</ion-label>
+          <ion-select [(ngModel)]="formData.role" interface="popover">
+            <ion-select-option value="OPERATORE">Operatore</ion-select-option>
+            <ion-select-option value="ADMIN">Admin</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-label position="stacked">Sede</ion-label>
+          <ion-select [(ngModel)]="formData.gym_id" interface="popover" [value]="formData.gym_id">
+            <ion-select-option [value]="null">Nessuna</ion-select-option>
+            <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <div class="ion-padding-top">
+          <ion-button expand="block" (click)="save()">Salva</ion-button>
+        </div>
+      </ion-content>
+    </ng-template>
+  </ion-modal>
+</ion-content>

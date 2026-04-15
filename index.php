@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/inc/security.php';
+require_once __DIR__ . '/inc/subscription.php';
 // Handle logout request: clear session and redirect to login
 if (isset($_GET['logout'])) {
     $_SESSION = [];
@@ -14,6 +15,7 @@ if (isset($_GET['logout'])) {
     exit;
 }
 if(!isset($_SESSION['admin_logged'])) { header("Location: login.php"); exit; }
+require_subscription();
 $ruolo_reale = isset($_SESSION['user_role']) ? strtoupper($_SESSION['user_role']) : 'USER';
 $supervisore = "CIMÒ";
 $versione_software = "V3.5.6 Search-Fixed";
@@ -274,6 +276,19 @@ try {
                     <?php if($ruolo_reale == 'ADMIN'): ?><a href="?export_excel=1" class="btn btn-outline-light btn-sm rounded-pill px-3 fw-bold" data-i18n="btn.excel">EXCEL</a><?php endif; ?>
                 </div>
         </div>
+
+        <?php
+        $sub_status_view = get_subscription_status();
+        if ($sub_status_view === 'trial'):
+            $days_left = get_trial_days_remaining();
+        ?>
+        <div style="background: linear-gradient(135deg,#7c4dff,#a78bfa); border-radius:16px; padding:12px 20px; margin-bottom:1rem; display:flex; align-items:center; justify-content:space-between; color:white;">
+            <span style="font-weight:600; font-size:0.9rem;">
+                ⏳ Prova gratuita: <strong><?php echo $days_left; ?> giorn<?php echo $days_left === 1 ? 'o' : 'i'; ?> rimanent<?php echo $days_left === 1 ? 'e' : 'i'; ?></strong>
+            </span>
+            <a href="paywall.php" style="background:white; color:#7c4dff; border-radius:20px; padding:5px 16px; font-weight:700; font-size:0.82rem; text-decoration:none;">Abbonati</a>
+        </div>
+        <?php endif; ?>
 
         <div class="row g-3 mb-4 stat-row">
               <div class="col-4"><div class="stat-card-white"><span class="text-muted small fw-bold d-block mb-1" data-i18n="stat.total">TOTALE</span><span class="stat-val text-primary"><?php echo $totale; ?></span></div></div>

@@ -1,0 +1,37 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /api/
+
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+
+    # Auth
+    RewriteRule ^auth/login$           auth/login.php [QSA,L]
+    RewriteRule ^auth/verify_token$    auth/verify_token.php [QSA,L]
+
+    # Register
+    RewriteRule ^register$             register.php [QSA,L]
+
+    # Gyms  (with optional /ID)
+    RewriteRule ^gyms/([0-9]+)$        gyms.php?id=$1 [QSA,L]
+    RewriteRule ^gyms$                 gyms.php [QSA,L]
+
+    # Services (with optional /ID)
+    RewriteRule ^services/([0-9]+)$    services.php?id=$1 [QSA,L]
+    RewriteRule ^services$             services.php [QSA,L]
+
+    # Appointments (with optional /ID)
+    RewriteRule ^appointments/([0-9]+)$ appointments.php?id=$1 [QSA,L]
+    RewriteRule ^appointments$         appointments.php [QSA,L]
+
+    # Contacts (with optional /ID)
+    RewriteRule ^contacts/([0-9]+)$    contacts.php?id=$1 [QSA,L]
+    RewriteRule ^contacts$             contacts.php [QSA,L]
+
+    # Users (with optional /ID)
+    RewriteRule ^users/([0-9]+)$       users.php?id=$1 [QSA,L]
+    RewriteRule ^users$                users.php [QSA,L]
+
+    # Settings
+    RewriteRule ^settings$             settings.php [QSA,L]
+</IfModule>

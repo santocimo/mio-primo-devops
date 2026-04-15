@@ -1,57 +1,133 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
-    <ion-title>Dashboard</ion-title>
+  <ion-toolbar color="primary">
+    <ion-title>Registro Digitale</ion-title>
     <ion-buttons slot="end">
       <ion-button (click)="logout()">
-        <ion-icon name="log-out"></ion-icon>
+        <ion-icon name="log-out-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" class="dashboard-content">
-  <ion-refresher slot="fixed" (ionRefresh)="$event.target.complete()">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
+<ion-content class="dashboard-content">
 
-  <div class="dashboard-container">
-    <div class="greeting-section">
-      <h1>Ciao, {{ userName }}!</h1>
-      <p>Benvenuto in BusinessRegistry</p>
-    </div>
-
-    <div class="quick-actions">
-      <ion-card class="action-card" (click)="goToBookAppointment()">
-        <ion-card-content>
-          <ion-icon name="add-circle"></ion-icon>
-          <p>Prenota appuntamento</p>
-        </ion-card-content>
-      </ion-card>
-
-      <ion-card class="action-card" (click)="goToAppointments()">
-        <ion-card-content>
-          <ion-icon name="calendar"></ion-icon>
-          <p>Miei appuntamenti</p>
-        </ion-card-content>
-      </ion-card>
-    </div>
-
-    <div *ngIf="!loading" class="stats-section">
-      <h2>Prossimi appuntamenti</h2>
-      <ion-list *ngIf="upcomingAppointments.length > 0; else noAppointments">
-        <ion-item *ngFor="let apt of upcomingAppointments">
-          <ion-label>
-            <h3>Appuntamento #{{ apt.id }}</h3>
-            <p>{{ apt.appointment_date }}</p>
-          </ion-label>
-          <ion-badge slot="end">{{ apt.status }}</ion-badge>
-        </ion-item>
-      </ion-list>
-      <ng-template #noAppointments>
-        <p class="no-data">Nessun appuntamento in programma</p>
-      </ng-template>
-    </div>
-
-    <ion-skeleton-text *ngIf="loading" animated></ion-skeleton-text>
+  <!-- Banner trial -->
+  <div *ngIf="isInTrial" class="trial-banner" (click)="router.navigate(['/paywall'])">
+    <ion-icon name="time-outline"></ion-icon>
+    <span>Prova gratuita: <strong>{{ trialDaysRemaining }} {{ trialDaysRemaining === 1 ? 'giorno rimasto' : 'giorni rimasti' }}</strong></span>
+    <ion-button fill="clear" size="small" class="trial-btn">Abbonati</ion-button>
   </div>
+
+  <!-- Statistiche -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <span class="stat-label">TOTALE</span>
+      <span class="stat-val primary">{{ stats.total }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">UOMINI</span>
+      <span class="stat-val info">{{ stats.men }}</span>
+    </div>
+    <div class="stat-card">
+      <span class="stat-label">DONNE</span>
+      <span class="stat-val danger">{{ stats.women }}</span>
+    </div>
+  </div>
+
+  <!-- Barra ricerca + bottone aggiungi -->
+  <div class="search-bar">
+    <ion-searchbar
+      [formControl]="searchCtrl"
+      placeholder="Cerca..."
+      animated
+      class="search-input"
+    ></ion-searchbar>
+    <ion-button (click)="openAddForm()" class="add-btn">
+      <ion-icon name="add-outline"></ion-icon>
+    </ion-button>
+  </div>
+
+  <!-- Lista contatti -->
+  <div class="contacts-list">
+    <ion-skeleton-text *ngIf="loading" animated style="height:60px; border-radius:12px; margin-bottom:10px;"></ion-skeleton-text>
+    <ion-skeleton-text *ngIf="loading" animated style="height:60px; border-radius:12px; margin-bottom:10px;"></ion-skeleton-text>
+
+    <ng-container *ngIf="!loading">
+      <div *ngIf="contacts.length === 0" class="no-data">Nessun risultato</div>
+
+      <div *ngFor="let c of contacts" class="contact-card">
+        <div class="contact-info">
+          <div class="contact-name">{{ c.nome }} {{ c.cognome }}</div>
+          <div class="cf-tag">{{ c.codice_fiscale }}</div>
+          <div class="contact-sub">{{ c.luogo_nascita }} | {{ c.indirizzo }} | {{ c.recapito }}</div>
+        </div>
+        <div class="contact-actions">
+          <ion-button fill="clear" size="small" (click)="openEditForm(c)">
+            <ion-icon name="pencil-outline" color="primary"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" size="small" (click)="confirmDelete(c)">
+            <ion-icon name="trash-outline" color="danger"></ion-icon>
+          </ion-button>
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
 </ion-content>
+
+<!-- Modal form aggiungi/modifica -->
+<ion-modal [isOpen]="showForm" (didDismiss)="closeForm()">
+  <ng-template>
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>{{ editingContact ? 'Modifica' : 'Nuovo' }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeForm()">Chiudi</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content class="form-content">
+      <div class="form-container">
+        <ion-item class="form-item">
+          <ion-label position="stacked">Nome *</ion-label>
+          <ion-input [(ngModel)]="formData.nome" placeholder="Nome" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Cognome *</ion-label>
+          <ion-input [(ngModel)]="formData.cognome" placeholder="Cognome" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Data di Nascita</ion-label>
+          <ion-input type="date" [(ngModel)]="formData.data_nascita" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Sesso</ion-label>
+          <ion-select [(ngModel)]="formData.sesso" class="form-input">
+            <ion-select-option value="M">Maschio</ion-select-option>
+            <ion-select-option value="F">Femmina</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Comune di Nascita</ion-label>
+          <ion-input [(ngModel)]="formData.luogo_nascita" placeholder="Comune" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Indirizzo</ion-label>
+          <ion-input [(ngModel)]="formData.indirizzo" placeholder="Indirizzo" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Telefono</ion-label>
+          <ion-input type="tel" [(ngModel)]="formData.recapito" placeholder="Telefono" class="form-input"></ion-input>
+        </ion-item>
+        <ion-item class="form-item">
+          <ion-label position="stacked">Codice Fiscale</ion-label>
+          <ion-input [(ngModel)]="formData.codice_fiscale" placeholder="Codice Fiscale" class="form-input" style="text-transform:uppercase"></ion-input>
+        </ion-item>
+
+        <ion-button expand="block" class="save-btn" (click)="saveContact()" [disabled]="!formData.nome || !formData.cognome">
+          SALVA
+        </ion-button>
+      </div>
+    </ion-content>
+  </ng-template>
+</ion-modal>
