@@ -44,3 +44,24 @@ open http://localhost:8081
 **Default Credentials**: Username: `admin`, Password: `admin123`
 
 ⚠️ **Change these immediately in a production environment!**
+
+## Session Checkpoint (Fast Resume)
+
+Use the script below at the end of each work session to save progress without staging runtime files from the home folder.
+
+```bash
+chmod +x scripts/checkpoint_session.sh
+scripts/checkpoint_session.sh \
+	-m "checkpoint: short commit title" \
+	-s "what was completed" \
+	-n "single next step"
+```
+
+What it does:
+- Updates `SESSION_HANDOFF.md` with branch, last commit, summary, and next step.
+- Stages only project paths (`api`, `app-mobile`, `docker-compose.yml`, docs).
+- Commits and pushes the current non-main branch.
+
+Safety rules:
+- Refuses to run on `master` or `main`.
+- Refuses commits with staged files larger than ~95 MB.
