@@ -1,0 +1,185 @@
+<ion-header [translucent]="true">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-menu-button></ion-menu-button>
+    </ion-buttons>
+    <ion-title>Contatti</ion-title>
+    <ion-buttons slot="end">
+      <ion-button *ngIf="isAdminUser" (click)="exportCsv()" [disabled]="exporting">
+        <ion-icon slot="icon-only" name="download-outline"></ion-icon>
+      </ion-button>
+      <ion-button (click)="openAdd()">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+  <!-- Sede attiva -->
+  <ion-toolbar *ngIf="selectedGymName" color="light" style="--min-height:32px;">
+    <ion-title size="small" style="font-size:0.78rem; color:#555; padding:0 16px;">
+      <ion-icon name="location-outline" style="vertical-align:middle; margin-right:4px;"></ion-icon>
+      {{ selectedGymName }}
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="contacts-content">
+  <div class="page-shell">
+    <section class="page-hero contacts-hero">
+      <div class="hero-kicker">
+        <ion-icon name="people-outline"></ion-icon>
+        <span>Archivio contatti</span>
+      </div>
+      <h1 class="hero-title">Schede chiare, ricerca veloce e operazioni immediate.</h1>
+      <p class="hero-subtitle">La vista mobile piu vicina alla versione desktop: tabella, filtro sede, export e modifica rapida.</p>
+      <div class="hero-meta-row">
+        <div class="hero-chip" *ngIf="selectedGymName">
+          <ion-icon name="location-outline"></ion-icon>
+          <span>{{ selectedGymName }}</span>
+        </div>
+        <div class="hero-chip" *ngIf="isAdminUser">
+          <ion-icon name="download-outline"></ion-icon>
+          <span>Export CSV disponibile</span>
+        </div>
+      </div>
+    </section>
+
+  <!-- Barra ricerca -->
+  <div class="search-bar">
+    <ion-searchbar
+      [formControl]="searchCtrl"
+      placeholder="Cerca per nome, CF, luogo..."
+      animated
+      class="search-input">
+    </ion-searchbar>
+  </div>
+
+  <!-- Skeleton loading -->
+  <ng-container *ngIf="loading">
+    <ion-skeleton-text animated style="height:56px; border-radius:10px; margin:8px 16px;" *ngFor="let i of [1,2,3,4]"></ion-skeleton-text>
+  </ng-container>
+
+  <!-- Tabella contatti (stile web) -->
+  <div class="table-wrap" *ngIf="!loading">
+    <div *ngIf="contacts.length === 0" class="no-data ion-text-center ion-padding">
+      <ion-icon name="people-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
+      <p>Nessun contatto trovato</p>
+    </div>
+
+    <table *ngIf="contacts.length > 0" class="contacts-table">
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th class="hide-sm">CF</th>
+          <th class="hide-sm">Nascita</th>
+          <th class="hide-md">Comune</th>
+          <th class="hide-md">Indirizzo</th>
+          <th class="hide-sm">Telefono</th>
+          <th class="hide-md">Sesso</th>
+          <th class="text-end">Azioni</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of contacts">
+          <td>
+            <div class="contact-name-cell">
+              <span class="name">{{ c.nome }} {{ c.cognome }}</span>
+              <span class="cf-badge show-sm">{{ c.codice_fiscale }}</span>
+            </div>
+          </td>
+          <td class="hide-sm"><span class="cf-tag">{{ c.codice_fiscale }}</span></td>
+          <td class="hide-sm">{{ formatDate(c.data_nascita) }}</td>
+          <td class="hide-md">{{ c.luogo_nascita }}</td>
+          <td class="hide-md">{{ c.indirizzo }}</td>
+          <td class="hide-sm">{{ c.recapito }}</td>
+          <td class="hide-md">{{ c.sesso }}</td>
+          <td class="text-end actions-cell">
+            <ion-button fill="clear" size="small" (click)="openEdit(c)">
+              <ion-icon name="pencil-outline" color="primary"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" size="small" (click)="confirmDelete(c)">
+              <ion-icon name="trash-outline" color="danger"></ion-icon>
+            </ion-button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  </div>
+
+</ion-content>
+
+<!-- Overlay nuovo/modifica contatto -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()"></div>
+<div class="modal-sheet" *ngIf="showModal">
+  <ion-header>
+    <ion-toolbar color="primary">
+      <ion-title>{{ editingContact ? 'Modifica contatto' : 'Nuovo contatto' }}</ion-title>
+      <ion-buttons slot="end">
+        <ion-button (click)="closeModal()">Chiudi</ion-button>
+      </ion-buttons>
+    </ion-toolbar>
+  </ion-header>
+  <div class="modal-body">
+
+    <ion-list>
+      <ion-item>
+        <ion-input label="Nome *" labelPlacement="stacked" [(ngModel)]="formData.nome" (ionInput)="onFormFieldChange()" placeholder="Nome"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Cognome *" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" placeholder="Cognome"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Data di nascita" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionInput)="onFormFieldChange()"></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-select label="Sesso" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover">
+          <ion-select-option value="M">Maschio</ion-select-option>
+          <ion-select-option value="F">Femmina</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <!-- Comune con autocomplete -->
+      <ion-item>
+        <ion-input
+          label="Comune di nascita"
+          labelPlacement="stacked"
+          [value]="comuneSearch"
+          (ionInput)="onComuneInput($event)"
+          placeholder="Cerca comune...">
+        </ion-input>
+      </ion-item>
+      <div class="suggestions" *ngIf="showSuggestions && comuniSuggestions.length > 0">
+        <div class="suggestion-item" *ngFor="let s of comuniSuggestions" (click)="selectComune(s)">
+          {{ s.label }}
+        </div>
+      </div>
+
+      <ion-item>
+        <ion-input label="Indirizzo" labelPlacement="stacked" [(ngModel)]="formData.indirizzo" placeholder="Via/Piazza..."></ion-input>
+      </ion-item>
+      <ion-item>
+        <ion-input label="Telefono" labelPlacement="stacked" type="tel" [(ngModel)]="formData.recapito" placeholder="+39..."></ion-input>
+      </ion-item>
+    </ion-list>
+
+    <!-- CF display -->
+    <div class="cf-display-box">
+      <small class="cf-label">CODICE FISCALE</small>
+      <div class="cf-value">{{ formData.codice_fiscale || '—' }}</div>
+      <ion-input
+        label="Codice fiscale"
+        labelPlacement="stacked"
+        [value]="formData.codice_fiscale"
+        (ionInput)="formData.codice_fiscale = ($any($event.target).value ?? '').toUpperCase()"
+        placeholder="o digita manualmente"
+        style="text-transform:uppercase; color:rgba(255,255,255,0.7); font-size:0.8rem;">
+      </ion-input>
+    </div>
+
+    <div class="ion-padding">
+      <ion-button expand="block" (click)="save()" [disabled]="!formData.nome || !formData.cognome">
+        {{ editingContact ? 'AGGIORNA' : 'SALVA' }}
+      </ion-button>
+    </div>
+  </div>
+</div>

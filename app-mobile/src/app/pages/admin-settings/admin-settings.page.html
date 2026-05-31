@@ -7,24 +7,39 @@
   </ion-toolbar>
 </ion-header>
 
-<ion-content class="ion-padding">
-  <ion-list>
-    <ion-list-header>
-      <ion-label><h2>Configurazione App</h2></ion-label>
-    </ion-list-header>
+<ion-content>
+  <div class="page-shell">
+    <section class="page-hero">
+      <div class="hero-kicker">
+        <ion-icon name="settings-outline"></ion-icon>
+        <span>Preferenze sistema</span>
+      </div>
+      <h1 class="hero-title">Impostazioni essenziali in una schermata piu chiara e meno tecnica.</h1>
+      <p class="hero-subtitle">Qui manteniamo la configurazione minima ma con una presentazione piu solida e coerente con il resto dell’app.</p>
+    </section>
 
-    <ion-item>
-      <ion-label position="stacked">Tipo di attività predefinito</ion-label>
-      <ion-select [(ngModel)]="businessType" interface="popover">
-        <ion-select-option *ngFor="let bt of businessTypes" [value]="bt.value">{{ bt.label }}</ion-select-option>
-      </ion-select>
-    </ion-item>
-  </ion-list>
+    <section class="section-card">
+      <div class="section-title-row">
+        <div>
+          <h2 class="section-title">Configurazione applicativa</h2>
+          <p class="section-note">Il tipo di attivita guida etichette e flussi principali della piattaforma.</p>
+        </div>
+      </div>
 
-  <div class="ion-padding-top">
-    <ion-button expand="block" (click)="save()" [disabled]="saving">
-      <ion-spinner *ngIf="saving" slot="start" name="crescent"></ion-spinner>
-      {{ saving ? 'Salvataggio...' : 'Salva impostazioni' }}
-    </ion-button>
+      <ion-item>
+        <ion-select label="Tipo di attività predefinito" labelPlacement="stacked" [(ngModel)]="businessType" interface="popover">
+          <ion-select-option *ngFor="let bt of businessTypes" [value]="bt.value">{{ bt.label }}</ion-select-option>
+        </ion-select>
+      </ion-item>
+
+      <div class="ion-padding-top">
+        <ion-button expand="block" (click)="save()" [disabled]="saving">
+          <ion-spinner *ngIf="saving" slot="start" name="crescent"></ion-spinner>
+          {{ saving ? 'Salvataggio...' : 'Salva impostazioni' }}
+        </ion-button>
+      </div>
+
+      <p class="modal-foot-note">Manteniamo poche opzioni ma leggibili, per privilegiare affidabilita e velocita d’uso.</p>
+    </section>
   </div>
 </ion-content>

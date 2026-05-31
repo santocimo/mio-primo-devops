@@ -59,30 +59,24 @@
       </ion-header>
       <ion-content class="ion-padding">
         <ion-item>
-          <ion-label position="stacked">Nome *</ion-label>
-          <ion-input [(ngModel)]="formData.name" placeholder="nome servizio"></ion-input>
+          <ion-input label="Nome *" labelPlacement="stacked" [(ngModel)]="formData.name" placeholder="nome servizio"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Sede *</ion-label>
-          <ion-select [(ngModel)]="formData.gym_id" interface="popover">
+          <ion-select label="Sede *" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover">
             <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
           </ion-select>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Categoria</ion-label>
-          <ion-input [(ngModel)]="formData.category" placeholder="general"></ion-input>
+          <ion-input label="Categoria" labelPlacement="stacked" [(ngModel)]="formData.category" placeholder="general"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Durata (minuti)</ion-label>
-          <ion-input type="number" [(ngModel)]="formData.duration_minutes"></ion-input>
+          <ion-input label="Durata (minuti)" labelPlacement="stacked" type="number" [(ngModel)]="formData.duration_minutes"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Capacità</ion-label>
-          <ion-input type="number" [(ngModel)]="formData.capacity"></ion-input>
+          <ion-input label="Capacità" labelPlacement="stacked" type="number" [(ngModel)]="formData.capacity"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Prezzo (€)</ion-label>
-          <ion-input type="number" [(ngModel)]="formData.price" placeholder="opzionale"></ion-input>
+          <ion-input label="Prezzo (€)" labelPlacement="stacked" type="number" [(ngModel)]="formData.price" placeholder="opzionale"></ion-input>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Descrizione</ion-label>

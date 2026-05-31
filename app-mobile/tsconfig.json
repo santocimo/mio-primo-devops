@@ -1,6 +1,7 @@
 {
   "compileOnSave": false,
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "baseUrl": "./",
     "outDir": "./dist/out-tsc",
     "forceConsistentCasingInFileNames": true,
@@ -15,10 +16,10 @@
     "experimentalDecorators": true,
     "moduleResolution": "node",
     "importHelpers": true,
-    "target": "ES2020",
+    "target": "ES2022",
     "module": "ES2020",
     "useDefineForClassFields": false,
-    "lib": ["ES2020", "dom"],
+    "lib": ["ES2022", "dom"],
     "paths": {
       "@app/*": ["src/app/*"],
       "@env": ["src/environments/environment"]

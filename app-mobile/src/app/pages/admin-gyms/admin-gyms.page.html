@@ -56,16 +56,13 @@
       </ion-header>
       <ion-content class="ion-padding">
         <ion-item>
-          <ion-label position="stacked">Nome *</ion-label>
-          <ion-input [(ngModel)]="formData.name" placeholder="nome sede"></ion-input>
+          <ion-input label="Nome *" labelPlacement="stacked" [(ngModel)]="formData.name" placeholder="nome sede"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Slug</ion-label>
-          <ion-input [(ngModel)]="formData.slug" placeholder="auto-generato se vuoto"></ion-input>
+          <ion-input label="Slug" labelPlacement="stacked" [(ngModel)]="formData.slug" placeholder="auto-generato se vuoto"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Categoria *</ion-label>
-          <ion-select [(ngModel)]="formData.category" interface="popover">
+          <ion-select label="Categoria *" labelPlacement="stacked" [(ngModel)]="formData.category" interface="popover">
             <ion-select-option *ngFor="let c of categories" [value]="c">{{ c }}</ion-select-option>
           </ion-select>
         </ion-item>

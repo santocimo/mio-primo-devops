@@ -1,0 +1,100 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Crea il tuo account</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="register-content">
+  <div class="register-container">
+
+    <!-- Logo -->
+    <div class="logo-area">SR</div>
+
+    <!-- Step indicator -->
+    <div class="steps">
+      <div class="step-dot" [class.active]="step >= 1"></div>
+      <div class="step-dot" [class.active]="step >= 2"></div>
+    </div>
+
+    <!-- STEP 1: Struttura -->
+    <div *ngIf="step === 1">
+      <h2 class="step-title">La tua struttura</h2>
+      <p class="step-subtitle">Inserisci i dati della tua attività</p>
+
+      <form [formGroup]="step1Form">
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Nome struttura" formControlName="gym_name" placeholder="Nome struttura (es. FitLife Gym)" type="text"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step1Form.get('gym_name')?.invalid && step1Form.get('gym_name')?.touched">
+          Inserisci un nome valido (2-150 caratteri)
+        </div>
+
+        <p class="field-label">Tipo di struttura</p>
+        <div class="category-grid">
+          <div
+            *ngFor="let cat of categories"
+            class="category-card"
+            [class.selected]="step1Form.get('gym_category')?.value === cat.value"
+            (click)="step1Form.get('gym_category')?.setValue(cat.value)"
+          >
+            {{ cat.label }}
+          </div>
+        </div>
+        <div class="error-msg" *ngIf="step1Form.get('gym_category')?.invalid && step1Form.get('gym_category')?.touched">
+          Seleziona un tipo di struttura
+        </div>
+
+        <ion-button expand="block" class="btn-main" (click)="nextStep()">
+          Continua →
+        </ion-button>
+      </form>
+    </div>
+
+    <!-- STEP 2: Account operatore -->
+    <div *ngIf="step === 2">
+      <h2 class="step-title">Account operatore</h2>
+      <p class="step-subtitle">Crea le tue credenziali di accesso per <strong>{{ step1Form.get('gym_name')?.value }}</strong></p>
+
+      <form [formGroup]="step2Form">
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Nome completo" formControlName="name" placeholder="Nome completo" type="text"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('name')?.invalid && step2Form.get('name')?.touched">Inserisci il tuo nome</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Email" formControlName="email" placeholder="Email" type="email"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('email')?.invalid && step2Form.get('email')?.touched">Inserisci un'email valida</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Username" formControlName="username" placeholder="Username (es. mario.rossi)" type="text"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('username')?.invalid && step2Form.get('username')?.touched">Username non valido (3-50 caratteri, lettere/numeri/.-_)</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Password" formControlName="password" placeholder="Password (min. 8 caratteri)" type="password"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('password')?.invalid && step2Form.get('password')?.touched">Password minimo 8 caratteri</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input aria-label="Conferma password" formControlName="password2" placeholder="Conferma password" type="password"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.errors?.['passwordMismatch'] && step2Form.get('password2')?.touched">Le password non coincidono</div>
+
+        <ion-button expand="block" class="btn-main" (click)="onRegister()">
+          Registrati e accedi
+        </ion-button>
+
+        <ion-button expand="block" fill="clear" class="btn-back" (click)="prevStep()">
+          ← Torna indietro
+        </ion-button>
+      </form>
+    </div>
+
+    <div class="login-link">
+      Hai già un account?
+      <a (click)="router.navigate(['/login'])">Accedi</a>
+    </div>
+
+  </div>
+</ion-content>

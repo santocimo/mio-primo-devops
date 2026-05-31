@@ -161,7 +161,7 @@ if ($method === 'PUT') {
         exit;
     }
 
-    if ($use_gym) {
+    if ($use_gym && $gym_id !== null) {
         $stmt = $pdo->prepare("UPDATE visitatori SET nome=?,cognome=?,codice_fiscale=?,data_nascita=?,luogo_nascita=?,indirizzo=?,recapito=?,sesso=? WHERE id=? AND gym_id=?");
         $stmt->execute([$nome,$cognome,$cf,$nascita,$luogo,$indirizzo,$recapito,$sesso,$id,$gym_id]);
     } else {
@@ -178,7 +178,7 @@ if ($method === 'DELETE') {
     $id = (int)end($parts);
     if (!$id) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'ID mancante']); exit; }
 
-    if ($use_gym) {
+    if ($use_gym && $gym_id !== null) {
         $stmt = $pdo->prepare("DELETE FROM visitatori WHERE id=? AND gym_id=?");
         $stmt->execute([$id, $gym_id]);
     } else {

@@ -60,18 +60,15 @@
       </ion-header>
       <ion-content class="ion-padding">
         <ion-item>
-          <ion-label position="stacked">Servizio *</ion-label>
-          <ion-select [(ngModel)]="formData.service_id" interface="popover">
+          <ion-select label="Servizio *" labelPlacement="stacked" [(ngModel)]="formData.service_id" interface="popover">
             <ion-select-option *ngFor="let s of services" [value]="s.id">{{ s.name }}</ion-select-option>
           </ion-select>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Cliente *</ion-label>
-          <ion-input [(ngModel)]="formData.customer_name" placeholder="nome cognome"></ion-input>
+          <ion-input label="Cliente *" labelPlacement="stacked" [(ngModel)]="formData.customer_name" placeholder="nome cognome"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Email</ion-label>
-          <ion-input type="email" [(ngModel)]="formData.customer_email" placeholder="opzionale"></ion-input>
+          <ion-input label="Email" labelPlacement="stacked" type="email" [(ngModel)]="formData.customer_email" placeholder="opzionale"></ion-input>
         </ion-item>
         <ion-item>
           <ion-label position="stacked">Data e ora *</ion-label>
@@ -85,8 +82,7 @@
           </ion-modal>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Stato</ion-label>
-          <ion-select [(ngModel)]="formData.status" interface="popover">
+          <ion-select label="Stato" labelPlacement="stacked" [(ngModel)]="formData.status" interface="popover">
             <ion-select-option *ngFor="let st of statuses" [value]="st">{{ st }}</ion-select-option>
           </ion-select>
         </ion-item>

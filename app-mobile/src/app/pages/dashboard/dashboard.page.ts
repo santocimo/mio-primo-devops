@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { AlertController } from '@ionic/angular';
+import { AlertController, ToastController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Contact, ContactStats } from '../../models/business.model';
@@ -30,6 +30,10 @@ export class DashboardPage implements OnInit, OnDestroy {
   editingContact: Contact | null = null;
   formData: Omit<Contact, 'id'> = this.emptyForm();
 
+  // Sede selezionata
+  selectedGymId: number | null = null;
+  selectedGymName = '';
+
   // Trial
   trialDaysRemaining = 0;
   isInTrial = false;
@@ -41,6 +45,7 @@ export class DashboardPage implements OnInit, OnDestroy {
     private apiService: ApiService,
     private authService: AuthService,
     private alertController: AlertController,
+    private toastController: ToastController,
     public router: Router
   ) {}
 
@@ -54,12 +59,30 @@ export class DashboardPage implements OnInit, OnDestroy {
       this.trialDaysRemaining = this.authService.getTrialDaysRemaining();
     }
 
-    this.loadStats();
-    this.loadContacts();
+    // Reagisce al cambio sede
+    this.authService.getSelectedGymIdStream()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(gymId => {
+        if (!this.authService.isLoggedIn()) {
+          this.loading = false;
+          return;
+        }
+
+        this.selectedGymId = gymId;
+        this.selectedGymName = this.authService.getSelectedGymName();
+        this.loadStats();
+        this.loadContacts(this.searchCtrl.value ?? '');
+        this.searchCtrl.setValue('', { emitEvent: false });
+      });
 
     this.searchCtrl.valueChanges
       .pipe(debounceTime(300), distinctUntilChanged(), takeUntil(this.destroy$))
-      .subscribe((q) => this.loadContacts(q ?? ''));
+      .subscribe((q) => {
+        if (!this.authService.isLoggedIn()) {
+          return;
+        }
+        this.loadContacts(q ?? '');
+      });
   }
 
   ngOnDestroy(): void {
@@ -68,21 +91,30 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   loadStats(): void {
+    if (!this.authService.isLoggedIn()) {
+      return;
+    }
+
     const isAdmin = this.isAdmin();
     const gymFilter = isAdmin ? null : this.selectedGymId;
     this.apiService.getContactStats(gymFilter).pipe(takeUntil(this.destroy$)).subscribe({
       next: (s) => (this.stats = s),
-      error: () => {},
+      error: () => { this.presentToast('Impossibile aggiornare le statistiche', 'warning'); },
     });
   }
 
   loadContacts(q: string = ''): void {
+    if (!this.authService.isLoggedIn()) {
+      this.loading = false;
+      return;
+    }
+
     this.loading = true;
     const isAdmin = this.isAdmin();
     const gymFilter = isAdmin ? null : this.selectedGymId;
     this.apiService.getContacts(q, gymFilter).pipe(takeUntil(this.destroy$)).subscribe({
       next: (c) => { this.contacts = c; this.loading = false; },
-      error: () => { this.loading = false; },
+      error: () => { this.loading = false; this.presentToast('Errore nel caricamento contatti', 'danger'); },
     });
   }
 
@@ -112,13 +144,21 @@ export class DashboardPage implements OnInit, OnDestroy {
     if (!this.formData.nome || !this.formData.cognome) return;
     if (this.editingContact) {
       this.apiService.updateContact(this.editingContact.id, this.formData)
-        .pipe(takeUntil(this.destroy$)).subscribe(() => {
-          this.closeForm(); this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+        .pipe(takeUntil(this.destroy$)).subscribe({
+          next: () => {
+            this.closeForm(); this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+            this.presentToast('Contatto aggiornato', 'success');
+          },
+          error: () => this.presentToast('Errore durante l\'aggiornamento', 'danger'),
         });
     } else {
       this.apiService.createContact(this.formData)
-        .pipe(takeUntil(this.destroy$)).subscribe(() => {
-          this.closeForm(); this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+        .pipe(takeUntil(this.destroy$)).subscribe({
+          next: () => {
+            this.closeForm(); this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+            this.presentToast('Contatto creato', 'success');
+          },
+          error: () => this.presentToast('Errore durante il salvataggio', 'danger'),
         });
     }
   }
@@ -132,8 +172,12 @@ export class DashboardPage implements OnInit, OnDestroy {
         {
           text: 'Elimina', role: 'destructive',
           handler: () => {
-            this.apiService.deleteContact(c.id).pipe(takeUntil(this.destroy$)).subscribe(() => {
-              this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+            this.apiService.deleteContact(c.id).pipe(takeUntil(this.destroy$)).subscribe({
+              next: () => {
+                this.loadStats(); this.loadContacts(this.searchCtrl.value ?? '');
+                this.presentToast('Contatto eliminato', 'success');
+              },
+              error: () => this.presentToast('Errore durante l\'eliminazione', 'danger'),
             });
           },
         },
@@ -144,7 +188,17 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   logout(): void {
     this.authService.logout();
-    this.router.navigate(['/login']);
+    void this.router.navigateByUrl('/login', { replaceUrl: true });
+  }
+
+  private async presentToast(message: string, color: 'success' | 'warning' | 'danger'): Promise<void> {
+    const toast = await this.toastController.create({
+      message,
+      color,
+      duration: 1800,
+      position: 'bottom',
+    });
+    await toast.present();
   }
 
   private emptyForm(): Omit<Contact, 'id'> {

@@ -60,23 +60,19 @@
       </ion-header>
       <ion-content class="ion-padding">
         <ion-item>
-          <ion-label position="stacked">Username *</ion-label>
-          <ion-input [(ngModel)]="formData.username" placeholder="username"></ion-input>
+          <ion-input label="Username *" labelPlacement="stacked" [(ngModel)]="formData.username" placeholder="username"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Password {{ editingUser ? '(lascia vuoto per non cambiare)' : '*' }}</ion-label>
-          <ion-input type="password" [(ngModel)]="formData.password" placeholder="password"></ion-input>
+          <ion-input label="Password {{ editingUser ? '(lascia vuoto per non cambiare)' : '*' }}" labelPlacement="stacked" aria-label="Password" type="password" [(ngModel)]="formData.password" placeholder="password"></ion-input>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Ruolo *</ion-label>
-          <ion-select [(ngModel)]="formData.role" interface="popover">
+          <ion-select label="Ruolo *" labelPlacement="stacked" [(ngModel)]="formData.role" interface="popover">
             <ion-select-option value="OPERATORE">Operatore</ion-select-option>
             <ion-select-option value="ADMIN">Admin</ion-select-option>
           </ion-select>
         </ion-item>
         <ion-item>
-          <ion-label position="stacked">Sede</ion-label>
-          <ion-select [(ngModel)]="formData.gym_id" interface="popover" [value]="formData.gym_id">
+          <ion-select label="Sede" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover" [value]="formData.gym_id">
             <ion-select-option [value]="null">Nessuna</ion-select-option>
             <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
           </ion-select>

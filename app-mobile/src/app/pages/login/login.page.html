@@ -13,8 +13,9 @@
 
     <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
       <ion-item>
-        <ion-label position="floating">Nome utente</ion-label>
         <ion-input
+          label="Nome utente"
+          labelPlacement="floating"
           formControlName="username"
           type="text"
           placeholder="Inserisci il tuo nome utente"
@@ -22,8 +23,9 @@
       </ion-item>
 
       <ion-item>
-        <ion-label position="floating">Password</ion-label>
         <ion-input
+          label="Password"
+          labelPlacement="floating"
           formControlName="password"
           type="password"
           placeholder="Inserisci la tua password"

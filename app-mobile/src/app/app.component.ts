@@ -24,8 +24,9 @@ export class AppComponent implements OnInit {
     return role.includes('ADMIN') || role.includes('SUPER');
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    await this.menuCtrl.close();
     this.authService.logout();
-    this.router.navigate(['/login']);
+    await this.router.navigateByUrl('/login', { replaceUrl: true });
   }
 }
