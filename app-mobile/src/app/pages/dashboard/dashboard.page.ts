@@ -68,7 +68,9 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   loadStats(): void {
-    this.apiService.getContactStats().pipe(takeUntil(this.destroy$)).subscribe({
+    const isAdmin = this.isAdmin();
+    const gymFilter = isAdmin ? null : this.selectedGymId;
+    this.apiService.getContactStats(gymFilter).pipe(takeUntil(this.destroy$)).subscribe({
       next: (s) => (this.stats = s),
       error: () => {},
     });
@@ -76,7 +78,9 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   loadContacts(q: string = ''): void {
     this.loading = true;
-    this.apiService.getContacts(q).pipe(takeUntil(this.destroy$)).subscribe({
+    const isAdmin = this.isAdmin();
+    const gymFilter = isAdmin ? null : this.selectedGymId;
+    this.apiService.getContacts(q, gymFilter).pipe(takeUntil(this.destroy$)).subscribe({
       next: (c) => { this.contacts = c; this.loading = false; },
       error: () => { this.loading = false; },
     });
@@ -145,5 +149,10 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   private emptyForm(): Omit<Contact, 'id'> {
     return { nome: '', cognome: '', codice_fiscale: '', data_nascita: '', luogo_nascita: '', indirizzo: '', recapito: '', sesso: 'M' };
+  }
+
+  private isAdmin(): boolean {
+    const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
+    return role.includes('ADMIN') || role.includes('SUPER');
   }
 }
