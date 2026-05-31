@@ -108,6 +108,9 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     this.belfiore = '';
     this.comuniSuggestions = [];
     this.showSuggestions = false;
+    if (this.comuneSearch.trim().length >= 2) {
+      this.fetchComuniSuggestions(this.comuneSearch);
+    }
     this.showModal = true;
   }
 
@@ -197,15 +200,16 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   onComuneInput(ev: any): void {
-    const val = ev.target?.value ?? '';
+    const val = (ev?.detail?.value ?? ev?.target?.value ?? '').toString();
     this.comuneSearch = val;
     this.formData.luogo_nascita = val;
     this.belfiore = '';
-    if (val.length < 2) { this.comuniSuggestions = []; this.showSuggestions = false; return; }
-    this.apiService.searchComuni(val).pipe(takeUntil(this.destroy$)).subscribe({
-      next: s => { this.comuniSuggestions = s; this.showSuggestions = s.length > 0; },
-      error: () => {},
-    });
+    if (val.length < 2) {
+      this.comuniSuggestions = [];
+      this.showSuggestions = false;
+      return;
+    }
+    this.fetchComuniSuggestions(val);
   }
 
   selectComune(s: { label: string; value: string; codice: string }): void {
@@ -233,6 +237,19 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   isAdmin(): boolean {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
     return role.includes('ADMIN') || role.includes('SUPER');
+  }
+
+  private fetchComuniSuggestions(term: string): void {
+    this.apiService.searchComuni(term).pipe(takeUntil(this.destroy$)).subscribe({
+      next: s => {
+        this.comuniSuggestions = s;
+        this.showSuggestions = s.length > 0;
+      },
+      error: () => {
+        this.comuniSuggestions = [];
+        this.showSuggestions = false;
+      },
+    });
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
