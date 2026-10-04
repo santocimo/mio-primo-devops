@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { environment } from '@env';
 import { AuthService } from './auth.service';
 import { Appointment, Service, Gym, Contact, ContactStats } from '../models/business.model';
@@ -33,9 +34,10 @@ export class ApiService {
   /**
    * Ottiene la lista delle palestre/location
    */
-  getGyms(): Observable<Gym[]> {
+  getGyms(allCategories: boolean = false): Observable<Gym[]> {
+    const allParam = allCategories ? '?all_categories=1' : '';
     return this.http.get<Gym[]>(
-      `${environment.apiUrl}/api/gyms`,
+      `${environment.apiUrl}/api/gyms${allParam}`,
       { headers: this.getHeaders() }
     );
   }
@@ -64,12 +66,12 @@ export class ApiService {
    * Crea un nuovo appuntamento
    */
   createAppointment(data: {
+    contact_id: number;
     service_id: number;
-    gym_id: number;
-    appointment_date: string;
-    appointment_time: string;
-  }): Observable<{ success: boolean; appointment_id?: number; message: string }> {
-    return this.http.post<{ success: boolean; appointment_id?: number; message: string }>(
+    scheduled_at: string;
+    notes?: string;
+  }): Observable<{ success: boolean; id?: number; appointment_id?: number; message?: string }> {
+    return this.http.post<{ success: boolean; id?: number; appointment_id?: number; message?: string }>(
       `${environment.apiUrl}/api/appointments`,
       data,
       { headers: this.getHeaders() }
@@ -103,18 +105,29 @@ export class ApiService {
 
   // ── Contacts (Visitatori) ────────────────────────────────────────────────
 
-  getContactStats(): Observable<ContactStats> {
+  getContactStats(gymId?: number | null): Observable<ContactStats> {
+    const gymParam = gymId ? `&gym_id=${gymId}` : '';
     return this.http.get<ContactStats>(
-      `${environment.apiUrl}/api/contacts?stats=1`,
+      `${environment.apiUrl}/api/contacts?stats=1${gymParam}`,
       { headers: this.getHeaders() }
     );
   }
 
-  getContacts(query: string = ''): Observable<Contact[]> {
-    const url = query
-      ? `${environment.apiUrl}/api/contacts?q=${encodeURIComponent(query)}`
-      : `${environment.apiUrl}/api/contacts`;
+  getContacts(query: string = '', gymId?: number | null): Observable<Contact[]> {
+    let url = `${environment.apiUrl}/api/contacts`;
+    const params: string[] = [];
+    if (query) params.push(`q=${encodeURIComponent(query)}`);
+    if (gymId) params.push(`gym_id=${gymId}`);
+    if (params.length) url += '?' + params.join('&');
     return this.http.get<Contact[]>(url, { headers: this.getHeaders() });
+  }
+
+  exportContactsCsv(gymId?: number | null): Observable<Blob> {
+    const gymParam = gymId ? `&gym_id=${gymId}` : '';
+    return this.http.get(`${environment.apiUrl}/api/contacts?export=csv${gymParam}`, {
+      headers: this.getHeaders(),
+      responseType: 'blob',
+    });
   }
 
   createContact(data: Omit<Contact, 'id'>): Observable<{ success: boolean; id: number }> {
@@ -174,8 +187,9 @@ export class ApiService {
 
   // ── Services full CRUD ──────────────────────────────────────────────────
 
-  getAllServices(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/api/services`, { headers: this.getHeaders() });
+  getAllServices(gymId?: number | null): Observable<any[]> {
+    const gymParam = gymId ? `?gym_id=${gymId}` : '';
+    return this.http.get<any[]>(`${environment.apiUrl}/api/services${gymParam}`, { headers: this.getHeaders() });
   }
 
   createService(data: any): Observable<any> {
@@ -192,8 +206,12 @@ export class ApiService {
 
   // ── Appointments full CRUD ───────────────────────────────────────────────
 
-  getAllAppointments(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/api/appointments`, { headers: this.getHeaders() });
+  getAllAppointments(gymId?: number | null, serviceId?: number | null): Observable<any[]> {
+    const params: string[] = [];
+    if (gymId) params.push(`gym_id=${gymId}`);
+    if (serviceId) params.push(`service_id=${serviceId}`);
+    const suffix = params.length ? `?${params.join('&')}` : '';
+    return this.http.get<any[]>(`${environment.apiUrl}/api/appointments${suffix}`, { headers: this.getHeaders() });
   }
 
   createAppointmentAdmin(data: any): Observable<any> {
@@ -211,10 +229,24 @@ export class ApiService {
   // ── App Settings ────────────────────────────────────────────────────────
 
   getSettings(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/api/settings`, { headers: this.getHeaders() });
+    return this.http.get<any>(`${environment.apiUrl}/api/settings`, { headers: this.getHeaders() })
+      .pipe(
+        catchError(() => this.http.get<any>(`${environment.apiUrl}/api/settings.php`, { headers: this.getHeaders() }))
+      );
   }
 
   saveSettings(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/api/settings`, data, { headers: this.getHeaders() });
+    return this.http.post<any>(`${environment.apiUrl}/api/settings`, data, { headers: this.getHeaders() })
+      .pipe(
+        catchError(() => this.http.post<any>(`${environment.apiUrl}/api/settings.php`, data, { headers: this.getHeaders() }))
+      );
+  }
+
+  // ── Comuni autocomplete ────────────────────────────────────────────────
+
+  searchComuni(term: string): Observable<{ label: string; value: string; codice: string }[]> {
+    return this.http.get<{ label: string; value: string; codice: string }[]>(
+      `${environment.apiUrl}/cerca_comuni.php?term=${encodeURIComponent(term)}`
+    );
   }
 }

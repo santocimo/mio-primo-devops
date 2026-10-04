@@ -51,7 +51,7 @@ npm run cap:add:android
 Modifica `src/environments/environment.ts`:
 ```typescript
 export const environment = {
-  apiUrl: 'http://localhost:8081', // URL del backend
+   apiUrl: 'http://localhost:8083', // URL del backend
   // ... altre configurazioni
 };
 ```

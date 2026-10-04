@@ -4,6 +4,7 @@ import { PaymentService } from '../../services/payment.service';
 import { ToastController, LoadingController } from '@ionic/angular';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { LanguageService } from '../../i18n/language.service';
 
 @Component({
   selector: 'app-subscribe',
@@ -20,7 +21,8 @@ export class SubscribePage implements OnInit, OnDestroy {
     private paymentService: PaymentService,
     private router: Router,
     private toastController: ToastController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private language: LanguageService
   ) {}
 
   ngOnInit(): void {
@@ -47,7 +49,7 @@ export class SubscribePage implements OnInit, OnDestroy {
 
   async confirmPayment(): Promise<void> {
     const loader = await this.loadingController.create({
-      message: 'Attivazione in corso...',
+      message: this.language.instant('subscribe.loading'),
     });
     await loader.present();
 
@@ -58,15 +60,15 @@ export class SubscribePage implements OnInit, OnDestroy {
         next: async (result) => {
           await loader.dismiss();
           if (result.success) {
-            await this.showToast('Abbonamento attivato con successo!', 'success');
-            this.router.navigate(['/dashboard']);
+            await this.showToast(this.language.instant('subscribe.success'), 'success');
+            this.router.navigate(['/contacts']);
           } else {
-            await this.showToast('Errore durante l\'attivazione', 'danger');
+            await this.showToast(this.language.instant('subscribe.error'), 'danger');
           }
         },
         error: async () => {
           await loader.dismiss();
-          await this.showToast('Errore di connessione', 'danger');
+          await this.showToast(this.language.instant('subscribe.connectionError'), 'danger');
         },
       });
   }

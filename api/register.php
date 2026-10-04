@@ -24,13 +24,21 @@ $data = json_decode(file_get_contents('php://input'), true);
 // Campi obbligatori
 $gym_name     = trim($data['gym_name']     ?? '');
 $gym_category = trim($data['gym_category'] ?? '');
+$gym_address  = trim($data['gym_address']  ?? '');
+$gym_city     = trim($data['gym_city']     ?? '');
+$gym_phone    = trim($data['gym_phone']    ?? '');
+$activity_name = trim($data['activity_name'] ?? '');
 $name         = trim($data['name']         ?? '');
+$surname      = trim($data['surname']      ?? '');
+$codice_fiscale = strtoupper(trim($data['codice_fiscale'] ?? ''));
 $email        = trim($data['email']        ?? '');
 $username     = trim($data['username']     ?? '');
 $password     = $data['password']          ?? '';
 
+$manager_name = trim($name . ' ' . $surname);
+
 // Validazioni
-if (!$gym_name || !$gym_category || !$name || !$email || !$username || !$password) {
+if (!$gym_name || !$gym_category || !$gym_address || !$name || !$surname || !$codice_fiscale || !$email || !$username || !$password) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Tutti i campi sono obbligatori']);
     exit;
@@ -42,10 +50,21 @@ if (!validate_gym_name($gym_name)) {
     exit;
 }
 
-$allowed_categories = ['gym', 'pilates', 'yoga', 'wellness', 'medical', 'studio'];
+$allowed_categories = ['gym', 'salon', 'studio', 'other'];
+if ($gym_category === 'other' && $activity_name === '') {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Se scegli Altro devi indicare la tua attivita']);
+    exit;
+}
 if (!in_array($gym_category, $allowed_categories, true)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Tipo struttura non valido']);
+    exit;
+}
+
+if (!preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
     exit;
 }
 
@@ -103,14 +122,25 @@ try {
     }
 
     // 2. Inserisce la struttura
-    $ins_gym = $pdo->prepare("INSERT INTO gyms (name, slug, category) VALUES (?, ?, ?)");
-    $ins_gym->execute([$gym_name, $slug, $gym_category]);
+    $settings = json_encode([
+        'address' => $gym_address,
+        'city' => $gym_city,
+        'phone' => $gym_phone,
+        'activity_name' => $activity_name ?: ($gym_category === 'gym' ? 'Palestra' : ($gym_category === 'salon' ? 'Centro estetico' : ($gym_category === 'studio' ? 'Studio' : 'Altro'))),
+        'manager_name' => $manager_name,
+        'manager_email' => $email,
+        'manager_username' => $username,
+        'manager_cf' => $codice_fiscale,
+    ], JSON_UNESCAPED_UNICODE);
+
+    $ins_gym = $pdo->prepare("INSERT INTO gyms (name, slug, category, settings) VALUES (?, ?, ?, ?)");
+    $ins_gym->execute([$gym_name, $slug, $gym_category, $settings]);
     $gym_id = (int)$pdo->lastInsertId();
 
-    // 3. Inserisce l'utente operatore (con trial attivo da subito)
+    // 3. Inserisce l'utente operatore
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, role, gym_id, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, 'operatore', ?, NOW(), 'trial')");
-    $ins_user->execute([$name, $email, $username, $password_hash, $gym_id]);
+    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id) VALUES (?, ?, ?, ?, ?, ?)");
+    $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id]);
     $user_id = (int)$pdo->lastInsertId();
 
     $pdo->commit();
@@ -129,7 +159,7 @@ try {
         'message' => 'Registrazione completata',
         'user' => [
             'id'       => $user_id,
-            'name'     => $name,
+            'name'     => $manager_name,
             'email'    => $email,
             'username' => $username,
             'role'     => 'operatore',

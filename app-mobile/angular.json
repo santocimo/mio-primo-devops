@@ -1,7 +1,9 @@
 {
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": false,
+    "defaultProject": "businessregistry"
   },
   "projects": {
     "businessregistry": {
@@ -59,6 +61,18 @@
             }
           },
           "defaultConfiguration": "production"
+        },
+        "serve": {
+          "builder": "@angular-devkit/build-angular:dev-server",
+          "configurations": {
+            "production": {
+              "browserTarget": "businessregistry:build:production"
+            },
+            "development": {
+              "browserTarget": "businessregistry:build:development"
+            }
+          },
+          "defaultConfiguration": "development"
         }
       }
     }

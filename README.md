@@ -38,10 +38,12 @@ nano .env
 docker-compose up -d
 
 # Access application
-open http://localhost:8081
+open http://localhost:8083
 ```
 
-**Default Credentials**: Username: `admin`, Password: `admin123`
+**Default Credentials**:
+- Admin: `admin` / `admin123`
+- Operator: `op` / `op123`
 
 ⚠️ **Change these immediately in a production environment!**
 

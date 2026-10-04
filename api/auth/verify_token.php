@@ -31,13 +31,35 @@ function verify_bearer_token(): bool {
     }
 
     // Imposta sessione compatibile con le API esistenti
-    $_SESSION['admin_logged'] = true;
-    $_SESSION['user_id']      = $payload['user_id'];
-    $_SESSION['username']     = $payload['username'];
-    $_SESSION['user_role']    = $payload['role'] ?? 'USER';
+    $role = strtoupper($payload['role'] ?? 'USER');
+    $_SESSION['user_id']   = $payload['user_id'];
+    $_SESSION['username']  = $payload['username'];
+    $_SESSION['user_role'] = $role;
+    $_SESSION['admin_logged'] = (strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false);
     if (isset($payload['gym_id'])) {
         $_SESSION['gym_id'] = (int)$payload['gym_id'];
     }
 
     return true;
+}
+
+// If called directly via HTTP, return a JSON response usable dall'app mobile
+$isDirectRequest = isset($_SERVER['SCRIPT_FILENAME'])
+    && realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__;
+if (php_sapi_name() !== 'cli' && $isDirectRequest) {
+    header('Content-Type: application/json');
+    session_start();
+    $ok = verify_bearer_token();
+    if ($ok) {
+        $user = [
+            'id' => $_SESSION['user_id'] ?? null,
+            'username' => $_SESSION['username'] ?? null,
+            'role' => $_SESSION['user_role'] ?? null,
+            'gym_id' => $_SESSION['gym_id'] ?? null,
+        ];
+        echo json_encode(['success' => true, 'user' => $user]);
+    } else {
+        echo json_encode(['success' => false]);
+    }
+    exit;
 }

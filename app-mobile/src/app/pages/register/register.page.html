@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Crea il tuo account</ion-title>
+    <ion-title>{{ 'register.title' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -18,82 +18,114 @@
 
     <!-- STEP 1: Struttura -->
     <div *ngIf="step === 1">
-      <h2 class="step-title">La tua struttura</h2>
-      <p class="step-subtitle">Inserisci i dati della tua attività</p>
+      <h2 class="step-title">{{ 'register.structure' | translate }}</h2>
+      <p class="step-subtitle">{{ 'register.enterActivity' | translate }}</p>
 
       <form [formGroup]="step1Form">
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Nome struttura" formControlName="gym_name" placeholder="Nome struttura (es. FitLife Gym)" type="text"></ion-input>
+          <ion-input [attr.aria-label]="'register.activityName' | translate" formControlName="gym_name" [placeholder]="'register.activityPlaceholder' | translate" type="text"></ion-input>
         </ion-item>
         <div class="error-msg" *ngIf="step1Form.get('gym_name')?.invalid && step1Form.get('gym_name')?.touched">
-          Inserisci un nome valido (2-150 caratteri)
+          {{ 'register.validName' | translate }}
         </div>
 
-        <p class="field-label">Tipo di struttura</p>
+        <ion-item lines="none" class="input-item">
+          <ion-input [attr.aria-label]="'register.address' | translate" formControlName="gym_address" [placeholder]="'register.addressPlaceholder' | translate" type="text"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step1Form.get('gym_address')?.invalid && step1Form.get('gym_address')?.touched">
+          {{ 'register.enterAddress' | translate }}
+        </div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input [attr.aria-label]="'register.city' | translate" formControlName="gym_city" [placeholder]="'register.optionalCity' | translate" type="text"></ion-input>
+        </ion-item>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input [attr.aria-label]="'register.phone' | translate" formControlName="gym_phone" [placeholder]="'register.optionalPhone' | translate" type="tel"></ion-input>
+        </ion-item>
+
+        <p class="field-label">{{ 'register.activityType' | translate }}</p>
         <div class="category-grid">
           <div
             *ngFor="let cat of categories"
             class="category-card"
             [class.selected]="step1Form.get('gym_category')?.value === cat.value"
-            (click)="step1Form.get('gym_category')?.setValue(cat.value)"
+            (click)="onCategorySelect(cat.value)"
           >
-            {{ cat.label }}
+            {{ cat.label | translate }}
           </div>
         </div>
         <div class="error-msg" *ngIf="step1Form.get('gym_category')?.invalid && step1Form.get('gym_category')?.touched">
-          Seleziona un tipo di struttura
+          {{ 'register.chooseType' | translate }}
+        </div>
+
+        <ion-item lines="none" class="input-item" *ngIf="isOtherCategory()">
+          <ion-input [attr.aria-label]="'register.customActivity' | translate" formControlName="activity_name" [placeholder]="'register.activityExample' | translate" type="text"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step1Form.get('activity_name')?.invalid && step1Form.get('activity_name')?.touched && isOtherCategory()">
+          {{ 'register.nameActivity' | translate }}
         </div>
 
         <ion-button expand="block" class="btn-main" (click)="nextStep()">
-          Continua →
+          {{ 'register.continue' | translate }}
         </ion-button>
       </form>
     </div>
 
     <!-- STEP 2: Account operatore -->
     <div *ngIf="step === 2">
-      <h2 class="step-title">Account operatore</h2>
-      <p class="step-subtitle">Crea le tue credenziali di accesso per <strong>{{ step1Form.get('gym_name')?.value }}</strong></p>
+      <h2 class="step-title">{{ 'register.operatorAccount' | translate }}</h2>
+      <p class="step-subtitle">{{ 'register.createCredentials' | translate }} <strong>{{ step1Form.get('gym_name')?.value }}</strong></p>
 
       <form [formGroup]="step2Form">
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Nome completo" formControlName="name" placeholder="Nome completo" type="text"></ion-input>
+          <ion-input [attr.aria-label]="'register.name' | translate" formControlName="name" [placeholder]="'register.name' | translate" type="text"></ion-input>
         </ion-item>
-        <div class="error-msg" *ngIf="step2Form.get('name')?.invalid && step2Form.get('name')?.touched">Inserisci il tuo nome</div>
+        <div class="error-msg" *ngIf="step2Form.get('name')?.invalid && step2Form.get('name')?.touched">{{ 'register.enterName' | translate }}</div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Email" formControlName="email" placeholder="Email" type="email"></ion-input>
+          <ion-input [attr.aria-label]="'register.surname' | translate" formControlName="surname" [placeholder]="'register.surname' | translate" type="text"></ion-input>
         </ion-item>
-        <div class="error-msg" *ngIf="step2Form.get('email')?.invalid && step2Form.get('email')?.touched">Inserisci un'email valida</div>
+        <div class="error-msg" *ngIf="step2Form.get('surname')?.invalid && step2Form.get('surname')?.touched">{{ 'register.enterSurname' | translate }}</div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Username" formControlName="username" placeholder="Username (es. mario.rossi)" type="text"></ion-input>
+          <ion-input [attr.aria-label]="'register.taxCode' | translate" formControlName="codice_fiscale" [placeholder]="'register.taxCode' | translate" type="text" style="text-transform: uppercase;"></ion-input>
         </ion-item>
-        <div class="error-msg" *ngIf="step2Form.get('username')?.invalid && step2Form.get('username')?.touched">Username non valido (3-50 caratteri, lettere/numeri/.-_)</div>
+        <div class="error-msg" *ngIf="step2Form.get('codice_fiscale')?.invalid && step2Form.get('codice_fiscale')?.touched">{{ 'register.invalidTaxCode' | translate }}</div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Password" formControlName="password" placeholder="Password (min. 8 caratteri)" type="password"></ion-input>
+          <ion-input [attr.aria-label]="'register.email' | translate" formControlName="email" [placeholder]="'register.email' | translate" type="email"></ion-input>
         </ion-item>
-        <div class="error-msg" *ngIf="step2Form.get('password')?.invalid && step2Form.get('password')?.touched">Password minimo 8 caratteri</div>
+        <div class="error-msg" *ngIf="step2Form.get('email')?.invalid && step2Form.get('email')?.touched">{{ 'register.validEmail' | translate }}</div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input aria-label="Conferma password" formControlName="password2" placeholder="Conferma password" type="password"></ion-input>
+          <ion-input [attr.aria-label]="'register.username' | translate" formControlName="username" [placeholder]="'register.usernameExample' | translate" type="text"></ion-input>
         </ion-item>
-        <div class="error-msg" *ngIf="step2Form.errors?.['passwordMismatch'] && step2Form.get('password2')?.touched">Le password non coincidono</div>
+        <div class="error-msg" *ngIf="step2Form.get('username')?.invalid && step2Form.get('username')?.touched">{{ 'register.invalidUsername' | translate }}</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input [attr.aria-label]="'register.password' | translate" formControlName="password" [placeholder]="'register.passwordMin' | translate" type="password"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('password')?.invalid && step2Form.get('password')?.touched">{{ 'register.passwordError' | translate }}</div>
+
+        <ion-item lines="none" class="input-item">
+          <ion-input [attr.aria-label]="'register.confirmPassword' | translate" formControlName="password2" [placeholder]="'register.confirmPassword' | translate" type="password"></ion-input>
+        </ion-item>
+        <div class="error-msg" *ngIf="step2Form.errors?.['passwordMismatch'] && step2Form.get('password2')?.touched">{{ 'register.passwordMismatch' | translate }}</div>
 
         <ion-button expand="block" class="btn-main" (click)="onRegister()">
-          Registrati e accedi
+          {{ 'register.submit' | translate }}
         </ion-button>
 
         <ion-button expand="block" fill="clear" class="btn-back" (click)="prevStep()">
-          ← Torna indietro
+          {{ 'register.back' | translate }}
         </ion-button>
       </form>
     </div>
 
     <div class="login-link">
-      Hai già un account?
-      <a (click)="router.navigate(['/login'])">Accedi</a>
+      {{ 'register.haveAccount' | translate }}
+      <a (click)="router.navigate(['/login'])">{{ 'register.login' | translate }}</a>
     </div>
 
   </div>

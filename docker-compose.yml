@@ -2,9 +2,7 @@ services:
   web-automatico:
     build: .
     ports:
-      - "8081:80"
-    volumes:
-      - ./:/var/www/html
+      - "8083:80"
     networks:
       - default
     depends_on:

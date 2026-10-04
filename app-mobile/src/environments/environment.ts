@@ -1,6 +1,6 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8081',
+  apiUrl: 'http://localhost:8083',
   appVersion: '1.0.0',
   inAppPurchaseConfig: {
     // RevenueCat API key per development

@@ -1,14 +1,96 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+      <ion-back-button defaultHref="/appointments"></ion-back-button>
     </ion-buttons>
-    <ion-title>Prenota appuntamento</ion-title>
+    <ion-title>{{ (editingAppointmentId ? 'appointments.edit' : 'appointments.new') | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true">
-  <div class="booking-container">
-    <p>Funzione di booking non ancora implementata</p>
+<ion-content class="booking-content">
+  <div class="page-shell">
+    <section class="page-hero booking-hero">
+      <div class="hero-kicker">
+        <ion-icon name="calendar-clear-outline"></ion-icon>
+        <span>{{ 'booking.kicker' | translate }}</span>
+      </div>
+      <h1 class="hero-title">{{ (editingAppointmentId ? 'booking.editHero' : 'booking.newHero') | translate }}</h1>
+      <p class="hero-subtitle">{{ (editingAppointmentId ? 'booking.editDescription' : 'booking.newDescription') | translate }}</p>
+      <div class="hero-meta-row" *ngIf="gymId">
+        <div class="hero-chip">
+          <ion-icon name="location-outline"></ion-icon>
+          <span>{{ 'menu.activeActivity' | translate }}</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-card booking-card" *ngIf="!loading && services.length && contacts.length">
+      <div class="section-title-row">
+        <div>
+          <h2 class="section-title">{{ (editingAppointmentId ? 'booking.editDetails' : 'booking.details') | translate }}</h2>
+          <p class="section-note">{{ 'booking.associationHint' | translate }}</p>
+        </div>
+      </div>
+
+      <div class="booking-grid">
+        <ion-select [label]="'booking.member' | translate" labelPlacement="stacked" [placeholder]="'booking.selectMember' | translate" interface="popover" [(ngModel)]="selectedContactId">
+          <ion-select-option *ngFor="let contact of contacts" [value]="contact.id">
+            {{ contactLabel(contact) }} · {{ contact.codice_fiscale || ('booking.noTaxCode' | translate) }}
+          </ion-select-option>
+        </ion-select>
+
+        <ion-select [label]="'booking.service' | translate" labelPlacement="stacked" [placeholder]="'booking.selectService' | translate" interface="popover" [(ngModel)]="selectedServiceId">
+          <ion-select-option *ngFor="let service of services" [value]="service.id">
+            {{ service.name }} · {{ serviceModeLabel(service) }}{{ service.provider_name ? ' · ' + service.provider_name : '' }}
+          </ion-select-option>
+        </ion-select>
+      </div>
+
+      <div class="service-summary" *ngIf="selectedService as service">
+        <div>
+          <span class="profile-label">{{ serviceModeLabel(service) | translate }}</span>
+          <strong>{{ service.name }}</strong>
+          <small *ngIf="service.description">{{ service.description }}</small>
+          <small *ngIf="service.provider_name || service.provider_type">{{ 'booking.provider' | translate:{name: service.provider_name || ('booking.collaborator' | translate), type: (providerTypeLabel(service.provider_type) | translate)} }}</small>
+        </div>
+        <div class="service-facts">
+          <span>{{ 'booking.duration' | translate:{minutes: service.duration_minutes} }}</span>
+          <span>{{ 'booking.capacity' | translate:{capacity: service.capacity} }}</span>
+          <span *ngIf="service.price != null">€ {{ service.price }}</span>
+        </div>
+      </div>
+
+      <div class="booking-grid booking-time-grid">
+        <ion-input [label]="'booking.date' | translate" labelPlacement="stacked" type="date" [min]="editingAppointmentId ? undefined : minDate" [(ngModel)]="date"></ion-input>
+        <ion-input [label]="'booking.time' | translate" labelPlacement="stacked" type="time" [(ngModel)]="time"></ion-input>
+      </div>
+
+      <ion-select *ngIf="editingAppointmentId" [label]="'booking.status' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="status">
+        <ion-select-option value="pending">{{ 'booking.pending' | translate }}</ion-select-option>
+        <ion-select-option value="confirmed">{{ 'booking.confirmed' | translate }}</ion-select-option>
+        <ion-select-option value="scheduled">{{ 'booking.scheduled' | translate }}</ion-select-option>
+        <ion-select-option value="completed">{{ 'booking.completed' | translate }}</ion-select-option>
+      </ion-select>
+
+      <ion-textarea class="booking-notes" [label]="'booking.notes' | translate" labelPlacement="stacked" [placeholder]="'booking.notesPlaceholder' | translate" rows="3" [(ngModel)]="notes"></ion-textarea>
+
+      <div class="booking-actions">
+        <ion-button expand="block" (click)="book()" [disabled]="!canBook()">
+          <ion-icon slot="start" name="checkmark-circle-outline"></ion-icon>
+          {{ (saving ? 'booking.saving' : (editingAppointmentId ? 'booking.save' : 'booking.confirm')) | translate }}
+        </ion-button>
+      </div>
+    </section>
+
+    <section class="section-card booking-state" *ngIf="loading">
+      <ion-skeleton-text animated style="width: 45%; height: 20px;"></ion-skeleton-text>
+      <ion-skeleton-text animated style="width: 100%; height: 120px; margin-top: 18px;"></ion-skeleton-text>
+    </section>
+
+    <section class="section-card booking-state" *ngIf="!loading && (!services.length || !contacts.length)">
+      <ion-icon [name]="!services.length ? 'layers-outline' : 'people-outline'"></ion-icon>
+      <h2>{{ (!services.length ? 'booking.noServiceTitle' : 'booking.noMemberTitle') | translate }}</h2>
+      <p>{{ (!services.length ? 'booking.addServices' : 'booking.addMembers') | translate }}</p>
+    </section>
   </div>
 </ion-content>

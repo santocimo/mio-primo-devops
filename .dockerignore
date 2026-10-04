@@ -1,0 +1,12 @@
+app-mobile/node_modules
+app-mobile/.angular
+app-mobile/dist
+.cache
+.npm
+.vscode-server
+.vscode-remote-containers
+.local
+.copilot
+backups
+logs
+.git

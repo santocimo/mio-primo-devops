@@ -6,6 +6,7 @@ import { takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs/op
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Contact } from '../../models/business.model';
+import { LanguageService } from '../../i18n/language.service';
 
 @Component({
   selector: 'app-contacts',
@@ -40,6 +41,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     private authService: AuthService,
     private alertController: AlertController,
     private toastController: ToastController,
+    public language: LanguageService,
     private cdr: ChangeDetectorRef
   ) {}
 
@@ -76,14 +78,22 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   loadContacts(q: string = ''): void {
+    const assignedGymId = this.authService.getCurrentUser()?.gym_id ?? null;
+    const gymFilter = this.selectedGymId ?? (this.isAdminUser ? null : assignedGymId);
+    if (!this.isAdminUser && !gymFilter) {
+      this.contacts = [];
+      this.loading = false;
+      this.cdr.detectChanges();
+      return;
+    }
+
     this.loading = true;
-    // Admin vede tutti i contatti (nessun filtro gym); operatori filtrano sulla propria sede
-    const gymFilter = this.isAdminUser ? null : this.selectedGymId;
+    // Operators fall back to their assigned gym while the selected-gym state restores.
     this.apiService.getContacts(q, gymFilter)
       .pipe(takeUntil(this.destroy$), finalize(() => { this.loading = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: c => { this.contacts = c; this.cdr.detectChanges(); },
-        error: () => { this.contacts = []; this.presentToast('Errore nel caricamento contatti', 'danger'); },
+        error: () => { this.contacts = []; this.presentToast(this.language.instant('contacts.errorLoad'), 'danger'); },
       });
   }
 
@@ -124,7 +134,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   save(): void {
     if (!this.formData.nome || !this.formData.cognome) return;
-    const cf = this.belfiore ? this.calculateCF() : (this.formData.codice_fiscale || '');
+    const cf = this.resolveCodiceFiscaleForSave();
     const data = { ...this.formData, codice_fiscale: cf.toUpperCase() };
 
     if (this.editingContact) {
@@ -133,9 +143,9 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           next: () => {
             this.closeModal();
             this.loadContacts(this.searchCtrl.value ?? '');
-            this.presentToast('Contatto aggiornato', 'success');
+            this.presentToast(this.language.instant('contacts.updated'), 'success');
           },
-          error: () => { this.presentToast('Errore durante l\'aggiornamento', 'danger'); },
+          error: () => { this.presentToast(this.language.instant('contacts.errorUpdate'), 'danger'); },
         });
     } else {
       this.apiService.createContact(data)
@@ -143,19 +153,19 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           next: () => {
             this.closeModal();
             this.loadContacts(this.searchCtrl.value ?? '');
-            this.presentToast('Contatto creato', 'success');
+            this.presentToast(this.language.instant('contacts.created'), 'success');
           },
-          error: () => { this.presentToast('Errore durante il salvataggio', 'danger'); },
+          error: () => { this.presentToast(this.language.instant('contacts.errorSave'), 'danger'); },
         });
     }
   }
 
   async confirmDelete(c: Contact): Promise<void> {
     const alert = await this.alertController.create({
-      header: 'Eliminare?',
+      header: this.language.instant('contacts.deleteTitle'),
       message: `${c.nome} ${c.cognome}`,
       buttons: [
-        { text: 'Annulla', role: 'cancel' },
+        { text: this.language.instant('common.cancel'), role: 'cancel' },
         {
           text: 'Elimina',
           role: 'destructive',
@@ -163,9 +173,9 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
             this.apiService.deleteContact(c.id).pipe(takeUntil(this.destroy$)).subscribe({
               next: () => {
                 this.loadContacts(this.searchCtrl.value ?? '');
-                this.presentToast('Contatto eliminato', 'success');
+                this.presentToast(this.language.instant('contacts.deleted'), 'success');
               },
-              error: () => { this.presentToast('Errore durante l\'eliminazione', 'danger'); },
+              error: () => { this.presentToast(this.language.instant('contacts.errorDelete'), 'danger'); },
             });
           },
         },
@@ -193,9 +203,9 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           link.click();
           document.body.removeChild(link);
           URL.revokeObjectURL(url);
-          this.presentToast('CSV esportato con successo', 'success');
+          this.presentToast(this.language.instant('contacts.csvExported'), 'success');
         },
-        error: () => { this.presentToast('Errore durante l\'export CSV', 'danger'); },
+        error: () => { this.presentToast(this.language.instant('contacts.errorCsv'), 'danger'); },
       });
   }
 
@@ -230,13 +240,21 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   formatDate(d: string): string {
     if (!d) return '';
     const parts = d.split('-');
-    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        if (parts.length === 3) {
+          return this.language.currentLanguage === 'en'
+            ? `${parts[1]}/${parts[2]}/${parts[0]}`
+            : `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
     return d;
   }
 
   isAdmin(): boolean {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
     return role.includes('ADMIN') || role.includes('SUPER');
+  }
+
+  currentUser() {
+    return this.authService.getCurrentUser();
   }
 
   private fetchComuniSuggestions(term: string): void {
@@ -264,6 +282,21 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   private emptyForm() {
     return { nome: '', cognome: '', codice_fiscale: '', data_nascita: '', luogo_nascita: '', indirizzo: '', recapito: '', sesso: 'M' as 'M' | 'F' };
+  }
+
+  private resolveCodiceFiscaleForSave(): string {
+    const manualCf = (this.formData.codice_fiscale || '').toUpperCase();
+    if (!this.belfiore && manualCf.length === 16) {
+      this.belfiore = this.extractBelfioreCode(manualCf);
+    }
+    const computed = this.calculateCF();
+    return (computed || manualCf).toUpperCase();
+  }
+
+  private extractBelfioreCode(cf: string): string {
+    const clean = (cf || '').toUpperCase().trim();
+    if (clean.length !== 16) return '';
+    return clean.substring(11, 15);
   }
 
   private calculateCF(): string {

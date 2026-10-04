@@ -47,3 +47,11 @@ phpunit.xml
 # Docker
 .docker/
 docker/
+app-mobile/.angular/
+app-mobile/www/
+
+# npm cache
+.npm/
+
+# Playwright test results
+app-mobile/test-results/

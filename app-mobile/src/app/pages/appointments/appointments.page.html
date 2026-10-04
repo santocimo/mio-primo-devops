@@ -1,41 +1,81 @@
 <ion-header [translucent]="true">
-  <ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/dashboard"></ion-back-button>
+      <ion-menu-button></ion-menu-button>
     </ion-buttons>
-    <ion-title>I miei appuntamenti</ion-title>
+    <ion-title>{{ 'appointments.title' | translate }}</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="openBooking()" [attr.aria-label]="'appointments.new' | translate">
+        <ion-icon slot="icon-only" name="add-outline"></ion-icon>
+      </ion-button>
+    </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
-<ion-content [fullscreen]="true" class="appointments-content">
-  <div *ngIf="!loading" class="appointments-container">
-    <ion-list *ngIf="appointments.length > 0; else noAppointments">
-      <ion-item-sliding *ngFor="let apt of appointments">
-        <ion-item>
-          <ion-label>
-            <h3>Appuntamento #{{ apt.id }}</h3>
-            <p>{{ apt.appointment_date }} ore {{ apt.appointment_time }}</p>
-          </ion-label>
-          <ion-badge slot="end" [color]="apt.status === 'scheduled' ? 'success' : 'medium'">
-            {{ apt.status }}
-          </ion-badge>
-        </ion-item>
-        <ion-item-options side="end">
-          <ion-item-option color="danger" (click)="cancelAppointment(apt.id)">
-            <ion-icon name="trash" slot="icon-only"></ion-icon>
-          </ion-item-option>
-        </ion-item-options>
-      </ion-item-sliding>
-    </ion-list>
-
-    <ng-template #noAppointments>
-      <div class="no-data">
-        <ion-icon name="calendar-outline"></ion-icon>
-        <h3>Nessun appuntamento</h3>
-        <p>Non hai ancora prenotato alcun appuntamento</p>
+<ion-content class="appointments-content">
+  <div class="page-shell">
+    <section class="page-hero appointments-hero">
+      <div class="hero-kicker">
+        <ion-icon name="calendar-clear-outline"></ion-icon>
+        <span>{{ 'appointments.heroKicker' | translate }}</span>
       </div>
-    </ng-template>
-  </div>
+      <h1 class="hero-title">{{ 'appointments.heroTitle' | translate }}</h1>
+      <p class="hero-subtitle">{{ 'appointments.heroDescription' | translate }}</p>
+    </section>
 
-  <ion-skeleton-text *ngIf="loading" animated></ion-skeleton-text>
+    <ion-refresher slot="fixed" (ionRefresh)="loadAppointments(); $event.target.complete()">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
+
+    <section class="section-card appointments-card" *ngIf="loading">
+      <ion-skeleton-text animated style="width: 100%; height: 58px; margin-bottom: 10px;" *ngFor="let item of [1,2,3]"></ion-skeleton-text>
+    </section>
+
+    <section class="section-card appointments-card" *ngIf="!loading && appointments.length > 0">
+      <div class="section-title-row">
+        <div>
+          <h2 class="section-title">{{ 'appointments.current' | translate }}</h2>
+          <p class="section-note">{{ 'appointments.listHint' | translate }}</p>
+        </div>
+        <span class="pill-badge">{{ 'appointments.count' | translate:{count: appointments.length} }}</span>
+      </div>
+
+      <div class="entity-list">
+        <article class="entity-row" *ngFor="let appointment of appointments">
+          <div class="entity-icon"><ion-icon name="time-outline"></ion-icon></div>
+          <div class="entity-body">
+            <h3 class="entity-title">{{ appointment.customer_name }}</h3>
+            <div class="entity-tags">
+              <span class="pill-badge">{{ appointment.service_name || ('appointments.service' | translate) }}</span>
+              <span class="pill-badge" *ngIf="appointment.service_provider_name">{{ appointment.service_provider_name }} · {{ (appointment.service_provider_type === 'external' ? 'appointments.external' : 'appointments.internal') | translate }}</span>
+              <span class="pill-badge">{{ appointment.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}</span>
+              <span class="pill-badge" *ngIf="appointment.gym_name">{{ appointment.gym_name }}</span>
+            </div>
+            <div class="entity-subline">
+              <ion-badge [color]="statusColor(appointment.status)">{{ ('status.' + appointment.status) | translate }}</ion-badge>
+              <span *ngIf="appointment.notes"> · {{ appointment.notes }}</span>
+            </div>
+          </div>
+          <div class="entity-actions" *ngIf="appointment.status !== 'cancelled' && appointment.status !== 'completed'">
+            <ion-button fill="clear" (click)="editAppointment(appointment)" [attr.aria-label]="'appointments.edit' | translate">
+              <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+            </ion-button>
+            <ion-button fill="clear" color="danger" (click)="cancelAppointment(appointment)" [attr.aria-label]="'appointments.cancelAria' | translate">
+              <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
+            </ion-button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-card appointments-empty" *ngIf="!loading && appointments.length === 0">
+      <ion-icon name="calendar-outline"></ion-icon>
+      <h2>{{ 'appointments.emptyTitle' | translate }}</h2>
+      <p>{{ 'appointments.emptyDescription' | translate }}</p>
+      <ion-button (click)="openBooking()">
+        <ion-icon slot="start" name="add-outline"></ion-icon>
+        {{ 'appointments.new' | translate }}
+      </ion-button>
+    </section>
+  </div>
 </ion-content>

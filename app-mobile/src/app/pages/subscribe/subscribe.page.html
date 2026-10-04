@@ -5,7 +5,7 @@
         <ion-icon name="arrow-back"></ion-icon>
       </ion-button>
     </ion-buttons>
-    <ion-title>Completa il pagamento</ion-title>
+    <ion-title>{{ 'subscribe.title' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -14,14 +14,14 @@
 
     <div class="logo-area">SR</div>
 
-    <h2 class="title">Completa il pagamento</h2>
+    <h2 class="title">{{ 'subscribe.title' | translate }}</h2>
     <div class="plan-badge">{{ planPrice }}</div>
 
     <div class="demo-notice">
       <ion-icon name="information-circle-outline"></ion-icon>
       <div>
-        <strong>Demo:</strong> Il sistema di pagamento non è ancora attivo.<br>
-        Clicca "Attiva ora" per simulare il pagamento e attivare l'abbonamento.
+        <strong>{{ 'subscribe.demo' | translate }}</strong> {{ 'subscribe.demoText' | translate }}<br>
+        {{ 'subscribe.simulate' | translate }}
       </div>
     </div>
 
@@ -30,7 +30,7 @@
       class="btn-activate"
       (click)="confirmPayment()"
     >
-      Attiva ora
+      {{ 'subscribe.activate' | translate }}
     </ion-button>
 
     <ion-button
@@ -39,7 +39,7 @@
       class="btn-back"
       (click)="goBack()"
     >
-      ← Torna alla scelta del piano
+      {{ 'subscribe.back' | translate }}
     </ion-button>
 
   </div>

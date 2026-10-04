@@ -1,38 +1,35 @@
 .appointments-content {
-  --background: #f8f9fa;
+  --background: transparent;
 }
 
-.appointments-container {
-  padding: 20px;
+.appointments-hero {
+  margin-bottom: 14px;
 }
 
-.no-data {
+.appointments-card,
+.appointments-empty {
+  margin-bottom: 18px;
+}
+
+.appointments-empty {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  padding: 60px 20px;
-  color: #999;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--app-muted);
 
-  ion-icon {
-    font-size: 64px;
-    margin-bottom: 20px;
-    opacity: 0.5;
+  > ion-icon {
+    color: var(--ion-color-primary);
+    font-size: 1.8rem;
   }
 
-  h3 {
-    font-size: 18px;
-    font-weight: bold;
-    margin: 0 0 8px 0;
+  h2 {
+    margin: 0;
+    color: var(--app-title);
+    font-size: 1rem;
   }
 
   p {
-    font-size: 14px;
-    margin: 0;
+    margin: 0 0 8px;
   }
-}
-
-ion-skeleton-text {
-  height: 300px;
 }

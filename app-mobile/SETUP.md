@@ -24,7 +24,9 @@ npm --version   # 9+
 npm start
 
 # L'app sarà disponibile a http://localhost:4200
-# Login: admin / admin123
+# Login fallback disponibili:
+# - admin / admin123 (ADMIN)
+# - op / op123 (OPERATORE)
 ```
 
 ### 1.3 Configurare endpoint API
@@ -33,7 +35,7 @@ Modifica `src/environments/environment.ts`:
 ```typescript
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:8081',  // Indirizzo del your backend
+   apiUrl: 'http://localhost:8083',  // Indirizzo del tuo backend
   inAppPurchaseConfig: {
     revenueCatApiKey: 'YOUR_DEV_API_KEY'
   }

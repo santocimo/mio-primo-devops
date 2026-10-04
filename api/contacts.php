@@ -2,7 +2,6 @@
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
-header('Content-Type: application/json');
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
@@ -33,8 +32,21 @@ try {
     $col->execute();
     $use_gym = (bool)$col->fetchColumn();
 } catch (Exception $e) {}
-// Admin vede tutto (gym_id = null = senza filtro), operatore filtrato
-$gym_id = ($use_gym && !$isAdmin) ? (int)($_SESSION['gym_id'] ?? 1) : null;
+// Admin può filtrare per sede specifica passando ?gym_id=X oppure usando la gym_id di sessione;
+// operatore sempre filtrato al suo gym.
+if ($use_gym && $isAdmin) {
+    if (isset($_GET['gym_id']) && (int)$_GET['gym_id'] > 0) {
+        $gym_id = (int)$_GET['gym_id'];
+    } elseif (!empty($_SESSION['gym_id'])) {
+        $gym_id = (int)$_SESSION['gym_id'];
+    } else {
+        $gym_id = null; // admin senza filtro = tutte le sedi
+    }
+} elseif ($use_gym) {
+    $gym_id = (int)($_SESSION['gym_id'] ?? 1);
+} else {
+    $gym_id = null;
+}
 
 function cf_is_valid(string $cf): bool {
     $cf = strtoupper(trim($cf));
@@ -67,6 +79,30 @@ function cf_is_valid(string $cf): bool {
 
 // ── GET ──────────────────────────────────────────────────────────────────────
 if ($method === 'GET') {
+    if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+        $filename = 'registro_' . date('d-m-Y') . '.csv';
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename=' . $filename);
+
+        $out = fopen('php://output', 'w');
+        fputcsv($out, ['ID', 'NOME', 'COGNOME', 'CF', 'DATA NASCITA', 'COMUNE', 'INDIRIZZO', 'RECAPITO', 'SESSO']);
+
+        if ($use_gym && $gym_id !== null) {
+            $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE gym_id=? ORDER BY id DESC");
+            $stmt->execute([$gym_id]);
+        } else {
+            $stmt = $pdo->query("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori ORDER BY id DESC");
+        }
+
+        while ($row = $stmt->fetch(PDO::FETCH_NUM)) {
+            fputcsv($out, $row);
+        }
+        fclose($out);
+        exit;
+    }
+
+    header('Content-Type: application/json');
+
     // Statistiche: ?stats=1
     if (isset($_GET['stats'])) {
         if ($use_gym && $gym_id !== null) {
@@ -84,22 +120,22 @@ if ($method === 'GET') {
 
     // Ricerca / lista: ?q=...
     $q = trim($_GET['q'] ?? '');
-    if ($q !== '') {
+        if ($q !== '') {
         $like = '%' . $q . '%';
         if ($use_gym && $gym_id !== null) {
-            $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE gym_id=? AND CONCAT_WS(' ',nome,cognome,codice_fiscale,luogo_nascita,indirizzo,recapito) LIKE ? ORDER BY id DESC LIMIT 100");
-            $stmt->execute([$gym_id, $like]);
-        } else {
-            $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE CONCAT_WS(' ',nome,cognome,codice_fiscale,luogo_nascita,indirizzo,recapito) LIKE ? ORDER BY id DESC LIMIT 100");
-            $stmt->execute([$like]);
-        }
+                $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE gym_id=? AND CONCAT_WS(' ',nome,cognome,codice_fiscale,luogo_nascita,indirizzo,recapito) LIKE ? ORDER BY id DESC LIMIT 100");
+                $stmt->execute([$gym_id, $like]);
+            } else {
+                $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE CONCAT_WS(' ',nome,cognome,codice_fiscale,luogo_nascita,indirizzo,recapito) LIKE ? ORDER BY id DESC LIMIT 100");
+                $stmt->execute([$like]);
+            }
     } else {
-        if ($use_gym && $gym_id !== null) {
-            $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE gym_id=? ORDER BY id DESC LIMIT 200");
-            $stmt->execute([$gym_id]);
-        } else {
-            $stmt = $pdo->query("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori ORDER BY id DESC LIMIT 200");
-        }
+            if ($use_gym && $gym_id !== null) {
+                $stmt = $pdo->prepare("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori WHERE gym_id=? ORDER BY id DESC LIMIT 200");
+                $stmt->execute([$gym_id]);
+            } else {
+                $stmt = $pdo->query("SELECT id,nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso FROM visitatori ORDER BY id DESC LIMIT 200");
+            }
     }
     echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
     exit;
@@ -128,9 +164,14 @@ if ($method === 'POST') {
         exit;
     }
 
+    // Admin può specificare una gym_id nel body per creare per una sede specifica
+    $effective_gym_id = $gym_id;
+    if ($isAdmin && $use_gym && isset($d['gym_id']) && (int)$d['gym_id'] > 0) {
+        $effective_gym_id = (int)$d['gym_id'];
+    }
     if ($use_gym) {
         $stmt = $pdo->prepare("INSERT INTO visitatori (nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso,gym_id) VALUES (?,?,?,?,?,?,?,?,?)");
-        $stmt->execute([$nome,$cognome,$cf,$nascita,$luogo,$indirizzo,$recapito,$sesso,$gym_id]);
+        $stmt->execute([$nome,$cognome,$cf,$nascita,$luogo,$indirizzo,$recapito,$sesso,$effective_gym_id ?? 1]);
     } else {
         $stmt = $pdo->prepare("INSERT INTO visitatori (nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso) VALUES (?,?,?,?,?,?,?,?)");
         $stmt->execute([$nome,$cognome,$cf,$nascita,$luogo,$indirizzo,$recapito,$sesso]);

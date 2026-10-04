@@ -1,6 +1,6 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-title>Accedi a BusinessRegistry</ion-title>
+    <ion-title>{{ 'login.title' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -8,27 +8,31 @@
   <div class="login-container">
     <div class="logo-section">
       <h1>BusinessRegistry</h1>
-      <p>Gestisci i tuoi appuntamenti</p>
+      <p>{{ 'login.tagline' | translate }}</p>
     </div>
+
+    <ion-button expand="block" fill="outline" type="button" class="register-button-top" (click)="goToRegister()">
+      <span>{{ 'login.registerPrompt' | translate }}</span>
+    </ion-button>
 
     <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
       <ion-item>
         <ion-input
-          label="Nome utente"
+          [label]="'login.username' | translate"
           labelPlacement="floating"
           formControlName="username"
           type="text"
-          placeholder="Inserisci il tuo nome utente"
+          [placeholder]="'login.usernamePlaceholder' | translate"
         ></ion-input>
       </ion-item>
 
       <ion-item>
         <ion-input
-          label="Password"
+          [label]="'login.password' | translate"
           labelPlacement="floating"
           formControlName="password"
           type="password"
-          placeholder="Inserisci la tua password"
+          [placeholder]="'login.passwordPlaceholder' | translate"
         ></ion-input>
       </ion-item>
 
@@ -38,13 +42,14 @@
         [disabled]="loginForm.invalid || loading"
         class="login-button"
       >
-        <span *ngIf="!loading">Accedi</span>
+        <span *ngIf="!loading">{{ 'login.submit' | translate }}</span>
         <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
       </ion-button>
+
     </form>
 
     <div class="footer-text">
-      <p>Demo: usa admin / admin123</p>
+      <p>{{ 'login.demo' | translate }}</p>
     </div>
   </div>
 </ion-content>

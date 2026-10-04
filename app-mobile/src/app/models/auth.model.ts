@@ -2,6 +2,7 @@ export interface User {
   id: number;
   name: string;
   email: string;
+  username?: string;
   phone?: string;
   role: 'admin' | 'manager' | 'operator' | 'user';
   gym_id?: number;
@@ -27,6 +28,8 @@ export interface AuthState {
   token?: string;
   subscriptionStatus?: SubscriptionStatus;
   trialStartDate?: string;
+  selectedGymId?: number | null;
+  selectedGymName?: string;
 }
 
 export enum SubscriptionStatus {

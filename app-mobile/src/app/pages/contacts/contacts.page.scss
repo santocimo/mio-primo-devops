@@ -1,0 +1,217 @@
+:host {
+  display: block;
+}
+
+ion-content.contacts-content {
+  --background: transparent;
+}
+
+.contacts-hero {
+  margin-bottom: 14px;
+}
+
+.search-bar {
+  padding: 0 0 8px;
+}
+
+.profile-card {
+  margin-bottom: 14px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-item {
+  background: rgba(15, 118, 110, 0.04);
+  border: 1px solid rgba(15, 118, 110, 0.1);
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  strong {
+    font-size: 0.96rem;
+    color: #0f172a;
+  }
+
+  small {
+    color: #64748b;
+  }
+}
+
+.profile-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #0f766e;
+}
+
+.search-input {
+  --border-radius: 999px;
+  --background: rgba(255, 255, 255, 0.82);
+  --box-shadow: 0 10px 22px rgba(15, 23, 42, 0.05);
+}
+
+.table-wrap {
+  padding: 0 0 8px;
+  overflow-x: auto;
+}
+
+.contacts-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255, 255, 255, 0.94);
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.06);
+  font-size: 0.85rem;
+
+  thead {
+    tr {
+      background: linear-gradient(90deg, #0f766e, #155e75);
+      color: #fff;
+    }
+    th {
+      padding: 10px 12px;
+      text-align: left;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #f1f5f9;
+      transition: background 0.12s;
+      &:hover { background: #f2fbfa; }
+      &:last-child { border-bottom: none; }
+    }
+    td {
+      padding: 10px 12px;
+      vertical-align: middle;
+    }
+  }
+}
+
+.cf-tag {
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  font-family: 'Monaco', monospace;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  border: 1px solid rgba(15, 118, 110, 0.1);
+  white-space: nowrap;
+}
+
+.contact-name-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  .name { font-weight: 700; color: #1e293b; }
+}
+
+.cf-badge {
+  display: none;
+  font-family: 'Monaco', monospace;
+  font-size: 0.7rem;
+  color: #0f766e;
+  font-weight: 700;
+}
+
+.text-end { text-align: right; }
+.actions-cell { white-space: nowrap; }
+
+.cf-display-box {
+  background: linear-gradient(180deg, #0f172a, #111827);
+  border-radius: 18px;
+  padding: 16px;
+  text-align: center;
+  color: #d5f5ef;
+  margin: 16px 0 8px;
+  border: 1px solid rgba(45, 212, 191, 0.12);
+
+  .cf-label {
+    display: block;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-bottom: 4px;
+    letter-spacing: 1px;
+  }
+
+  .cf-value {
+    font-family: 'Monaco', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+}
+
+.suggestions {
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  margin: 0 16px 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 999;
+
+  .suggestion-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    &:last-child { border-bottom: none; }
+    &:hover { background: #f2fbfa; color: #0f766e; }
+  }
+}
+
+// Responsive: hide columns on small screens
+@media (max-width: 600px) {
+  .hide-sm { display: none !important; }
+  .cf-badge.show-sm { display: block; }
+}
+
+@media (max-width: 900px) {
+  .hide-md { display: none !important; }
+}
+
+// Overlay modal custom (sostituisce ion-modal per compatibilità lazy-loading)
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+}
+
+.modal-sheet {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: min(560px, 96vw);
+  max-height: 90vh;
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  .modal-body {
+    overflow-y: auto;
+    flex: 1;
+    background: linear-gradient(180deg, #fbfffe 0%, #f5faf9 100%);
+  }
+}

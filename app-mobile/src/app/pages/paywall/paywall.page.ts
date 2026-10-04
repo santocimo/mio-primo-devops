@@ -6,6 +6,7 @@ import { SubscriptionStatus } from '../../models/auth.model';
 import { ToastController, LoadingController } from '@ionic/angular';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { LanguageService } from '../../i18n/language.service';
 
 @Component({
   selector: 'app-paywall',
@@ -24,14 +25,15 @@ export class PaywallPage implements OnInit, OnDestroy {
     private authService: AuthService,
     private router: Router,
     private toastController: ToastController,
-    private loadingController: LoadingController
+    private loadingController: LoadingController,
+    private language: LanguageService
   ) {}
 
   ngOnInit(): void {
     const state = this.authService['authState$'].getValue();
-    // Utente già abbonato: torna alla dashboard
+    // Utente già abbonato: apre la sezione iscritti
     if (state.subscriptionStatus === SubscriptionStatus.ACTIVE) {
-      this.router.navigate(['/dashboard']);
+      this.router.navigate(['/contacts']);
       return;
     }
     this.isTrialExpired = state.subscriptionStatus === SubscriptionStatus.EXPIRED;
@@ -60,7 +62,8 @@ export class PaywallPage implements OnInit, OnDestroy {
     this.selectedProductId = productId;
     const product = this.products.find((p) => p.id === productId);
     const planLabel = product?.name ?? '';
-    const planPrice = product ? `${product.price} ${product.currency}/${product.duration === 'monthly' ? 'mese' : 'anno'}` : '';
+    const period = product ? this.language.instant(product.duration === 'monthly' ? 'paywall.month' : 'paywall.year') : '';
+    const planPrice = product ? `${product.price} ${product.currency}/${period}` : '';
     this.router.navigate(['/subscribe'], {
       state: { planId: productId, planLabel, planPrice },
     });
@@ -68,7 +71,7 @@ export class PaywallPage implements OnInit, OnDestroy {
 
   async restorePurchases(): Promise<void> {
     const loader = await this.loadingController.create({
-      message: 'Ripristino acquisti...',
+      message: this.language.instant('paywall.restoreLoading'),
     });
     await loader.present();
 
@@ -78,13 +81,13 @@ export class PaywallPage implements OnInit, OnDestroy {
       .subscribe({
         next: async (result) => {
           await loader.dismiss();
-          await this.showToast(result.message, 'success');
-          this.router.navigate(['/dashboard']);
+          await this.showToast(this.language.instant('paywall.restoreSuccess'), 'success');
+          this.router.navigate(['/contacts']);
         },
         error: async (error) => {
           await loader.dismiss();
           console.error('Errore:', error);
-          await this.showToast('Errore nel ripristino', 'danger');
+          await this.showToast(this.language.instant('paywall.restoreError'), 'danger');
         },
       });
   }

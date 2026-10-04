@@ -2,11 +2,12 @@ import { NgModule } from '@angular/core';
 import { PreloadAllModules, RouterModule, Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
 import { AdminGuard } from './guards/admin.guard';
+import { UsersGuard } from './guards/users.guard';
 
 const routes: Routes = [
   {
     path: '',
-    redirectTo: 'dashboard',
+    redirectTo: 'contacts',
     pathMatch: 'full',
   },
   {
@@ -26,8 +27,8 @@ const routes: Routes = [
     loadChildren: () => import('./pages/subscribe/subscribe.module').then((m) => m.SubscribePageModule),
   },
   {
-    path: 'dashboard',
-    loadChildren: () => import('./pages/dashboard/dashboard.module').then((m) => m.DashboardPageModule),
+    path: 'contacts',
+    loadChildren: () => import('./pages/contacts/contacts.module').then((m) => m.ContactsPageModule),
     canActivate: [AuthGuard],
   },
   {
@@ -36,8 +37,18 @@ const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
+    path: 'services',
+    loadChildren: () => import('./pages/admin-services/admin-services.module').then((m) => m.AdminServicesPageModule),
+    canActivate: [AuthGuard],
+  },
+  {
     path: 'book-appointment',
     loadChildren: () => import('./pages/book-appointment/book-appointment.module').then((m) => m.BookAppointmentPageModule),
+    canActivate: [AuthGuard],
+  },
+  {
+    path: 'gym',
+    loadChildren: () => import('./pages/gym/gym.module').then((m) => m.GymPageModule),
     canActivate: [AuthGuard],
   },
   {
@@ -48,7 +59,7 @@ const routes: Routes = [
   {
     path: 'admin/users',
     loadChildren: () => import('./pages/admin-users/admin-users.module').then((m) => m.AdminUsersPageModule),
-    canActivate: [AuthGuard, AdminGuard],
+    canActivate: [AuthGuard, UsersGuard],
   },
   {
     path: 'admin/gyms',
@@ -72,7 +83,7 @@ const routes: Routes = [
   },
   {
     path: '**',
-    redirectTo: 'dashboard',
+    redirectTo: 'contacts',
   },
 ];
 

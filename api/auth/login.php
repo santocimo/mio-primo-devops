@@ -104,6 +104,36 @@ if ($username === 'admin' && $password === 'admin123') {
     exit;
 }
 
+if (($username === 'op' || $username === 'ope') && $password === 'op123') {
+    $_SESSION['admin_logged'] = true;
+    $_SESSION['user_id'] = -1;
+    $_SESSION['user_role'] = 'OPERATORE';
+    $_SESSION['gym_id'] = 1;
+
+    $token = base64_encode(json_encode([
+        'user_id'   => -1,
+        'username'  => $username,
+        'role'      => 'OPERATORE',
+        'gym_id'    => 1,
+        'timestamp' => time()
+    ]));
+
+    echo json_encode([
+        'success' => true,
+        'message' => 'Login successful',
+        'user' => [
+            'id' => -1,
+            'name' => $username === 'ope' ? 'Ope Rossi' : 'Operator Demo',
+            'email' => $username === 'ope' ? 'ope@fit.local' : 'operator@system.local',
+            'username' => $username,
+            'role' => 'operatore',
+            'gym_id' => 1
+        ],
+        'token' => $token
+    ]);
+    exit;
+}
+
 http_response_code(401);
 echo json_encode(['success' => false, 'message' => 'Invalid credentials']);
 ?>

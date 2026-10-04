@@ -1,1 +1,151 @@
-/* App component styles */
+.app-menu {
+	--width: 318px;
+}
+
+.menu-panel {
+	--background:
+		radial-gradient(circle at top right, rgba(249, 115, 22, 0.15), transparent 26%),
+		linear-gradient(180deg, #0f172a 0%, #14213d 100%);
+	color: #ffffff;
+}
+
+.menu-shell {
+	padding: 18px 14px 32px;
+}
+
+.menu-brand {
+	margin-bottom: 16px;
+	padding: 2px 4px;
+
+	.brand-mark {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		font-family: 'Space Grotesk', sans-serif;
+		font-size: 1.28rem;
+		font-weight: 700;
+		letter-spacing: -0.03em;
+	}
+
+	.brand-mark ion-icon {
+		font-size: 1.3rem;
+		color: #fb923c;
+	}
+
+	.brand-copy {
+		margin-top: 4px;
+		color: rgba(255, 255, 255, 0.62);
+		font-size: 0.82rem;
+	}
+}
+
+.menu-profile-card {
+	padding: 16px;
+	border-radius: 24px;
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+	border: 1px solid rgba(255, 255, 255, 0.08);
+	box-shadow: 0 18px 34px rgba(0, 0, 0, 0.18);
+	margin-bottom: 18px;
+}
+
+.menu-user-row {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.menu-avatar {
+	width: 46px;
+	height: 46px;
+	border-radius: 16px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	background: linear-gradient(135deg, #f97316, #fb7185);
+	color: #fff;
+	font-weight: 800;
+	font-size: 1rem;
+	flex-shrink: 0;
+}
+
+.menu-user-name {
+	margin: 0;
+	font-family: 'Space Grotesk', sans-serif;
+	font-size: 1rem;
+	font-weight: 700;
+}
+
+.menu-user-role {
+	margin-top: 4px;
+	color: rgba(255, 255, 255, 0.62);
+	font-size: 0.78rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+}
+
+.menu-context {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: 14px;
+}
+
+.menu-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 10px;
+	border-radius: 14px;
+	background: rgba(255, 255, 255, 0.08);
+	color: #dbeafe;
+	font-size: 0.78rem;
+	font-weight: 600;
+}
+
+.menu-section-label {
+	margin: 18px 0 10px;
+	padding-left: 8px;
+	color: rgba(255, 255, 255, 0.44);
+	font-size: 0.72rem;
+	font-weight: 800;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+}
+
+.menu-nav-list {
+	display: grid;
+	gap: 8px;
+}
+
+.menu-nav-item {
+	--background: transparent;
+	--color: #ffffff;
+	--border-radius: 18px;
+	margin: 0;
+	border-radius: 18px;
+	box-shadow: none;
+}
+
+.menu-nav-item::part(native) {
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid rgba(255, 255, 255, 0.05);
+	border-radius: 18px;
+}
+
+.menu-nav-item ion-icon {
+	color: #7dd3fc;
+}
+
+.menu-nav-item ion-label {
+	font-weight: 700;
+}
+
+.menu-gym-picker {
+	--background: rgba(255, 255, 255, 0.07);
+	--color: #ffffff;
+}
+
+.menu-logout ion-icon,
+.menu-logout ion-label {
+	color: #fca5a5 !important;
+}

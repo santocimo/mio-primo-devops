@@ -5,6 +5,7 @@ import { ApiService } from '../../services/api.service';
 import { Gym } from '../../models/business.model';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { LanguageService } from '../../i18n/language.service';
 
 @Component({
   selector: 'app-admin-gyms',
@@ -23,6 +24,7 @@ export class AdminGymsPage implements OnInit, OnDestroy {
   constructor(
     private apiService: ApiService,
     private alertController: AlertController,
+    private language: LanguageService,
     public router: Router
   ) {}
 
@@ -31,7 +33,7 @@ export class AdminGymsPage implements OnInit, OnDestroy {
 
   load(): void {
     this.loading = true;
-    this.apiService.getGyms().pipe(takeUntil(this.destroy$)).subscribe({
+    this.apiService.getGyms(true).pipe(takeUntil(this.destroy$)).subscribe({
       next: g => { this.gyms = g; this.loading = false; },
       error: () => { this.loading = false; },
     });
@@ -60,10 +62,10 @@ export class AdminGymsPage implements OnInit, OnDestroy {
 
   async del(g: Gym): Promise<void> {
     const alert = await this.alertController.create({
-      header: 'Elimina', message: `Eliminare ${g.name}?`,
+      header: this.language.instant('common.delete'), message: this.language.instant('adminGyms.deleteConfirm', { name: g.name }),
       buttons: [
-        { text: 'Annulla', role: 'cancel' },
-        { text: 'Elimina', role: 'destructive', handler: () => {
+        { text: this.language.instant('common.cancel'), role: 'cancel' },
+        { text: this.language.instant('common.delete'), role: 'destructive', handler: () => {
             this.apiService.deleteGym(g.id).pipe(takeUntil(this.destroy$)).subscribe(() => this.load());
           }
         },

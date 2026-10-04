@@ -1,14 +1,18 @@
 export interface Appointment {
   id: number;
-  user_id: number;
   service_id: number;
+  contact_id?: number | null;
   gym_id: number;
-  appointment_date: string;
-  appointment_time: string;
-  status: 'scheduled' | 'completed' | 'cancelled';
+  customer_name: string;
+  customer_email?: string | null;
+  scheduled_at: string;
+  status: 'pending' | 'confirmed' | 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
-  created_at: string;
-  updated_at: string;
+  service_name?: string;
+  service_provider_name?: string | null;
+  service_provider_type?: 'internal' | 'external' | null;
+  gym_name?: string;
+  created_at?: string;
 }
 
 export interface Contact {
@@ -32,8 +36,13 @@ export interface ContactStats {
 export interface Service {
   id: number;
   name: string;
+  slug?: string;
+  category: string;
   description?: string;
-  duration: number; // in minutes
+  provider_name?: string | null;
+  provider_type?: 'internal' | 'external' | null;
+  duration_minutes: number;
+  capacity: number;
   price?: number;
   gym_id: number;
   created_at: string;
@@ -44,10 +53,17 @@ export interface Gym {
   id: number;
   name: string;
   slug?: string;
+  description?: string;
   address?: string;
   city?: string;
   phone?: string;
   email?: string;
+  manager_name?: string;
+  manager_email?: string;
+  manager_username?: string;
+  manager_cf?: string;
+  activity_name?: string;
+  settings?: any;
   category: 'gym' | 'salon' | 'studio' | 'other';
   created_at: string;
   updated_at: string;

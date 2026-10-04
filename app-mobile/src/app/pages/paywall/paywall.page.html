@@ -1,6 +1,6 @@
 <ion-header>
   <ion-toolbar>
-    <ion-title>Abbonati</ion-title>
+    <ion-title>{{ 'paywall.title' | translate }}</ion-title>
   </ion-toolbar>
 </ion-header>
 
@@ -9,33 +9,33 @@
 
     <div class="header-section">
       <div *ngIf="isTrialExpired" class="trial-expired-badge">
-        La tua prova gratuita è scaduta
+        {{ 'paywall.expired' | translate }}
       </div>
-      <h1>Sblocca tutte le funzioni</h1>
-      <p *ngIf="!isTrialExpired">Prova gratis per 7 giorni, poi scegli il tuo piano</p>
-      <p *ngIf="isTrialExpired">Scegli un piano per continuare ad utilizzare l'app</p>
+      <h1>{{ 'paywall.heading' | translate }}</h1>
+      <p *ngIf="!isTrialExpired">{{ 'paywall.trial' | translate }}</p>
+      <p *ngIf="isTrialExpired">{{ 'paywall.choosePlan' | translate }}</p>
     </div>
 
     <div class="features-list">
       <div class="feature-item">
         <ion-icon name="checkmark-circle"></ion-icon>
-        <span>Gestione illimitata appuntamenti</span>
+        <span>{{ 'paywall.featureAppointments' | translate }}</span>
       </div>
       <div class="feature-item">
         <ion-icon name="checkmark-circle"></ion-icon>
-        <span>Sincronizzazione in tempo reale</span>
+        <span>{{ 'paywall.featureSync' | translate }}</span>
       </div>
       <div class="feature-item">
         <ion-icon name="checkmark-circle"></ion-icon>
-        <span>Statistiche avanzate</span>
+        <span>{{ 'paywall.featureStats' | translate }}</span>
       </div>
       <div class="feature-item">
         <ion-icon name="checkmark-circle"></ion-icon>
-        <span>Supporto prioritario</span>
+        <span>{{ 'paywall.featureSupport' | translate }}</span>
       </div>
       <div class="feature-item">
         <ion-icon name="checkmark-circle"></ion-icon>
-        <span>Nessuna pubblicità</span>
+        <span>{{ 'paywall.featureAds' | translate }}</span>
       </div>
     </div>
 
@@ -47,13 +47,13 @@
         [class.best-value]="product.duration === 'yearly'"
         (click)="selectedProductId = product.id"
       >
-        <div *ngIf="product.duration === 'yearly'" class="best-value-badge">Più conveniente</div>
-        <h3>{{ product.name }}</h3>
-        <p class="description">{{ product.description }}</p>
+        <div *ngIf="product.duration === 'yearly'" class="best-value-badge">{{ 'paywall.bestValue' | translate }}</div>
+        <h3>{{ (product.duration === 'yearly' ? 'paywall.yearlyPlan' : 'paywall.monthlyPlan') | translate }}</h3>
+        <p class="description">{{ (product.duration === 'yearly' ? 'paywall.yearlyDescription' : 'paywall.monthlyDescription') | translate }}</p>
         <div class="price">
           <span class="amount">{{ product.price }}</span>
           <span class="currency">{{ product.currency }}</span>
-          <span class="duration">/{{ product.duration === 'monthly' ? 'mese' : 'anno' }}</span>
+          <span class="duration">/{{ (product.duration === 'monthly' ? 'paywall.month' : 'paywall.year') | translate }}</span>
         </div>
         <ion-button
           expand="block"
@@ -61,19 +61,19 @@
           [disabled]="purchaseInProgress"
           class="purchase-button"
         >
-          Abbonati ora
+          {{ 'paywall.subscribeNow' | translate }}
         </ion-button>
       </div>
     </div>
 
     <div class="restore-section">
       <ion-button fill="clear" (click)="restorePurchases()">
-        Hai già un abbonamento? Ripristina
+        {{ 'paywall.restore' | translate }}
       </ion-button>
     </div>
 
     <div class="terms-text">
-      <p>Rinnovo automatico. Cancella in qualsiasi momento dalle impostazioni del tuo account.</p>
+      <p>{{ 'paywall.terms' | translate }}</p>
     </div>
 
   </div>
