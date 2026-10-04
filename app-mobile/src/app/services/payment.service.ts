@@ -1,5 +1,7 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable, of } from 'rxjs';
+import { HttpClient } from '@angular/common/http';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { finalize, map } from 'rxjs/operators';
 import { environment } from '@env';
 import { SubscriptionStatus } from '../models/auth.model';
 import { AuthService } from './auth.service';
@@ -27,7 +29,7 @@ export class PaymentService {
   private products$ = new BehaviorSubject<Product[]>([]);
   private purchaseInProgress$ = new BehaviorSubject<boolean>(false);
 
-  constructor(private authService: AuthService) {
+  constructor(private authService: AuthService, private http: HttpClient) {
     this.initializePayments();
   }
 
@@ -67,31 +69,47 @@ export class PaymentService {
   }
 
   /**
-   * Effettua un acquisto in-app
-   * In produzione, questo userebbe RevenueCat o Stripe
+   * Avvia il pagamento PayPal: crea l'ordine sul server e reindirizza all'approvazione.
    */
-  purchase(productId: string): Observable<PurchaseResult> {
+  startPayPalCheckout(productId: string): Observable<void> {
+    const plan = productId.endsWith('_yearly') ? 'yearly' : 'monthly';
+    const returnUrl = `${window.location.origin}/subscribe`;
     this.purchaseInProgress$.next(true);
+    return this.http
+      .post<{ approve_url: string }>(`${environment.apiUrl}/api/payments/paypal.php`, {
+        action: 'create',
+        plan,
+        return_url: returnUrl,
+        cancel_url: `${returnUrl}?cancelled=1`,
+      })
+      .pipe(
+        map((res) => {
+          window.location.href = res.approve_url;
+        }),
+        finalize(() => this.purchaseInProgress$.next(false))
+      );
+  }
 
-    // Mock implementation - In production usare RevenueCat SDK
-    return new Observable((observer) => {
-      setTimeout(() => {
-        // Simula il successo dell'acquisto
-        const result: PurchaseResult = {
-          success: true,
-          message: 'Abbonamento attivato con successo',
-          transactionId: `TXN_${Date.now()}`,
-          expiryDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        };
-
-        // Aggiorna lo stato della sottoscrizione
-        this.authService.updateSubscriptionStatus(SubscriptionStatus.ACTIVE);
-
-        this.purchaseInProgress$.next(false);
-        observer.next(result);
-        observer.complete();
-      }, 2000);
-    });
+  /**
+   * Conferma il pagamento PayPal al ritorno dall'approvazione.
+   */
+  capturePayPalOrder(orderId: string): Observable<PurchaseResult> {
+    return this.http
+      .post<{ transaction_id?: string; subscription?: { expires_at?: string } }>(
+        `${environment.apiUrl}/api/payments/paypal.php`,
+        { action: 'capture', order_id: orderId }
+      )
+      .pipe(
+        map((res) => {
+          this.authService.updateSubscriptionStatus(SubscriptionStatus.ACTIVE);
+          return {
+            success: true,
+            message: 'Abbonamento attivato con successo',
+            transactionId: res.transaction_id,
+            expiryDate: res.subscription?.expires_at,
+          };
+        })
+      );
   }
 
   /**

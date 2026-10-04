@@ -15,6 +15,12 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - APP_ENV=${APP_ENV:-production}
       - APP_DEBUG=${APP_DEBUG:-false}
+      - PAYPAL_CLIENT_ID=${PAYPAL_CLIENT_ID:-}
+      - PAYPAL_CLIENT_SECRET=${PAYPAL_CLIENT_SECRET:-}
+      - PAYPAL_MODE=${PAYPAL_MODE:-sandbox}
+      - PAYPAL_CURRENCY=${PAYPAL_CURRENCY:-EUR}
+      - PAYPAL_PRICE_MONTHLY=${PAYPAL_PRICE_MONTHLY:-4.99}
+      - PAYPAL_PRICE_YEARLY=${PAYPAL_PRICE_YEARLY:-49.99}
     restart: unless-stopped
 
   database-santo:
