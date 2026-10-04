@@ -57,7 +57,21 @@ if (php_sapi_name() !== 'cli' && $isDirectRequest) {
             'role' => $_SESSION['user_role'] ?? null,
             'gym_id' => $_SESSION['gym_id'] ?? null,
         ];
-        echo json_encode(['success' => true, 'user' => $user]);
+        require_once __DIR__ . '/../../db.php';
+        require_once __DIR__ . '/../../inc/subscription.php';
+        $subRow = ['role' => $user['role']];
+        if ((int)$user['id'] > 0) {
+            try {
+                $q = getPDO()->prepare("SELECT role, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE id = ?");
+                $q->execute([(int)$user['id']]);
+                $subRow = $q->fetch(PDO::FETCH_ASSOC) ?: $subRow;
+            } catch (Exception $e) {
+                // stato non disponibile: tratta come scaduto
+            }
+        } else {
+            $subRow['role'] = 'ADMIN';
+        }
+        echo json_encode(['success' => true, 'user' => $user, 'subscription' => compute_subscription($subRow)]);
     } else {
         echo json_encode(['success' => false]);
     }

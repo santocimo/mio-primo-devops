@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { environment } from '@env';
-import { AuthState, LoginRequest, LoginResponse, User, SubscriptionStatus } from '../models/auth.model';
+import { AuthState, LoginRequest, LoginResponse, User, SubscriptionStatus, ServerSubscription } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root',
@@ -82,12 +82,15 @@ export class AuthService {
 
           Promise.resolve(resp).then((data: any) => {
             if (data && data.success && data.user) {
+              const sub = data.subscription
+                ? this.mapServerSubscription(data.subscription)
+                : { subscriptionStatus: SubscriptionStatus.EXPIRED, trialStartDate: undefined };
               const recoveredState: AuthState = {
                 isLoggedIn: true,
                 user: data.user,
                 token: tokenOnly,
-                subscriptionStatus: SubscriptionStatus.TRIAL,
-                trialStartDate: new Date().toISOString(),
+                subscriptionStatus: sub.subscriptionStatus,
+                trialStartDate: sub.trialStartDate,
               };
               this.authState$.next(recoveredState);
               localStorage.setItem('authState', JSON.stringify(recoveredState));
@@ -121,24 +124,11 @@ export class AuthService {
             const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
             const userGymId = response.user.gym_id != null ? Number(response.user.gym_id) : null;
 
-            // Determina lo stato abbonamento
-            let subscriptionStatus = isAdmin
-              ? SubscriptionStatus.ACTIVE
-              : (prevState.subscriptionStatus ?? SubscriptionStatus.NONE);
-            let trialStartDate = isAdmin ? undefined : prevState.trialStartDate;
-
-            // Primo accesso: avvia il trial
-            if (!trialStartDate && subscriptionStatus !== SubscriptionStatus.ACTIVE) {
-              trialStartDate = new Date().toISOString();
-              subscriptionStatus = SubscriptionStatus.TRIAL;
-            }
-
-            // Se era in trial, verifica se è ancora valido
-            if (subscriptionStatus === SubscriptionStatus.TRIAL && trialStartDate) {
-              const trialDays = this.calcTrialDaysRemaining(trialStartDate);
-              if (trialDays <= 0) {
-                subscriptionStatus = SubscriptionStatus.EXPIRED;
-              }
+            // Lo stato abbonamento/trial arriva dal server (fonte di verità)
+            let subscriptionStatus = isAdmin ? SubscriptionStatus.ACTIVE : SubscriptionStatus.NONE;
+            let trialStartDate: string | undefined;
+            if (!isAdmin && response.subscription) {
+              ({ subscriptionStatus, trialStartDate } = this.mapServerSubscription(response.subscription));
             }
 
             const selectedGymId = isAdmin ? (prevState.selectedGymId ?? null) : userGymId;
@@ -159,6 +149,21 @@ export class AuthService {
           return response;
         })
       );
+  }
+
+  /**
+   * Converte lo stato abbonamento restituito dal server nello stato client
+   */
+  mapServerSubscription(sub: ServerSubscription): { subscriptionStatus: SubscriptionStatus; trialStartDate?: string } {
+    const map: Record<ServerSubscription['status'], SubscriptionStatus> = {
+      trial: SubscriptionStatus.TRIAL,
+      active: SubscriptionStatus.ACTIVE,
+      expired: SubscriptionStatus.EXPIRED,
+    };
+    return {
+      subscriptionStatus: map[sub.status] ?? SubscriptionStatus.EXPIRED,
+      trialStartDate: sub.trial_start_date ?? undefined,
+    };
   }
 
   /**

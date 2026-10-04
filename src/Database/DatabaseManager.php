@@ -163,6 +163,27 @@ class DatabaseManager {
             $this->pdo->exec("ALTER TABLE users ADD COLUMN email VARCHAR(150) NOT NULL DEFAULT ''");
         }
 
+        $needsTrialBackfill = !in_array('trial_start_date', $userColumns, true);
+        if ($needsTrialBackfill) {
+            $this->pdo->exec("ALTER TABLE users ADD COLUMN trial_start_date DATETIME NULL");
+        }
+        if (!in_array('subscription_status', $userColumns, true)) {
+            $this->pdo->exec("ALTER TABLE users ADD COLUMN subscription_status VARCHAR(20) NULL");
+        }
+        if (!in_array('subscription_plan', $userColumns, true)) {
+            $this->pdo->exec("ALTER TABLE users ADD COLUMN subscription_plan VARCHAR(50) NULL");
+        }
+        if (!in_array('subscription_expires_at', $userColumns, true)) {
+            $this->pdo->exec("ALTER TABLE users ADD COLUMN subscription_expires_at DATETIME NULL");
+        }
+        if ($needsTrialBackfill) {
+            // Operatori già esistenti: la settimana di prova parte dal momento dell'aggiornamento
+            $this->pdo->exec(
+                "UPDATE users SET trial_start_date = NOW(), subscription_status = 'trial'
+                 WHERE LOWER(role) = 'operatore'"
+            );
+        }
+
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? LIMIT 1");
         $stmt->execute(['admin']);
         if ((int)$stmt->fetchColumn() === 0) {

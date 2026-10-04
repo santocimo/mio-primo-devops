@@ -15,11 +15,21 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface ServerSubscription {
+  status: 'trial' | 'active' | 'expired';
+  trial_start_date: string | null;
+  trial_ends_at: string | null;
+  trial_days_remaining: number;
+  expires_at: string | null;
+  plan: string | null;
+}
+
 export interface LoginResponse {
   success: boolean;
   message: string;
   user?: User;
   token?: string;
+  subscription?: ServerSubscription;
 }
 
 export interface AuthState {

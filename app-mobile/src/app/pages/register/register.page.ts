@@ -122,13 +122,15 @@ export class RegisterPage {
         await loader.dismiss();
         if (res.success) {
           // Auto-login: salva stato auth
-          const trialStartDate = new Date().toISOString();
+          const sub = res.subscription
+            ? this.authService.mapServerSubscription(res.subscription)
+            : { subscriptionStatus: SubscriptionStatus.TRIAL, trialStartDate: new Date().toISOString() };
           const state: AuthState = {
             isLoggedIn: true,
             user: res.user,
             token: res.token,
-            subscriptionStatus: SubscriptionStatus.TRIAL,
-            trialStartDate,
+            subscriptionStatus: sub.subscriptionStatus,
+            trialStartDate: sub.trialStartDate,
             selectedGymId: res.user?.gym_id ?? null,
           };
           (this.authService as any).authState$.next(state);

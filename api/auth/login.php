@@ -13,6 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 require_once __DIR__ . '/../../inc/security.php';
 require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../inc/subscription.php';
+
+$demoActive = ['status' => 'active', 'trial_start_date' => null, 'trial_ends_at' => null, 'trial_days_remaining' => 0, 'expires_at' => null, 'plan' => null];
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -33,7 +36,7 @@ $password = $data['password'];
 
 try {
     $pdo = getPDO();
-    $stmt = $pdo->prepare("SELECT id, name, email, username, role, password_hash, gym_id FROM users WHERE username = ? LIMIT 1");
+    $stmt = $pdo->prepare("SELECT id, name, email, username, role, password_hash, gym_id, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE username = ? LIMIT 1");
     $stmt->execute([$username]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
@@ -66,7 +69,8 @@ try {
                 'role' => strtolower($user['role']),
                 'gym_id' => $user['gym_id']
             ],
-            'token' => $token
+            'token' => $token,
+            'subscription' => compute_subscription($user)
         ]);
         exit;
     }
@@ -99,7 +103,8 @@ if ($username === 'admin' && $password === 'admin123') {
             'role' => 'admin',
             'gym_id' => 1
         ],
-        'token' => $token
+        'token' => $token,
+        'subscription' => $demoActive
     ]);
     exit;
 }
@@ -129,7 +134,8 @@ if (($username === 'op' || $username === 'ope') && $password === 'op123') {
             'role' => 'operatore',
             'gym_id' => 1
         ],
-        'token' => $token
+        'token' => $token,
+        'subscription' => $demoActive
     ]);
     exit;
 }

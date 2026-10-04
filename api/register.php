@@ -18,6 +18,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../inc/validation.php';
+require_once __DIR__ . '/../inc/subscription.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -139,9 +140,13 @@ try {
 
     // 3. Inserisce l'utente operatore
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id) VALUES (?, ?, ?, ?, ?, ?)");
+    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'trial')");
     $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id]);
     $user_id = (int)$pdo->lastInsertId();
+
+    $subRow = $pdo->prepare("SELECT role, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE id = ?");
+    $subRow->execute([$user_id]);
+    $subscription = compute_subscription($subRow->fetch(PDO::FETCH_ASSOC) ?: []);
 
     $pdo->commit();
 
@@ -165,7 +170,8 @@ try {
             'role'     => 'operatore',
             'gym_id'   => $gym_id,
         ],
-        'token' => $token
+        'token' => $token,
+        'subscription' => $subscription
     ]);
 
 } catch (Exception $e) {
