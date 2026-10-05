@@ -59,6 +59,14 @@ form {
   }
 }
 
+.account-deletion-link {
+  display: block;
+  margin: 22px auto 0;
+  --color: rgba(255, 255, 255, 0.9);
+  font-size: 0.82rem;
+  text-transform: none;
+}
+
 .register-button {
   margin-top: 10px;
   --color: rgba(255, 255, 255, 0.95);

@@ -23,19 +23,11 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   editingContact: Contact | null = null;
   formData = this.emptyForm();
 
-  // Comune autocomplete
-  comuneSearch = '';
-  comuniSuggestions: { label: string; value: string; codice: string }[] = [];
-  showSuggestions = false;
-  belfiore = '';
-
   selectedGymId: number | null = null;
   selectedGymName = '';
   isAdminUser = false;
 
   private destroy$ = new Subject<void>();
-  private readonly CF_MONTHS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
-
   constructor(
     private apiService: ApiService,
     private authService: AuthService,
@@ -100,27 +92,16 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   openAdd(): void {
     this.editingContact = null;
     this.formData = this.emptyForm();
-    this.comuneSearch = '';
-    this.belfiore = '';
-    this.comuniSuggestions = [];
-    this.showSuggestions = false;
     this.showModal = true;
   }
 
   openEdit(c: Contact): void {
     this.editingContact = c;
     this.formData = {
-      nome: c.nome, cognome: c.cognome, codice_fiscale: c.codice_fiscale,
-      data_nascita: c.data_nascita, luogo_nascita: c.luogo_nascita,
-      indirizzo: c.indirizzo, recapito: c.recapito, sesso: c.sesso,
+      nome: c.nome, cognome: c.cognome, codice_fiscale: c.codice_fiscale ?? '',
+      data_nascita: c.data_nascita ?? '', luogo_nascita: c.luogo_nascita ?? '',
+      indirizzo: c.indirizzo ?? '', recapito: c.recapito ?? '', sesso: c.sesso ?? '',
     };
-    this.comuneSearch = c.luogo_nascita;
-    this.belfiore = '';
-    this.comuniSuggestions = [];
-    this.showSuggestions = false;
-    if (this.comuneSearch.trim().length >= 2) {
-      this.fetchComuniSuggestions(this.comuneSearch);
-    }
     this.showModal = true;
   }
 
@@ -128,14 +109,14 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     this.showModal = false;
     this.editingContact = null;
     this.formData = this.emptyForm();
-    this.comuneSearch = '';
-    this.belfiore = '';
   }
 
   save(): void {
     if (!this.formData.nome || !this.formData.cognome) return;
-    const cf = this.resolveCodiceFiscaleForSave();
-    const data = { ...this.formData, codice_fiscale: cf.toUpperCase() };
+    const data = {
+      ...this.formData,
+      codice_fiscale: this.formData.codice_fiscale.trim().toUpperCase(),
+    };
 
     if (this.editingContact) {
       this.apiService.updateContact(this.editingContact.id, data)
@@ -209,35 +190,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
       });
   }
 
-  onComuneInput(ev: any): void {
-    const val = (ev?.detail?.value ?? ev?.target?.value ?? '').toString();
-    this.comuneSearch = val;
-    this.formData.luogo_nascita = val;
-    this.belfiore = '';
-    if (val.length < 2) {
-      this.comuniSuggestions = [];
-      this.showSuggestions = false;
-      return;
-    }
-    this.fetchComuniSuggestions(val);
-  }
-
-  selectComune(s: { label: string; value: string; codice: string }): void {
-    this.comuneSearch = s.value;
-    this.formData.luogo_nascita = s.value;
-    this.belfiore = s.codice;
-    this.comuniSuggestions = [];
-    this.showSuggestions = false;
-    this.formData.codice_fiscale = this.calculateCF();
-  }
-
-  onFormFieldChange(): void {
-    if (this.belfiore) {
-      this.formData.codice_fiscale = this.calculateCF();
-    }
-  }
-
-  formatDate(d: string): string {
+  formatDate(d: string | null): string {
     if (!d) return '';
     const parts = d.split('-');
         if (parts.length === 3) {
@@ -257,19 +210,6 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     return this.authService.getCurrentUser();
   }
 
-  private fetchComuniSuggestions(term: string): void {
-    this.apiService.searchComuni(term).pipe(takeUntil(this.destroy$)).subscribe({
-      next: s => {
-        this.comuniSuggestions = s;
-        this.showSuggestions = s.length > 0;
-      },
-      error: () => {
-        this.comuniSuggestions = [];
-        this.showSuggestions = false;
-      },
-    });
-  }
-
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
     const toast = await this.toastController.create({
       message,
@@ -281,53 +221,6 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   private emptyForm() {
-    return { nome: '', cognome: '', codice_fiscale: '', data_nascita: '', luogo_nascita: '', indirizzo: '', recapito: '', sesso: 'M' as 'M' | 'F' };
-  }
-
-  private resolveCodiceFiscaleForSave(): string {
-    const manualCf = (this.formData.codice_fiscale || '').toUpperCase();
-    if (!this.belfiore && manualCf.length === 16) {
-      this.belfiore = this.extractBelfioreCode(manualCf);
-    }
-    const computed = this.calculateCF();
-    return (computed || manualCf).toUpperCase();
-  }
-
-  private extractBelfioreCode(cf: string): string {
-    const clean = (cf || '').toUpperCase().trim();
-    if (clean.length !== 16) return '';
-    return clean.substring(11, 15);
-  }
-
-  private calculateCF(): string {
-    const n = this.formData.nome;
-    const c = this.formData.cognome;
-    const d = this.formData.data_nascita;
-    const s = this.formData.sesso;
-    if (!n || !c || !d || d.length < 10 || !this.belfiore) return this.formData.codice_fiscale;
-    const parts = d.split('-');
-    const anno = parts[0].slice(-2);
-    const mese = this.CF_MONTHS[parseInt(parts[1]) - 1];
-    let gg = parseInt(parts[2]);
-    if (s === 'F') gg += 40;
-    let cf = this.getLetters(c, false) + this.getLetters(n, true) + anno + mese + gg.toString().padStart(2, '0') + this.belfiore;
-    cf = cf.toUpperCase();
-    return cf + this.calcolaControllo(cf);
-  }
-
-  private getLetters(str: string, isName: boolean): string {
-    const s = str.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Z]/g, '');
-    const c = s.replace(/[AEIOU]/g, '');
-    const v = s.replace(/[^AEIOU]/g, '');
-    if (isName && c.length >= 4) return c[0] + c[2] + c[3];
-    return (c + v + 'XXX').substring(0, 3);
-  }
-
-  private calcolaControllo(cf15: string): string {
-    const d: Record<string, number> = { '0': 1, '1': 0, '2': 5, '3': 7, '4': 9, '5': 13, '6': 15, '7': 17, '8': 19, '9': 21, A: 1, B: 0, C: 5, D: 7, E: 9, F: 13, G: 15, H: 17, I: 19, J: 21, K: 2, L: 4, M: 18, N: 20, O: 11, P: 3, Q: 6, R: 8, S: 12, T: 14, U: 16, V: 10, W: 22, X: 25, Y: 24, Z: 23 };
-    const p: Record<string, number> = { '0': 0, '1': 1, '2': 2, '3': 3, '4': 4, '5': 5, '6': 6, '7': 7, '8': 8, '9': 9, A: 0, B: 1, C: 2, D: 3, E: 4, F: 5, G: 6, H: 7, I: 8, J: 9, K: 10, L: 11, M: 12, N: 13, O: 14, P: 15, Q: 16, R: 17, S: 18, T: 19, U: 20, V: 21, W: 22, X: 23, Y: 24, Z: 25 };
-    let sum = 0;
-    for (let i = 0; i < 15; i++) sum += ((i + 1) % 2 !== 0) ? (d[cf15[i]] ?? 0) : (p[cf15[i]] ?? 0);
-    return String.fromCharCode(65 + (sum % 26));
+    return { nome: '', cognome: '', codice_fiscale: '', data_nascita: '', luogo_nascita: '', indirizzo: '', recapito: '', sesso: '' as 'M' | 'F' | '' };
   }
 }

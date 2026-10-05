@@ -1,3 +1,82 @@
 .profile-container {
-  padding: 20px;
+  padding-top: 20px;
+}
+
+.profile-container > section {
+  margin-bottom: 18px;
+}
+
+.profile-details {
+  display: grid;
+  gap: 14px;
+  margin: 16px 0 0;
+}
+
+.profile-details div,
+.profile-activity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-details dt,
+.profile-activity span,
+.profile-activity small {
+  color: var(--app-muted);
+}
+
+.profile-details dd {
+  margin: 2px 0 0;
+  color: var(--app-title);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.profile-activity-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.profile-activity {
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+
+  > ion-icon {
+    color: var(--ion-color-primary);
+    font-size: 1.4rem;
+  }
+
+  > div {
+    display: grid;
+    flex: 1;
+    gap: 3px;
+    min-width: 0;
+  }
+
+  strong {
+    color: var(--app-title);
+    overflow-wrap: anywhere;
+  }
+}
+
+.profile-loading,
+.profile-error {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.profile-error {
+  flex-wrap: wrap;
+}
+
+.profile-danger-zone {
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.3);
+
+  p {
+    color: var(--app-muted);
+  }
 }

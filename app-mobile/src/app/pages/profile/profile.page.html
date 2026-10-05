@@ -8,7 +8,71 @@
 </ion-header>
 
 <ion-content [fullscreen]="true">
-  <div class="profile-container">
-    <p>{{ 'profile.placeholder' | translate }}</p>
+  <div class="page-shell profile-container">
+    <section class="page-hero">
+      <div class="hero-kicker">
+        <ion-icon name="person-circle-outline"></ion-icon>
+        <span>{{ 'profile.accountKicker' | translate }}</span>
+      </div>
+      <h1 class="hero-title">{{ user?.name || user?.username }}</h1>
+      <p class="hero-subtitle">{{ 'profile.accountDescription' | translate }}</p>
+    </section>
+
+    <section class="section-card">
+      <h2 class="section-title">{{ 'profile.accountDetails' | translate }}</h2>
+      <dl class="profile-details">
+        <div>
+          <dt>{{ 'profile.email' | translate }}</dt>
+          <dd>{{ user?.email || '—' }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'profile.username' | translate }}</dt>
+          <dd>{{ user?.username || '—' }}</dd>
+        </div>
+        <div>
+          <dt>{{ 'profile.accessRole' | translate }}</dt>
+          <dd>{{ (isAdmin() ? 'menu.adminRole' : 'menu.operatorRole') | translate }}</dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="section-card">
+      <div class="section-title-row">
+        <div>
+          <h2 class="section-title">{{ 'profile.activities' | translate }}</h2>
+          <p class="section-note">{{ 'profile.activitiesDescription' | translate }}</p>
+        </div>
+      </div>
+
+      <div *ngIf="loading" class="profile-loading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+      <div *ngIf="loadError" class="profile-error" role="alert">
+        <p>{{ 'profile.activitiesError' | translate }}</p>
+        <ion-button fill="outline" size="small" (click)="loadActivities()">{{ 'common.retry' | translate }}</ion-button>
+      </div>
+      <p *ngIf="!loading && !loadError && activities.length === 0">{{ 'profile.noActivities' | translate }}</p>
+
+      <div class="profile-activity-list" *ngIf="!loading && !loadError">
+        <article class="profile-activity" *ngFor="let activity of activities">
+          <ion-icon name="business-outline" aria-hidden="true"></ion-icon>
+          <div>
+            <strong>{{ activity.name }}</strong>
+            <span>{{ (activity.activity_name || categoryKey(activity)) | translate }}</span>
+            <small *ngIf="activity.city">{{ activity.city }}</small>
+          </div>
+          <ion-badge *ngIf="activity.category">{{ categoryKey(activity) | translate }}</ion-badge>
+        </article>
+      </div>
+    </section>
+
+    <section class="section-card profile-danger-zone">
+      <h2 class="section-title">{{ 'profile.privacy' | translate }}</h2>
+      <p>{{ 'profile.deletionDescription' | translate }}</p>
+      <ion-button fill="outline" color="danger" (click)="requestAccountDeletion()">
+        <ion-icon slot="start" name="trash-outline"></ion-icon>
+        {{ 'profile.deleteAccount' | translate }}
+      </ion-button>
+    </section>
   </div>
 </ion-content>

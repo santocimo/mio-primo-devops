@@ -79,6 +79,10 @@ export class LoginPage implements OnInit {
     void this.router.navigate(['/register']);
   }
 
+  goToAccountDeletion(): void {
+    void this.router.navigate(['/account-deletion']);
+  }
+
   private async showToast(
     message: string,
     color: 'success' | 'danger' | 'warning'

@@ -1,0 +1,30 @@
+.account-deletion-container {
+  padding-top: 20px;
+}
+
+.account-deletion-container > section {
+  margin-bottom: 18px;
+}
+
+.deletion-warning {
+  border: 1px solid rgba(var(--ion-color-danger-rgb), 0.3);
+
+  p {
+    color: var(--app-muted);
+    line-height: 1.5;
+  }
+}
+
+.deletion-form {
+  display: grid;
+  gap: 16px;
+
+  ion-input {
+    padding: 5px 12px;
+    border: 1px solid rgba(148, 163, 184, 0.22);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.92);
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+}

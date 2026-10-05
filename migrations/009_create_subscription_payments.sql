@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS subscription_payments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   provider VARCHAR(20) NOT NULL,
   provider_payment_id VARCHAR(255) NOT NULL,
-  user_id INT NOT NULL,
+  user_id INT NULL,
   plan VARCHAR(20) NOT NULL,
   amount_minor INT UNSIGNED NOT NULL,
   currency CHAR(3) NOT NULL,

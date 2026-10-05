@@ -294,7 +294,29 @@ if ($method === 'DELETE') {
     $parts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'],PHP_URL_PATH),'/'));
     $id = (int)end($parts);
     if (!$id) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'ID mancante']); exit; }
-    $pdo->prepare("DELETE FROM appointments WHERE id=?")->execute([$id]);
+    $pdo->beginTransaction();
+    $existingStmt = $pdo->prepare(
+        "SELECT {$aptGymExpr} AS appointment_gym_id
+         FROM appointments a LEFT JOIN services s ON s.id=a.service_id
+         WHERE a.id=? LIMIT 1 FOR UPDATE"
+    );
+    $existingStmt->execute([$id]);
+    $existing = $existingStmt->fetch(PDO::FETCH_ASSOC);
+    if (!$existing) {
+        $pdo->rollBack();
+        http_response_code(404); echo json_encode(['success'=>false,'message'=>'Prenotazione non trovata']); exit;
+    }
+
+    $appointmentGymId = (int)($existing['appointment_gym_id'] ?? 0);
+    $sessionGymId = (int)($_SESSION['gym_id'] ?? 0);
+    if (!$isAdmin && (!$isOperator || !$sessionGymId || $appointmentGymId !== $sessionGymId)) {
+        $pdo->rollBack();
+        http_response_code(403); echo json_encode(['success'=>false,'message'=>'Puoi eliminare solo le prenotazioni della tua attività']); exit;
+    }
+
+    $deleteStmt = $pdo->prepare("DELETE FROM appointments WHERE id=?");
+    $deleteStmt->execute([$id]);
+    $pdo->commit();
     echo json_encode(['success'=>true]);
     exit;
 }

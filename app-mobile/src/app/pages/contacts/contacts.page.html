@@ -121,38 +121,33 @@
   </ion-header>
   <div class="modal-body">
 
+    <p class="data-minimization-note">{{ 'contacts.dataMinimization' | translate }}</p>
     <ion-list>
       <ion-item>
-        <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.firstName' | translate"></ion-input>
+        <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" [placeholder]="'contacts.firstName' | translate"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.lastName' | translate"></ion-input>
+        <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" [placeholder]="'contacts.lastName' | translate"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionInput)="onFormFieldChange()"></ion-input>
+        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover">
+        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" interface="popover">
+          <ion-select-option value="">{{ 'contacts.notSpecified' | translate }}</ion-select-option>
           <ion-select-option value="M">{{ 'contacts.male' | translate }}</ion-select-option>
           <ion-select-option value="F">{{ 'contacts.female' | translate }}</ion-select-option>
         </ion-select>
       </ion-item>
 
-      <!-- Comune con autocomplete -->
       <ion-item>
         <ion-input
           [label]="'contacts.birthCity' | translate"
           labelPlacement="stacked"
-          [value]="comuneSearch"
-          (ionInput)="onComuneInput($event)"
-          [placeholder]="'contacts.searchCity' | translate">
+          [(ngModel)]="formData.luogo_nascita"
+          [placeholder]="'contacts.birthCity' | translate">
         </ion-input>
       </ion-item>
-      <div class="suggestions" *ngIf="showSuggestions && comuniSuggestions.length > 0">
-        <div class="suggestion-item" *ngFor="let s of comuniSuggestions" (click)="selectComune(s)">
-          {{ s.label }}
-        </div>
-      </div>
 
       <ion-item>
         <ion-input [label]="'contacts.address' | translate" labelPlacement="stacked" [(ngModel)]="formData.indirizzo" [placeholder]="'contacts.addressPlaceholder' | translate"></ion-input>
@@ -160,21 +155,17 @@
       <ion-item>
         <ion-input [label]="'contacts.phone' | translate" labelPlacement="stacked" type="tel" [(ngModel)]="formData.recapito" placeholder="+39..."></ion-input>
       </ion-item>
+      <ion-item>
+        <ion-input
+          [label]="'contacts.taxCode' | translate"
+          labelPlacement="stacked"
+          [(ngModel)]="formData.codice_fiscale"
+          (ionInput)="formData.codice_fiscale = ($any($event.target).value ?? '').toUpperCase()"
+          [placeholder]="'contacts.manualTaxCode' | translate"
+          style="text-transform:uppercase;">
+        </ion-input>
+      </ion-item>
     </ion-list>
-
-    <!-- CF display -->
-    <div class="cf-display-box">
-      <small class="cf-label">{{ 'contacts.taxCode' | translate | uppercase }}</small>
-      <div class="cf-value">{{ formData.codice_fiscale || '—' }}</div>
-      <ion-input
-        [label]="'contacts.taxCode' | translate"
-        labelPlacement="stacked"
-        [value]="formData.codice_fiscale"
-        (ionInput)="formData.codice_fiscale = ($any($event.target).value ?? '').toUpperCase()"
-        [placeholder]="'contacts.manualTaxCode' | translate"
-        style="text-transform:uppercase; color:rgba(255,255,255,0.7); font-size:0.8rem;">
-      </ion-input>
-    </div>
 
     <div class="ion-padding">
       <ion-button expand="block" (click)="save()" [disabled]="!formData.nome || !formData.cognome">

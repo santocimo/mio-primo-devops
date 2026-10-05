@@ -19,6 +19,10 @@ const routes: Routes = [
     loadChildren: () => import('./pages/register/register.module').then((m) => m.RegisterPageModule),
   },
   {
+    path: 'account-deletion',
+    loadChildren: () => import('./pages/account-deletion/account-deletion.module').then((m) => m.AccountDeletionPageModule),
+  },
+  {
     path: 'paywall',
     loadChildren: () => import('./pages/paywall/paywall.module').then((m) => m.PaywallPageModule),
   },

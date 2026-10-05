@@ -76,4 +76,8 @@ export class PaywallPage implements OnInit, OnDestroy {
       state: { planId: productId, planLabel, planPrice, providers: this.providers },
     });
   }
+
+  goToAccountDeletion(): void {
+    void this.router.navigate(['/account-deletion']);
+  }
 }

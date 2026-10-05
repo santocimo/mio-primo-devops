@@ -103,6 +103,14 @@ export class ApiService {
     );
   }
 
+  deleteCurrentAccount(data: { password: string; confirmation: string }): Observable<{ success: boolean; activity_deleted: boolean }> {
+    return this.http.post<{ success: boolean; activity_deleted: boolean }>(
+      `${environment.apiUrl}/api/account/delete.php`,
+      data,
+      { headers: this.getHeaders() }
+    );
+  }
+
   // ── Contacts (Visitatori) ────────────────────────────────────────────────
 
   getContactStats(gymId?: number | null): Observable<ContactStats> {
@@ -242,11 +250,4 @@ export class ApiService {
       );
   }
 
-  // ── Comuni autocomplete ────────────────────────────────────────────────
-
-  searchComuni(term: string): Observable<{ label: string; value: string; codice: string }[]> {
-    return this.http.get<{ label: string; value: string; codice: string }[]>(
-      `${environment.apiUrl}/cerca_comuni.php?term=${encodeURIComponent(term)}`
-    );
-  }
 }

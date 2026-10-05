@@ -145,21 +145,32 @@ if ($method === 'POST') {
     $d = json_decode(file_get_contents('php://input'), true);
     $nome     = mb_strtoupper(trim($d['nome'] ?? ''));
     $cognome  = mb_strtoupper(trim($d['cognome'] ?? ''));
-    $cf       = strtoupper(trim($d['codice_fiscale'] ?? ''));
-    $nascita  = $d['data_nascita'] ?? '';
-    $luogo    = mb_strtoupper(trim($d['luogo_nascita'] ?? ''));
+    $cf = strtoupper(trim($d['codice_fiscale'] ?? ''));
+    $cf = $cf !== '' ? $cf : null;
+    $nascita = trim($d['data_nascita'] ?? '');
+    $nascita = $nascita !== '' ? $nascita : null;
+    $luogo = mb_strtoupper(trim($d['luogo_nascita'] ?? ''));
+    $luogo = $luogo !== '' ? $luogo : null;
     $indirizzo = mb_strtoupper(trim($d['indirizzo'] ?? ''));
+    $indirizzo = $indirizzo !== '' ? $indirizzo : null;
     $recapito = trim($d['recapito'] ?? '');
-    $sesso    = $d['sesso'] ?? 'M';
+    $recapito = $recapito !== '' ? $recapito : null;
+    $sesso = strtoupper(trim($d['sesso'] ?? ''));
+    $sesso = $sesso !== '' ? $sesso : null;
 
     if (!$nome || !$cognome) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Nome e cognome obbligatori']);
         exit;
     }
-    if ($cf !== '' && !cf_is_valid($cf)) {
+    if ($cf !== null && !cf_is_valid($cf)) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
+        exit;
+    }
+    if ($sesso !== null && !in_array($sesso, ['M', 'F'], true)) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Sesso non valido']);
         exit;
     }
 
@@ -188,16 +199,27 @@ if ($method === 'PUT') {
     $d = json_decode(file_get_contents('php://input'), true);
     $nome      = mb_strtoupper(trim($d['nome'] ?? ''));
     $cognome   = mb_strtoupper(trim($d['cognome'] ?? ''));
-    $cf        = strtoupper(trim($d['codice_fiscale'] ?? ''));
-    $nascita   = $d['data_nascita'] ?? '';
-    $luogo     = mb_strtoupper(trim($d['luogo_nascita'] ?? ''));
+    $cf = strtoupper(trim($d['codice_fiscale'] ?? ''));
+    $cf = $cf !== '' ? $cf : null;
+    $nascita = trim($d['data_nascita'] ?? '');
+    $nascita = $nascita !== '' ? $nascita : null;
+    $luogo = mb_strtoupper(trim($d['luogo_nascita'] ?? ''));
+    $luogo = $luogo !== '' ? $luogo : null;
     $indirizzo = mb_strtoupper(trim($d['indirizzo'] ?? ''));
-    $recapito  = trim($d['recapito'] ?? '');
-    $sesso     = $d['sesso'] ?? 'M';
+    $indirizzo = $indirizzo !== '' ? $indirizzo : null;
+    $recapito = trim($d['recapito'] ?? '');
+    $recapito = $recapito !== '' ? $recapito : null;
+    $sesso = strtoupper(trim($d['sesso'] ?? ''));
+    $sesso = $sesso !== '' ? $sesso : null;
 
-    if ($cf !== '' && !cf_is_valid($cf)) {
+    if ($cf !== null && !cf_is_valid($cf)) {
         http_response_code(400);
         echo json_encode(['success'=>false,'message'=>'Codice fiscale non valido']);
+        exit;
+    }
+    if ($sesso !== null && !in_array($sesso, ['M', 'F'], true)) {
+        http_response_code(400);
+        echo json_encode(['success'=>false,'message'=>'Sesso non valido']);
         exit;
     }
 

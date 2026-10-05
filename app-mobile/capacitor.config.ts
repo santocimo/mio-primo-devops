@@ -15,7 +15,7 @@ const config: CapacitorConfig = {
   server: {
     // In development, punta al server di sviluppo
     url: process.env['IONIC_SERVER_URL'] || undefined,
-    cleartext: true,
+    cleartext: Boolean(process.env['IONIC_SERVER_URL']),
   },
 };
 

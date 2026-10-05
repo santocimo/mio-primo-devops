@@ -40,7 +40,7 @@ $password     = $data['password']          ?? '';
 $manager_name = trim($name . ' ' . $surname);
 
 // Validazioni
-if (!$gym_name || !$gym_category || !$gym_address || !$name || !$surname || !$codice_fiscale || !$email || !$username || !$password) {
+if (!$gym_name || !$gym_category || !$gym_address || !$name || !$surname || !$email || !$username || !$password) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Tutti i campi sono obbligatori']);
     exit;
@@ -64,7 +64,7 @@ if (!in_array($gym_category, $allowed_categories, true)) {
     exit;
 }
 
-if (!preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
+if ($codice_fiscale !== '' && !preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
     exit;

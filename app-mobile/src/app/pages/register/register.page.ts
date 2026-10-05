@@ -55,7 +55,7 @@ export class RegisterPage {
     this.step2Form = this.fb.group({
       name:          ['', [Validators.required, Validators.minLength(2)]],
       surname:       ['', [Validators.required, Validators.minLength(2)]],
-      codice_fiscale:['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{16}$/)]],
+      codice_fiscale:['', [Validators.pattern(/^[A-Za-z0-9]{16}$/)]],
       email:         ['', [Validators.required, Validators.email]],
       username:      ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9._-]{3,50}$/)]],
       password:      ['', [Validators.required, Validators.minLength(8)]],

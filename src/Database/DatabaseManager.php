@@ -101,7 +101,7 @@ class DatabaseManager {
               luogo_nascita VARCHAR(150) DEFAULT NULL,
               indirizzo VARCHAR(255) DEFAULT NULL,
               recapito VARCHAR(100) DEFAULT NULL,
-              sesso CHAR(1) DEFAULT 'M',
+              sesso CHAR(1) DEFAULT NULL,
               gym_id INT NOT NULL DEFAULT 1,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
               UNIQUE KEY ux_visitatori_gym_cf (gym_id, codice_fiscale),
@@ -282,7 +282,7 @@ class DatabaseManager {
               id INT AUTO_INCREMENT PRIMARY KEY,
               provider VARCHAR(20) NOT NULL,
               provider_payment_id VARCHAR(255) NOT NULL,
-              user_id INT NOT NULL,
+              user_id INT NULL,
               plan VARCHAR(20) NOT NULL,
               amount_minor INT UNSIGNED NOT NULL,
               currency CHAR(3) NOT NULL,
@@ -292,5 +292,13 @@ class DatabaseManager {
               INDEX idx_subscription_payments_user (user_id)
             ) ENGINE=InnoDB CHARSET=utf8mb4"
         );
+
+        $columns = $this->pdo->query("SHOW COLUMNS FROM subscription_payments")->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($columns as $column) {
+            if ($column['Field'] === 'user_id' && strtoupper((string)$column['Null']) !== 'YES') {
+                $this->pdo->exec('ALTER TABLE subscription_payments MODIFY COLUMN user_id INT NULL');
+                break;
+            }
+        }
     }
 }

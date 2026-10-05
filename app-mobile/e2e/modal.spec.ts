@@ -43,7 +43,7 @@ test('screenshot popup nuovo contatto', async ({ page }) => {
   await expect(modal.locator('ion-input').first()).toBeVisible();
 });
 
-test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) => {
+test('modifica contatto mostra i dati facoltativi salvati', async ({ page, request }) => {
   test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD');
   const loginResponse = await request.post(`${API_BASE}/api/auth/login.php`, {
     data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
@@ -73,15 +73,6 @@ test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) =
   const createBody = await createResponse.json();
   const contactId = createBody.id;
 
-  await page.route('**/cerca_comuni.php?term=*', async route => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify([
-        { label: 'ROMA (RM)', value: 'ROMA', codice: 'H501' },
-      ]),
-    });
-  });
-
   try {
     await login(page);
     await openContactsPage(page);
@@ -94,7 +85,7 @@ test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) =
     const modal = page.locator('.modal-sheet');
     await expect(modal).toBeVisible({ timeout: 5000 });
     await expect(modal.locator('ion-title')).toContainText('Modifica contatto');
-    await expect(page.locator('.suggestion-item').first()).toHaveText('ROMA (RM)', { timeout: 5000 });
+    await expect(modal.locator('ion-input').nth(3)).toHaveJSProperty('value', 'ROMA');
   } finally {
     await request.delete(`${API_BASE}/api/contacts.php/${contactId}`, {
       headers: { Authorization: `Bearer ${token}` },

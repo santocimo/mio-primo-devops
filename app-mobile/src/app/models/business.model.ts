@@ -19,12 +19,12 @@ export interface Contact {
   id: number;
   nome: string;
   cognome: string;
-  codice_fiscale: string;
-  data_nascita: string;
-  luogo_nascita: string;
-  indirizzo: string;
-  recapito: string;
-  sesso: 'M' | 'F';
+  codice_fiscale: string | null;
+  data_nascita: string | null;
+  luogo_nascita: string | null;
+  indirizzo: string | null;
+  recapito: string | null;
+  sesso: 'M' | 'F' | '' | null;
 }
 
 export interface ContactStats {

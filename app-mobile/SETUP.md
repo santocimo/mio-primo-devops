@@ -34,9 +34,6 @@ Modifica `src/environments/environment.ts`:
 export const environment = {
   production: false,
    apiUrl: 'http://localhost:8083',  // Indirizzo del tuo backend
-  inAppPurchaseConfig: {
-    revenueCatApiKey: 'YOUR_DEV_API_KEY'
-  }
 };
 ```
 
@@ -60,9 +57,13 @@ npm run cap:add:ios
 npm run cap:add:android
 ```
 
+Le cartelle native sono generate localmente e sono escluse da Git. Dopo aver clonato il progetto, aggiungi entrambe le piattaforme e sincronizza gli asset con `npm run build:mobile`.
+
 **Requisiti**:
 - **iOS**: Xcode 14+ installato (macOS)
 - **Android**: Android Studio + Android SDK
+
+Il backend di produzione deve essere pubblicato su un URL HTTPS prima di compilare una release. `src/environments/environment.prod.ts` contiene ancora un dominio segnaposto: non distribuire build che lo usano.
 
 ## Phase 3: Configurazione iOS
 
@@ -156,44 +157,17 @@ npm run cap:open:android
 # 3. Genera file (.aab per Play Store, .apk per testing)
 ```
 
-## Phase 5: In-App Purchase (RevenueCat)
+## Phase 5: Prodotto e pagamenti
 
-### 5.1 Registrazione
+I pagamenti sono attualmente disattivati. Prima di riattivarli nelle app distribuite dagli store, verificare le regole Apple e Google applicabili al prodotto, al tipo di accesso digitale e ai paesi di distribuzione. Il checkout web Stripe/PayPal non va considerato automaticamente approvato per acquisti in-app. I prezzi presenti nel backend sono provvisori e non sono prezzi commerciali approvati.
 
-1. Vai su [RevenueCat.com](https://www.revenuecat.com)
-2. Registrati e crea nuovo progetto
-3. Seleziona piattaforme: iOS e Android
+Prima di promuovere l'app, validare l'esperienza con gestori di palestre, centri estetici, studi e altre attività, senza restringere il prodotto a una singola categoria. Osservare se ciascuno riesce a configurare la propria attività, aggiungere servizi e iscritti/clienti e fissare un appuntamento senza assistenza; raccogliere i blocchi e correggere quelli ricorrenti prima di aggiungere funzioni specifiche di settore.
 
-### 5.2 Configura prodotti
+## Privacy dei dati dei clienti
 
-Crea questi prodotti in RevenueCat:
-- **ID**: businessregistry_monthly
-  - Prezzo: €4.99
-  - Tipo: Subscription (monthly)
-- **ID**: businessregistry_yearly
-  - Prezzo: €49.99
-  - Tipo: Subscription (yearly)
+Nel modulo iscritti/clienti sono obbligatori solo nome e cognome. Codice fiscale, data e luogo di nascita, sesso, indirizzo e telefono sono facoltativi; il codice fiscale non viene più calcolato automaticamente. Raccogliere questi dati solo quando servono davvero all'attività e spiegare ai clienti finalità e tempi di conservazione nell'informativa privacy.
 
-### 5.3 Collega con App Store / Google Play
-
-**App Store**:
-1. In RevenueCat, aggiungi API key (in App Store Connect > Keys > Subscription Key)
-2. Crea gli stessi prodotti in App Store Connect
-3. RevenueCat sincronizzerà automaticamente
-
-**Google Play**:
-1. Aggiungi in RevenueCat la Service Account key di Google Play
-2. Crea gli stessi prodotti come In-App Products in Play Console
-3. RevenueCat sincronizzerà automaticamente
-
-### 5.4 Configura API key nell'app
-
-Modifica `src/environments/environment.prod.ts`:
-```typescript
-inAppPurchaseConfig: {
-  revenueCatApiKey: 'pk_prod_YOUR_API_KEY'
-}
-```
+Per i database esistenti, applicare la migration `migrations/011_make_contact_gender_optional.sql` per rimuovere il valore predefinito "M" dai nuovi record senza modificare i dati già salvati.
 
 ## Phase 6: Distribuzione App Store
 
@@ -213,22 +187,16 @@ npm run cap:open:ios
 ### 6.2 App Store Connect
 
 1. Accedi a [App Store Connect](https://appstoreconnect.apple.com)
-2. Privacy Policy: Aggiungi URL della privacy policy
-3. Pricing: Seleziona paesi e prezzo
-4. In-App Purchases: Configura i prodotti di ReneveCAT
-5. Screenshots e descrizione
-6. Invia per review
+2. Pubblica e collega un'informativa privacy verificata, coerente con dati raccolti, finalità, fornitori e tempi di conservazione.
+3. Verifica il percorso in-app di cancellazione nel Profilo e il percorso web `/account-deletion`.
+4. Compila le dichiarazioni privacy e prepara account dimostrativi e istruzioni per la review.
+5. Verifica le regole di pagamento applicabili prima di abilitare acquisti o link a checkout esterni.
+6. Prepara screenshots, descrizione accurata e metadati.
+7. Invia per review solo dopo prove su dispositivi e backend di produzione.
 
 **Cose importanti**:
-- Privacy Policy è OBBLIGATORIA
-- App deve funzionare senza connessione (almeno in parte)
-- In-app purchase deve essere chiaramente visibile
-
-### 6.3 Attendi review
-
-- 24-48 ore solitamente
-- Se rifiutata, Apple fornisce motivo
-- Correggi e ri-invia se necessario
+- L'esperienza deve offrire valore e funzionalità sufficienti oltre a una semplice visualizzazione del sito.
+- Le dichiarazioni privacy devono corrispondere al comportamento effettivo dell'app e degli SDK inclusi.
 
 ## Phase 7: Distribuzione Google Play
 
@@ -245,10 +213,11 @@ npm run cap:open:ios
 
 1. Accedi a [Play Console](https://play.google.com/console)
 2. Privacy Policy: Aggiungi URL
-3. Target audience: Seleziona (es. "Fitness")
-4. Content rating questionnaire
-5. Pricing: Seleziona paesi e prezzo
-6. In-App Products: Aggiungi prodotti RevenueCat
+3. Pubblica l'app web e verifica che la risorsa `/account-deletion` sia raggiungibile anche senza installare l'app.
+4. Compila Data safety, inclusi i dettagli sulla cancellazione, e il questionario di classificazione dei contenuti.
+5. Seleziona un pubblico e categorie che rappresentino tutte le attività effettivamente supportate.
+6. Verifica i requisiti correnti sul target API prima della build di rilascio.
+7. Verifica le regole di pagamento applicabili prima di abilitare acquisti o link a checkout esterni.
 
 ### 7.3 Upload AAB
 
@@ -266,8 +235,16 @@ npm run cap:open:ios
    - 2-3 giorni di test
 
 4. Production:
-   - Upload final AAB
-   - Scrivi change log
+   - Upload final AAB solo dopo aver soddisfatto i requisiti API target e privacy correnti.
+   - Scrivi un change log accurato.
+
+## Release blockers verificati (2026-10)
+
+- La configurazione Capacitor è alla versione 5 e lo scaffold Android generato usa `targetSdkVersion = 33`. Google Play richiede API 36 per nuove app e aggiornamenti dal 31 agosto 2026. Aggiornare Capacitor/toolchain Android e testare le modifiche di comportamento prima della submission.
+- L'ambiente disponibile qui usa Node 18; il Playwright installato dichiara Node 20 o superiore. I test browser e la validazione nativa completa restano da eseguire con una toolchain supportata.
+- L'audit npm delle sole dipendenze di produzione rileva 8 advisory Angular (4 high e 4 moderate); pianificare l'aggiornamento coordinato di Angular, Ionic e Capacitor e rieseguire l'audit prima della release.
+- I progetti Android/iOS possono essere generati localmente con Capacitor, ma iOS richiede macOS/Xcode e Android richiede Android Studio/SDK per build, firma e test.
+- Il flusso self-service per la cancellazione account/attività è implementato; definire con consulenza privacy tempi di conservazione delle copie di backup e dei record finanziari prima del lancio.
    - Submit for review
 
 ### 7.4 Attendi approval
@@ -302,7 +279,6 @@ npm run cap:sync
 
 ### 8.3 Monitoraggio
 
-- RevenueCat Dashboard: Monitora entrate
 - Crash Reports: App Store Connect e Play Console
 - Reviews: Rispondi alle recensioni degli utenti
 
@@ -331,12 +307,12 @@ npm run cap:open:android
 # 4. Usa HTTPS in produzione (non HTTP)
 ```
 
-**Problema**: In-app purchase non funziona
+**Problema**: Il checkout non è disponibile
 ```bash
 # Verifica:
-# 1. API key RevenueCat è corretta
-# 2. Prodotti esistono in App Store/Play Store
-# 3. Device/Simulator ha account test configurato
+# Verifica che il backend sia configurato con un provider supportato.
+# I pagamenti sono disattivati finché non viene approvato il modello e
+# verificata la compatibilità con le regole dello store di distribuzione.
 ```
 
 ## Timeline Stimate
@@ -345,7 +321,6 @@ npm run cap:open:android
 - **Capacitor setup**: 1 giorno
 - **iOS configuration**: 2-3 giorni (Certificati)
 - **Android configuration**: 1-2 giorni
-- **RevenueCat setup**: 1 giorno
 - **Testing**: 3-5 giorni
 - **Submission**: 1 giorno
 - **Review & approval**: 3-7 giorni

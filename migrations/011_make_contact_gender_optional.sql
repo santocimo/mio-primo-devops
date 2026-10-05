@@ -1,0 +1,2 @@
+ALTER TABLE visitatori
+  MODIFY sesso CHAR(1) NULL DEFAULT NULL;

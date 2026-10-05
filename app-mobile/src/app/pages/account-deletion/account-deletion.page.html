@@ -1,0 +1,61 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/profile"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ 'accountDeletion.title' | translate }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="page-shell account-deletion-container">
+    <section class="page-hero">
+      <div class="hero-kicker">
+        <ion-icon name="trash-outline"></ion-icon>
+        <span>{{ 'accountDeletion.kicker' | translate }}</span>
+      </div>
+      <h1 class="hero-title">{{ 'accountDeletion.heading' | translate }}</h1>
+      <p class="hero-subtitle">{{ 'accountDeletion.description' | translate }}</p>
+    </section>
+
+    <section class="section-card deletion-warning">
+      <h2 class="section-title">{{ 'accountDeletion.impactTitle' | translate }}</h2>
+      <p>{{ 'accountDeletion.impact' | translate }}</p>
+      <p>{{ 'accountDeletion.retention' | translate }}</p>
+    </section>
+
+    <section class="section-card deletion-form">
+      <ion-input
+        [label]="'accountDeletion.username' | translate"
+        labelPlacement="stacked"
+        autocomplete="username"
+        [(ngModel)]="username"
+        [readonly]="!!user?.username">
+      </ion-input>
+
+      <ion-input
+        [label]="'accountDeletion.password' | translate"
+        labelPlacement="stacked"
+        type="password"
+        autocomplete="current-password"
+        [(ngModel)]="password">
+      </ion-input>
+
+      <ion-input
+        [label]="'accountDeletion.confirmLabel' | translate:{phrase: confirmationPhrase}"
+        labelPlacement="stacked"
+        autocomplete="off"
+        [(ngModel)]="confirmation">
+      </ion-input>
+
+      <ion-button
+        expand="block"
+        color="danger"
+        (click)="requestDeletion()"
+        [disabled]="!canSubmit()">
+        <ion-spinner *ngIf="deleting" name="crescent" slot="start"></ion-spinner>
+        {{ 'accountDeletion.deleteButton' | translate }}
+      </ion-button>
+    </section>
+  </div>
+</ion-content>
