@@ -73,6 +73,7 @@
       </ion-select>
 
       <ion-textarea class="booking-notes" [label]="'booking.notes' | translate" labelPlacement="stacked" [placeholder]="'booking.notesPlaceholder' | translate" rows="3" [(ngModel)]="notes"></ion-textarea>
+      <p class="booking-privacy-hint" role="note">{{ 'booking.notesPrivacyHint' | translate }}</p>
 
       <div class="booking-actions">
         <ion-button expand="block" (click)="book()" [disabled]="!canBook()">

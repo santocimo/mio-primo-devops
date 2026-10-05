@@ -23,6 +23,7 @@ Never commit `.env` to version control. The `.gitignore` file includes `.env`.
 - Regularly backup your database
 - Use prepared statements for all SQL queries (this project uses PDO prepared statements)
 - Enable database authentication
+- Keep the database port private; the provided Docker Compose file binds it to localhost for development access only. Do not publish it on a public interface.
 
 ### 3. Password Management
 
