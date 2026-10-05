@@ -144,6 +144,10 @@ export class AppComponent implements OnInit, OnDestroy {
     return role.includes('ADMIN') || role.includes('SUPER') || role.includes('OPERATORE');
   }
 
+  get trialDaysRemaining(): number {
+    return this.authService.getTrialDaysRemaining();
+  }
+
   async logout(): Promise<void> {
     await this.menuCtrl.close();
     this.authService.logout();

@@ -1,14 +1,17 @@
 .login-content {
-  display: flex;
-  align-items: center;
-  justify-content: center;
   --background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+
+  &::part(scroll) {
+    display: flex;
+  }
 }
 
 .login-container {
   width: 100%;
-  max-width: 400px;
+  max-width: 440px;
+  box-sizing: border-box;
   padding: 20px;
+  margin: auto;
 }
 
 .logo-section {

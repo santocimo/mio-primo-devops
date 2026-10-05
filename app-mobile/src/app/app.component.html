@@ -1,4 +1,16 @@
 <ion-app>
+  <ng-container *ngIf="authState$ | async as state">
+    <div
+      *ngIf="state.isLoggedIn && state.subscriptionStatus === 'trial'"
+      class="trial-indicator"
+      role="status">
+      <ion-icon name="time-outline" aria-hidden="true"></ion-icon>
+      <span *ngIf="trialDaysRemaining === 1">{{ 'trial.oneDayRemaining' | translate }}</span>
+      <span *ngIf="trialDaysRemaining !== 1">{{ 'trial.daysRemaining' | translate: { days: trialDaysRemaining } }}</span>
+      <button type="button" (click)="navigateTo('/paywall')">{{ 'trial.choosePlan' | translate }}</button>
+    </div>
+  </ng-container>
+
   <!-- Side menu (visible only when logged in) -->
   <ion-menu contentId="main-content" *ngIf="(authState$ | async)?.isLoggedIn" class="app-menu">
     <ion-header>
@@ -117,5 +129,8 @@
     </ion-content>
   </ion-menu>
 
-  <ion-router-outlet id="main-content"></ion-router-outlet>
+  <ion-router-outlet
+    id="main-content"
+    [class.trial-offset]="(authState$ | async)?.isLoggedIn && (authState$ | async)?.subscriptionStatus === 'trial'">
+  </ion-router-outlet>
 </ion-app>
