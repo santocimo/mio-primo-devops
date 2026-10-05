@@ -3,7 +3,6 @@ import { Router } from '@angular/router';
 import { PaymentService, Product } from '../../services/payment.service';
 import { AuthService } from '../../services/auth.service';
 import { SubscriptionStatus } from '../../models/auth.model';
-import { ToastController, LoadingController } from '@ionic/angular';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
@@ -24,8 +23,6 @@ export class PaywallPage implements OnInit, OnDestroy {
     private paymentService: PaymentService,
     private authService: AuthService,
     private router: Router,
-    private toastController: ToastController,
-    private loadingController: LoadingController,
     private language: LanguageService
   ) {}
 
@@ -67,41 +64,5 @@ export class PaywallPage implements OnInit, OnDestroy {
     this.router.navigate(['/subscribe'], {
       state: { planId: productId, planLabel, planPrice },
     });
-  }
-
-  async restorePurchases(): Promise<void> {
-    const loader = await this.loadingController.create({
-      message: this.language.instant('paywall.restoreLoading'),
-    });
-    await loader.present();
-
-    this.paymentService
-      .restorePurchases()
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: async (result) => {
-          await loader.dismiss();
-          await this.showToast(this.language.instant('paywall.restoreSuccess'), 'success');
-          this.router.navigate(['/contacts']);
-        },
-        error: async (error) => {
-          await loader.dismiss();
-          console.error('Errore:', error);
-          await this.showToast(this.language.instant('paywall.restoreError'), 'danger');
-        },
-      });
-  }
-
-  private async showToast(
-    message: string,
-    color: 'success' | 'danger' | 'warning'
-  ): Promise<void> {
-    const toast = await this.toastController.create({
-      message,
-      duration: 2000,
-      color,
-      position: 'bottom',
-    });
-    await toast.present();
   }
 }

@@ -120,36 +120,6 @@ export class PaymentService {
   }
 
   /**
-   * Ripristina gli acquisti precedenti
-   */
-  restorePurchases(): Observable<PurchaseResult> {
-    return new Observable((observer) => {
-      // In produzione, usare RevenueCat per ripristinare acquisti
-      this.authService.updateSubscriptionStatus(SubscriptionStatus.ACTIVE);
-      observer.next({
-        success: true,
-        message: 'Acquisti ripristinati',
-      });
-      observer.complete();
-    });
-  }
-
-  /**
-   * Annulla la sottoscrizione
-   */
-  cancelSubscription(): Observable<PurchaseResult> {
-    return new Observable((observer) => {
-      // In produzione, comunicare il cancellamento a RevenueCat/Stripe
-      this.authService.updateSubscriptionStatus(SubscriptionStatus.NONE);
-      observer.next({
-        success: true,
-        message: 'Sottoscrizione annullata',
-      });
-      observer.complete();
-    });
-  }
-
-  /**
    * Verifica se l'utente ha un abbonamento attivo
    */
   hasActiveSubscription(): Observable<boolean> {
