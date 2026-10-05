@@ -1,6 +1,6 @@
 # Session Handoff
 
-Ultimo aggiornamento: 2026-10-04
+Ultimo aggiornamento: 2026-10-05
 
 ## Stato consegna
 - Branch di lavoro (pulito, basato su origin/master): `work/clean-app-2026-10-04`
@@ -18,18 +18,24 @@ Ultimo aggiornamento: 2026-10-04
   Prezzi provvisori: 4,99 EUR/mese, 49,99 EUR/anno (da decidere).
 - Le API usano token bearer firmati HMAC con `APP_TOKEN_SECRET` e rileggono ruolo,
   palestra e abbonamento dal database ad ogni richiesta. Token precedenti richiedono un nuovo login.
+- Trial scaduto, token alterato/scaduto o richiesta non autenticata non accedono alle API.
+- Rimossi i fallback di login statici e la falsa azione "ripristina acquisti".
+  La pagina piani ora specifica che PayPal esegue pagamenti singoli senza rinnovo automatico.
 
 ## Da fare alla prossima sessione
-1. Mettere in `.env`: APP_TOKEN_SECRET (casuale, almeno 32 caratteri), ADMIN_INITIAL_PASSWORD
-   (almeno 12 caratteri per nuove installazioni), PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET,
-   PAYPAL_MODE=sandbox (opz. PAYPAL_PRICE_MONTHLY/YEARLY, PAYPAL_CURRENCY).
-2. Ricostruire il web: `docker compose -p santo --env-file ~/.env up -d --build --no-deps web-automatico`
-3. Provare nel browser (http://localhost:4200, `npx ng serve --host 0.0.0.0 --port 4200` in app-mobile; `npm ci --ignore-scripts`):
-   registrazione -> trial; scadenza (UPDATE users SET trial_start_date = NOW() - INTERVAL 8 DAY) -> paywall; pagamento sandbox -> active.
-4. Decidere prezzo definitivo.
+1. Configurare PayPal sandbox (`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE=sandbox`)
+   e provare acquisto/capture end-to-end.
+2. Decidere i prezzi definitivi e, se si vuole checkout con carta, configurare un provider hosted
+   (consigliato Stripe Checkout) senza raccogliere dati carta nell'app.
+3. Cambiare in ogni ambiente esistente le password amministrative e impostare APP_TOKEN_SECRET
+   nello store segreti del deployment; la chiave locale di sviluppo non va riutilizzata in produzione.
+4. Eseguire i test browser con Node.js 20+ e credenziali dedicate
+   (`E2E_ADMIN_USERNAME`, `E2E_ADMIN_PASSWORD`).
 
 ## Limiti noti
 - Pagamento singolo senza rinnovo automatico; manca webhook PayPal; redirect solo web (no deep link nativo).
 - Prima del deploy pubblico, cambiare le credenziali predefinite di ogni account amministratore gia' esistente.
+- I test PHPUnit e la build mobile passano; i test Playwright non sono stati eseguiti qui perche'
+  l'ambiente disponibile usa Node 18 (richiesto Node 20+).
 - Operatori esistenti backfillati in trial dal 2026-10-04 (scadono ~2026-10-11).
-- Node 18 (Playwright richiede >=20); node-sass richiede `--ignore-scripts`.
+- Per installare le dipendenze legacy di Ionic usare `npm ci --ignore-scripts` (node-sass richiede Python 2).
