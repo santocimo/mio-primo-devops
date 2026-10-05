@@ -15,6 +15,7 @@ if (!verify_bearer_token()) {
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit;
 }
+require_active_api_subscription();
 
 $pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];

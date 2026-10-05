@@ -40,6 +40,12 @@
     </div>
 
     <div class="pricing-section">
+      <div *ngIf="loadingPlans" class="plans-loading">
+        <ion-spinner name="crescent"></ion-spinner>
+      </div>
+      <p *ngIf="plansUnavailable" class="plans-error" role="alert">
+        {{ 'paywall.plansError' | translate }}
+      </p>
       <div
         *ngFor="let product of products"
         class="pricing-card"
@@ -58,7 +64,7 @@
         <ion-button
           expand="block"
           (click)="onPurchase(product.id); $event.stopPropagation()"
-          [disabled]="purchaseInProgress"
+          [disabled]="purchaseInProgress || loadingPlans || plansUnavailable || (!providers.paypal && !providers.stripe)"
           class="purchase-button"
         >
           {{ 'paywall.subscribeNow' | translate }}

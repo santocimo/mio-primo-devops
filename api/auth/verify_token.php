@@ -10,10 +10,6 @@ require_once __DIR__ . '/../../inc/subscription.php';
 function set_authenticated_user(array $user): bool {
     $role = strtoupper((string)$user['role']);
     $subscription = compute_subscription($user);
-    if ($subscription['status'] !== 'active' && $subscription['status'] !== 'trial') {
-        $_SESSION['api_auth_error'] = 'subscription_expired';
-        return false;
-    }
 
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['username'] = (string)$user['username'];
@@ -32,8 +28,17 @@ function set_authenticated_user(array $user): bool {
         'gym_id' => isset($user['gym_id']) ? (int)$user['gym_id'] : null,
     ];
     $_SESSION['authenticated_subscription'] = $subscription;
-    unset($_SESSION['api_auth_error']);
     return true;
+}
+
+function require_active_api_subscription(): void {
+    $status = $_SESSION['authenticated_subscription']['status'] ?? 'expired';
+    if ($status !== 'active' && $status !== 'trial') {
+        http_response_code(402);
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'Subscription required', 'subscription_status' => $status]);
+        exit;
+    }
 }
 
 function verify_bearer_token(): bool {

@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { finalize, map } from 'rxjs/operators';
+import { Observable, throwError } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '@env';
-import { SubscriptionStatus } from '../models/auth.model';
+import { SubscriptionUpdate } from '../models/auth.model';
 import { AuthService } from './auth.service';
+import { LanguageService } from '../i18n/language.service';
 
 export interface Product {
   id: string;
@@ -15,118 +16,128 @@ export interface Product {
   duration: 'monthly' | 'yearly';
 }
 
+export interface CheckoutConfig {
+  products: Product[];
+  providers: {
+    paypal: boolean;
+    stripe: boolean;
+  };
+}
+
 export interface PurchaseResult {
   success: boolean;
   message: string;
   transactionId?: string;
   expiryDate?: string;
+  subscription?: SubscriptionUpdate;
+}
+
+interface ServerPlan {
+  id: string;
+  duration: 'monthly' | 'yearly';
+  amount_minor: number;
+  currency: string;
+}
+
+interface PlansResponse {
+  success: boolean;
+  currency: string;
+  providers: CheckoutConfig['providers'];
+  plans: ServerPlan[];
 }
 
 @Injectable({
   providedIn: 'root',
 })
 export class PaymentService {
-  private products$ = new BehaviorSubject<Product[]>([]);
-  private purchaseInProgress$ = new BehaviorSubject<boolean>(false);
+  constructor(
+    private authService: AuthService,
+    private http: HttpClient,
+    private language: LanguageService
+  ) {}
 
-  constructor(private authService: AuthService, private http: HttpClient) {
-    this.initializePayments();
-  }
-
-  /**
-   * Inizializza il sistema di pagamento
-   * In produzione, collegherebbe RevenueCat
-   */
-  private initializePayments(): void {
-    // Mock products - In production, questi verrebbero da RevenueCat
-    const mockProducts: Product[] = [
-      {
-        id: 'businessregistry_monthly',
-        name: 'Piano Mensile',
-        description: 'Accesso completo, rinnovo mensile',
-        price: '4,99',
-        currency: '€',
-        duration: 'monthly',
-      },
-      {
-        id: 'businessregistry_yearly',
-        name: 'Piano Annuale',
-        description: 'Accesso completo per 1 anno — risparmi il 17%',
-        price: '49,99',
-        currency: '€',
-        duration: 'yearly',
-      },
-    ];
-
-    this.products$.next(mockProducts);
-  }
-
-  /**
-   * Ottiene i prodotti disponibili per l'acquisto
-   */
-  getProducts(): Observable<Product[]> {
-    return this.products$.asObservable();
-  }
-
-  /**
-   * Avvia il pagamento PayPal: crea l'ordine sul server e reindirizza all'approvazione.
-   */
-  startPayPalCheckout(productId: string): Observable<void> {
-    const plan = productId.endsWith('_yearly') ? 'yearly' : 'monthly';
-    const returnUrl = `${window.location.origin}/subscribe`;
-    this.purchaseInProgress$.next(true);
+  getCheckoutConfig(): Observable<CheckoutConfig> {
     return this.http
-      .post<{ approve_url: string }>(`${environment.apiUrl}/api/payments/paypal.php`, {
-        action: 'create',
-        plan,
-        return_url: returnUrl,
-        cancel_url: `${returnUrl}?cancelled=1`,
-      })
+      .get<PlansResponse>(`${environment.apiUrl}/api/payments/plans.php`)
       .pipe(
-        map((res) => {
-          window.location.href = res.approve_url;
-        }),
-        finalize(() => this.purchaseInProgress$.next(false))
-      );
-  }
-
-  /**
-   * Conferma il pagamento PayPal al ritorno dall'approvazione.
-   */
-  capturePayPalOrder(orderId: string): Observable<PurchaseResult> {
-    return this.http
-      .post<{ transaction_id?: string; subscription?: { expires_at?: string } }>(
-        `${environment.apiUrl}/api/payments/paypal.php`,
-        { action: 'capture', order_id: orderId }
-      )
-      .pipe(
-        map((res) => {
-          this.authService.updateSubscriptionStatus(SubscriptionStatus.ACTIVE);
+        map((response) => {
+          if (!response.success || !Array.isArray(response.plans)) {
+            throw new Error('Invalid subscription plans response');
+          }
+          const locale = this.language.currentLanguage === 'en' ? 'en-IE' : 'it-IT';
           return {
-            success: true,
-            message: 'Abbonamento attivato con successo',
-            transactionId: res.transaction_id,
-            expiryDate: res.subscription?.expires_at,
+            providers: response.providers,
+            products: response.plans.map((plan) => ({
+              id: plan.id,
+              name: this.language.instant(plan.duration === 'yearly' ? 'paywall.yearlyPlan' : 'paywall.monthlyPlan'),
+              description: this.language.instant(plan.duration === 'yearly' ? 'paywall.yearlyDescription' : 'paywall.monthlyDescription'),
+              price: new Intl.NumberFormat(locale, {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }).format(plan.amount_minor / 100),
+              currency: new Intl.NumberFormat(locale, {
+                style: 'currency',
+                currency: plan.currency,
+              }).formatToParts(0).find((part) => part.type === 'currency')?.value ?? plan.currency,
+              duration: plan.duration,
+            })),
           };
         })
       );
   }
 
-  /**
-   * Controlla se un acquisto è in corso
-   */
-  isPurchaseInProgress(): Observable<boolean> {
-    return this.purchaseInProgress$.asObservable();
+  startPayPalCheckout(planId: string): Observable<void> {
+    return this.startCheckout('paypal', planId, 'approve_url');
   }
 
-  /**
-   * Verifica se l'utente ha un abbonamento attivo
-   */
-  hasActiveSubscription(): Observable<boolean> {
-    return new Observable((observer) => {
-      this.authService.getSubscriptionStatus().subscribe((status) => {
-        observer.next(status === SubscriptionStatus.ACTIVE);
-      });
-    });
+  startStripeCheckout(planId: string): Observable<void> {
+    return this.startCheckout('stripe', planId, 'checkout_url');
+  }
+
+  private startCheckout(
+    provider: 'paypal' | 'stripe',
+    planId: string,
+    urlKey: 'approve_url' | 'checkout_url'
+  ): Observable<void> {
+    return this.http
+      .post<Record<string, string>>(`${environment.apiUrl}/api/payments/${provider}.php`, {
+        action: 'create',
+        plan: planId,
+      })
+      .pipe(
+        map((response) => {
+          const url = response[urlKey];
+          if (!url) {
+            throw new Error(`${provider} checkout URL is missing`);
+          }
+          window.location.assign(url);
+        })
+      );
+  }
+
+  capturePayPalOrder(orderId: string): Observable<PurchaseResult> {
+    return this.http
+      .post<PurchaseResult>(`${environment.apiUrl}/api/payments/paypal.php`, {
+        action: 'capture',
+        order_id: orderId,
+      })
+      .pipe(map((result) => this.applyPurchaseResult(result)));
+  }
+
+  confirmStripeCheckout(sessionId: string): Observable<PurchaseResult> {
+    return this.http
+      .post<PurchaseResult>(`${environment.apiUrl}/api/payments/stripe.php`, {
+        action: 'confirm',
+        session_id: sessionId,
+      })
+      .pipe(map((result) => this.applyPurchaseResult(result)));
+  }
+
+  private applyPurchaseResult(result: PurchaseResult): PurchaseResult {
+    if (!result.success || !result.subscription) {
+      throw new Error('Payment response did not include the activated subscription');
+    }
+    this.authService.updateSubscription(result.subscription);
+    return result;
   }
 }

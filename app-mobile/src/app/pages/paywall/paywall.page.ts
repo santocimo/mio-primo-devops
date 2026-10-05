@@ -1,6 +1,6 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
-import { PaymentService, Product } from '../../services/payment.service';
+import { CheckoutConfig, PaymentService, Product } from '../../services/payment.service';
 import { AuthService } from '../../services/auth.service';
 import { SubscriptionStatus } from '../../models/auth.model';
 import { Subject } from 'rxjs';
@@ -17,6 +17,9 @@ export class PaywallPage implements OnInit, OnDestroy {
   selectedProductId: string | null = null;
   purchaseInProgress = false;
   isTrialExpired = false;
+  loadingPlans = true;
+  plansUnavailable = false;
+  providers: CheckoutConfig['providers'] = { paypal: false, stripe: false };
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -44,14 +47,22 @@ export class PaywallPage implements OnInit, OnDestroy {
 
   private loadProducts(): void {
     this.paymentService
-      .getProducts()
+      .getCheckoutConfig()
       .pipe(takeUntil(this.destroy$))
-      .subscribe((products) => {
-        this.products = products;
+      .subscribe({
+        next: (config) => {
+          this.products = config.products;
+          this.providers = config.providers;
+          this.loadingPlans = false;
         // Seleziona il piano annuale per default
-        if (products && products.length > 1) {
-          this.selectedProductId = products[1].id;
-        }
+          if (this.products.length > 1) {
+            this.selectedProductId = this.products[1].id;
+          }
+        },
+        error: () => {
+          this.loadingPlans = false;
+          this.plansUnavailable = true;
+        },
       });
   }
 
@@ -62,7 +73,7 @@ export class PaywallPage implements OnInit, OnDestroy {
     const period = product ? this.language.instant(product.duration === 'monthly' ? 'paywall.month' : 'paywall.year') : '';
     const planPrice = product ? `${product.price} ${product.currency}/${period}` : '';
     this.router.navigate(['/subscribe'], {
-      state: { planId: productId, planLabel, planPrice },
+      state: { planId: productId, planLabel, planPrice, providers: this.providers },
     });
   }
 }

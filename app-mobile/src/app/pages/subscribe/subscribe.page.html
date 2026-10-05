@@ -18,12 +18,28 @@
     <div class="plan-badge">{{ planPrice }}</div>
 
     <ion-button
+      *ngIf="providers.stripe"
       expand="block"
       class="btn-activate"
-      (click)="confirmPayment()"
-    >
+      (click)="confirmPayment('stripe')"
+      [disabled]="processing">
+      <ion-icon name="card-outline" slot="start"></ion-icon>
+      {{ 'subscribe.payWithCard' | translate }}
+    </ion-button>
+
+    <ion-button
+      *ngIf="providers.paypal"
+      expand="block"
+      class="btn-activate"
+      (click)="confirmPayment('paypal')"
+      [disabled]="processing">
+      <ion-icon name="logo-paypal" slot="start"></ion-icon>
       {{ 'subscribe.activate' | translate }}
     </ion-button>
+
+    <p *ngIf="!providers.stripe && !providers.paypal" class="payment-unavailable" role="status">
+      {{ 'subscribe.providersUnavailable' | translate }}
+    </p>
 
     <ion-button
       fill="clear"

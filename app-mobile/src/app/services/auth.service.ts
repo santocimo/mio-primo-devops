@@ -3,7 +3,7 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { HttpClient } from '@angular/common/http';
 import { map } from 'rxjs/operators';
 import { environment } from '@env';
-import { AuthState, LoginRequest, LoginResponse, User, SubscriptionStatus, ServerSubscription } from '../models/auth.model';
+import { AuthState, LoginRequest, LoginResponse, User, SubscriptionStatus, ServerSubscription, SubscriptionUpdate } from '../models/auth.model';
 
 @Injectable({
   providedIn: 'root',
@@ -154,7 +154,7 @@ export class AuthService {
   /**
    * Converte lo stato abbonamento restituito dal server nello stato client
    */
-  mapServerSubscription(sub: ServerSubscription): { subscriptionStatus: SubscriptionStatus; trialStartDate?: string } {
+  mapServerSubscription(sub: Pick<ServerSubscription, 'status'> & { trial_start_date?: string | null }): { subscriptionStatus: SubscriptionStatus; trialStartDate?: string } {
     const map: Record<ServerSubscription['status'], SubscriptionStatus> = {
       trial: SubscriptionStatus.TRIAL,
       active: SubscriptionStatus.ACTIVE,
@@ -228,6 +228,16 @@ export class AuthService {
   updateSubscriptionStatus(status: SubscriptionStatus): void {
     const state = this.authState$.getValue();
     state.subscriptionStatus = status;
+    this.authState$.next(state);
+    localStorage.setItem('authState', JSON.stringify(state));
+  }
+
+  updateSubscription(subscription: SubscriptionUpdate): void {
+    const state = {
+      ...this.authState$.getValue(),
+      subscriptionStatus: this.mapServerSubscription(subscription).subscriptionStatus,
+      trialStartDate: subscription.trial_start_date ?? undefined,
+    };
     this.authState$.next(state);
     localStorage.setItem('authState', JSON.stringify(state));
   }

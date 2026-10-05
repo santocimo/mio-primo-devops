@@ -21,19 +21,30 @@ Ultimo aggiornamento: 2026-10-05
 - Trial scaduto, token alterato/scaduto o richiesta non autenticata non accedono alle API.
 - Rimossi i fallback di login statici e la falsa azione "ripristina acquisti".
   La pagina piani ora specifica che PayPal esegue pagamenti singoli senza rinnovo automatico.
+- In lavorazione: checkout Stripe ospitato e PayPal con piani server-side condivisi,
+  prezzi singoli senza rinnovo, ledger idempotente e webhook Stripe firmato.
+  Nuova configurazione: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`,
+  `APP_FRONTEND_URL`, `PLAN_MONTHLY_PRICE`, `PLAN_YEARLY_PRICE`, `PAYMENT_CURRENCY`.
+  Stripe pubblica il webhook su `/api/payments/stripe_webhook.php`.
+- Verifiche già superate dopo le modifiche pagamenti: build Angular production,
+  lint sintassi PHP sugli endpoint/helper modificati, PHPUnit (8 test / 17 asserzioni),
+  `docker compose config --quiet` e `git diff --check`.
+- Nessun provider configurato né pagamento sandbox eseguito: nessuna transazione live
+  è stata avviata. I prezzi restano provvisori. Le modifiche non sono ancora committate.
 
 ## Da fare alla prossima sessione
-1. Configurare PayPal sandbox (`PAYPAL_CLIENT_ID`, `PAYPAL_CLIENT_SECRET`, `PAYPAL_MODE=sandbox`)
-   e provare acquisto/capture end-to-end.
-2. Decidere i prezzi definitivi e, se si vuole checkout con carta, configurare un provider hosted
-   (consigliato Stripe Checkout) senza raccogliere dati carta nell'app.
+1. Configurare Stripe test mode e PayPal sandbox, avviare backend/frontend puliti,
+   verificare piani e flussi provider end-to-end; testare anche webhook duplicato/firma errata.
+2. Decidere i prezzi definitivi prima del lancio e provare su dispositivo il redirect
+   mobile (attualmente il callback usa route web; manca deep link nativo).
 3. Cambiare in ogni ambiente esistente le password amministrative e impostare APP_TOKEN_SECRET
    nello store segreti del deployment; la chiave locale di sviluppo non va riutilizzata in produzione.
 4. Eseguire i test browser con Node.js 20+ e credenziali dedicate
    (`E2E_ADMIN_USERNAME`, `E2E_ADMIN_PASSWORD`).
 
 ## Limiti noti
-- Pagamento singolo senza rinnovo automatico; manca webhook PayPal; redirect solo web (no deep link nativo).
+- Pagamento singolo senza rinnovo automatico; Stripe ha un webhook firmato, PayPal al momento no;
+  redirect solo web (no deep link nativo). I provider richiedono credenziali e test sandbox prima del rilascio.
 - Prima del deploy pubblico, cambiare le credenziali predefinite di ogni account amministratore gia' esistente.
 - I test PHPUnit e la build mobile passano; i test Playwright non sono stati eseguiti qui perche'
   l'ambiente disponibile usa Node 18 (richiesto Node 20+).

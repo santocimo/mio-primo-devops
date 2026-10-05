@@ -14,6 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 if (!verify_bearer_token()) {
     http_response_code(401); echo json_encode(['error' => 'Unauthorized']); exit;
 }
+require_active_api_subscription();
 
 // Admin only
 $role = strtoupper($_SESSION['user_role'] ?? '');

@@ -13,6 +13,7 @@ require_once __DIR__ . '/auth/verify_token.php';
 if (!verify_bearer_token()) {
     http_response_code(401); echo json_encode(['success' => false, 'message' => 'Unauthorized']); exit;
 }
+require_active_api_subscription();
 
 $role = strtoupper($_SESSION['user_role'] ?? '');
 if (strpos($role, 'ADMIN') === false && strpos($role, 'SUPER') === false && strpos($role, 'OPERATORE') === false) {

@@ -45,6 +45,12 @@ Set `ADMIN_INITIAL_PASSWORD` to a unique password of at least 12 characters befo
 
 Generate the signing key with `openssl rand -hex 32`, store it only in `.env`, and keep it unchanged across deployments. Existing mobile sessions issued before signed tokens are enabled must sign in again. Existing administrator passwords are not reset automatically; change any previously used default password before exposing the service publicly.
 
+### One-time payments
+
+The monthly and yearly plans are single purchases with no automatic renewal. The current amounts (`4.99` and `49.99` EUR) are provisional; approve final prices before launch. Configure PayPal sandbox credentials to test PayPal. Hosted Stripe Checkout is offered only after both `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are configured; card details are handled by Stripe, not this application.
+
+Configure the public frontend URL with `APP_FRONTEND_URL`, then register Stripe's webhook endpoint at `https://<api-host>/api/payments/stripe_webhook.php` for `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Keep provider secrets out of source control and use test credentials until an end-to-end sandbox purchase and webhook have been verified. The `subscription_payments` ledger prevents duplicate webhook/callback delivery from granting the same payment twice.
+
 ## Session Checkpoint (Fast Resume)
 
 Use the script below at the end of each work session to save progress without staging runtime files from the home folder.
