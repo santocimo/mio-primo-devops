@@ -41,11 +41,7 @@ The application will be available at:
 - **Container Manager (Portainer)**: https://localhost:9443
 
 #### 5. Access Application
-Login with default credentials:
-- Username: `admin`
-- Password: `admin123`
-
-⚠️ **CHANGE THESE IMMEDIATELY!**
+Set a unique `ADMIN_INITIAL_PASSWORD` (at least 12 characters) in `.env` before first startup. Use that password with username `admin`. Existing administrator passwords are not changed automatically.
 
 ---
 
@@ -241,8 +237,7 @@ docker-compose exec -T database-santo mysql -u root -pPASSWORD mio_database < ba
 ## User Management
 
 ### Default Accounts
-- **Admin User**: admin / admin123 (change immediately!)
-- **Operator User**: op / op123 (change immediately!)
+- **Admin User**: username `admin`, password supplied through `ADMIN_INITIAL_PASSWORD` at first startup.
 
 ### Changing Passwords
 

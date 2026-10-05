@@ -14,8 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../../inc/security.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../../inc/subscription.php';
-
-$demoActive = ['status' => 'active', 'trial_start_date' => null, 'trial_ends_at' => null, 'trial_days_remaining' => 0, 'expires_at' => null, 'plan' => null];
+require_once __DIR__ . '/../../inc/api_token.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
@@ -41,22 +40,12 @@ try {
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($user && password_verify($password, $user['password_hash'])) {
-        // Valid login
+        $token = create_api_token($user);
+        session_regenerate_id(true);
         $_SESSION['admin_logged'] = true;
         $_SESSION['user_id'] = $user['id'];
         $_SESSION['user_role'] = strtoupper($user['role']);
-        if ($user['gym_id']) {
-            $_SESSION['gym_id'] = (int)$user['gym_id'];
-        }
-        
-        // Generate simple token
-        $token = base64_encode(json_encode([
-            'user_id'   => $user['id'],
-            'username'  => $user['username'],
-            'role'      => strtoupper($user['role']),
-            'gym_id'    => (int)($user['gym_id'] ?? 1),
-            'timestamp' => time()
-        ]));
+        $_SESSION['gym_id'] = $user['gym_id'] !== null ? (int)$user['gym_id'] : null;
         
         echo json_encode([
             'success' => true,
@@ -74,69 +63,10 @@ try {
         ]);
         exit;
     }
-} catch (Exception $e) {
-    // Fall through to static credentials
-}
-
-// Fallback static credentials
-if ($username === 'admin' && $password === 'admin123') {
-    $_SESSION['admin_logged'] = true;
-    $_SESSION['user_id'] = 0;
-    $_SESSION['user_role'] = 'ADMIN';
-    
-    $token = base64_encode(json_encode([
-        'user_id'   => 0,
-        'username'  => 'admin',
-        'role'      => 'ADMIN',
-        'gym_id'    => 1,
-        'timestamp' => time()
-    ]));
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Login successful',
-        'user' => [
-            'id' => 0,
-            'name' => 'Administrator',
-            'email' => 'admin@system.local',
-            'username' => 'admin',
-            'role' => 'admin',
-            'gym_id' => 1
-        ],
-        'token' => $token,
-        'subscription' => $demoActive
-    ]);
-    exit;
-}
-
-if (($username === 'op' || $username === 'ope') && $password === 'op123') {
-    $_SESSION['admin_logged'] = true;
-    $_SESSION['user_id'] = -1;
-    $_SESSION['user_role'] = 'OPERATORE';
-    $_SESSION['gym_id'] = 1;
-
-    $token = base64_encode(json_encode([
-        'user_id'   => -1,
-        'username'  => $username,
-        'role'      => 'OPERATORE',
-        'gym_id'    => 1,
-        'timestamp' => time()
-    ]));
-
-    echo json_encode([
-        'success' => true,
-        'message' => 'Login successful',
-        'user' => [
-            'id' => -1,
-            'name' => $username === 'ope' ? 'Ope Rossi' : 'Operator Demo',
-            'email' => $username === 'ope' ? 'ope@fit.local' : 'operator@system.local',
-            'username' => $username,
-            'role' => 'operatore',
-            'gym_id' => 1
-        ],
-        'token' => $token,
-        'subscription' => $demoActive
-    ]);
+} catch (Throwable $e) {
+    error_log('Login failed: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Unable to authenticate']);
     exit;
 }
 

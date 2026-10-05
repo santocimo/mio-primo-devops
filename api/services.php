@@ -17,19 +17,10 @@ require_once __DIR__ . '/auth/verify_token.php';
 
 // Accetta sia sessione PHP (web) che Bearer token (app mobile).
 // Il Bearer token ha priorita assoluta, anche se la sessione PHP precedente e' stale.
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-if (preg_match('/^Bearer\s+/i', (string)$authHeader)) {
-    if (!verify_bearer_token()) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-        exit;
-    }
-} elseif (!isset($_SESSION['admin_logged'])) {
-    if (!verify_bearer_token()) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-        exit;
-    }
+if (!verify_bearer_token()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
 $pdo = getPDO();

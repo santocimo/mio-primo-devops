@@ -73,7 +73,7 @@ $userId = SessionManager::get('user_id');
 
 #### Old Way (Inline Login Logic)
 ```php
-if ($u === 'admin' && $p === 'admin123') {
+if ($u === '<legacy-demo-user>' && $p === '<legacy-demo-password>') {
     $_SESSION['admin_logged'] = true;
 }
 ```
@@ -256,7 +256,7 @@ Old:
 $u = $_POST['username'] ?? '';
 $p = $_POST['password'] ?? '';
 
-if ($u === 'admin' && $p === 'admin123') {
+if ($u === '<legacy-demo-user>' && $p === '<legacy-demo-password>') {
     $_SESSION['admin_logged'] = true;
 }
 ```

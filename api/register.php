@@ -19,6 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/../inc/validation.php';
 require_once __DIR__ . '/../inc/subscription.php';
+require_once __DIR__ . '/../inc/api_token.php';
 
 $data = json_decode(file_get_contents('php://input'), true);
 
@@ -109,6 +110,7 @@ try {
     }
 
     $pdo->beginTransaction();
+    $token = null;
 
     // 1. Crea lo slug univoco per la struttura
     $base_slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $gym_name));
@@ -146,18 +148,16 @@ try {
 
     $subRow = $pdo->prepare("SELECT role, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE id = ?");
     $subRow->execute([$user_id]);
-    $subscription = compute_subscription($subRow->fetch(PDO::FETCH_ASSOC) ?: []);
+    $user = $subRow->fetch(PDO::FETCH_ASSOC) ?: [];
+    $subscription = compute_subscription($user);
+    $token = create_api_token([
+        'id' => $user_id,
+        'username' => $username,
+        'role' => 'OPERATORE',
+        'gym_id' => $gym_id,
+    ]);
 
     $pdo->commit();
-
-    // 4. Genera token per auto-login
-    $token = base64_encode(json_encode([
-        'user_id'   => $user_id,
-        'username'  => $username,
-        'role'      => 'OPERATORE',
-        'gym_id'    => $gym_id,
-        'timestamp' => time()
-    ]));
 
     echo json_encode([
         'success' => true,
@@ -174,8 +174,9 @@ try {
         'subscription' => $subscription
     ]);
 
-} catch (Exception $e) {
+} catch (Throwable $e) {
     if ($pdo->inTransaction()) $pdo->rollBack();
+    error_log('Registration failed: ' . $e->getMessage());
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Errore del server']);
 }

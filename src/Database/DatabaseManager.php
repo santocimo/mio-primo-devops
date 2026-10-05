@@ -187,19 +187,24 @@ class DatabaseManager {
         $stmt = $this->pdo->prepare("SELECT COUNT(*) FROM users WHERE username = ? LIMIT 1");
         $stmt->execute(['admin']);
         if ((int)$stmt->fetchColumn() === 0) {
-            $adminPasswordHash = password_hash('admin123', PASSWORD_DEFAULT);
-            $insert = $this->pdo->prepare(
-                "INSERT INTO users (name, email, username, password_hash, role, gym_id)
-                 VALUES (?, ?, ?, ?, ?, ?)"
-            );
-            $insert->execute([
-                'Administrator',
-                'admin@system.local',
-                'admin',
-                $adminPasswordHash,
-                'ADMIN',
-                1,
-            ]);
+            $initialPassword = getenv('ADMIN_INITIAL_PASSWORD') ?: '';
+            if (strlen($initialPassword) < 12) {
+                Logger::getInstance()->warning('Administrator not provisioned: set ADMIN_INITIAL_PASSWORD to at least 12 characters');
+            } else {
+                $adminPasswordHash = password_hash($initialPassword, PASSWORD_DEFAULT);
+                $insert = $this->pdo->prepare(
+                    "INSERT INTO users (name, email, username, password_hash, role, gym_id)
+                     VALUES (?, ?, ?, ?, ?, ?)"
+                );
+                $insert->execute([
+                    'Administrator',
+                    'admin@system.local',
+                    'admin',
+                    $adminPasswordHash,
+                    'ADMIN',
+                    1,
+                ]);
+            }
         } else {
             $this->pdo->prepare(
                 "UPDATE users SET name = COALESCE(NULLIF(name, ''), ?), email = COALESCE(NULLIF(email, ''), ?) WHERE username = ?"

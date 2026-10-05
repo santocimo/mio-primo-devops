@@ -140,7 +140,7 @@ $pdo = getPDO();
 cp .env.example .env
 docker-compose up -d
 # Visit http://localhost:8081
-# Login: admin / admin123 (change immediately!)
+# Login: username admin and the password configured with ADMIN_INITIAL_PASSWORD on first setup.
 ```
 
 ### Run Tests

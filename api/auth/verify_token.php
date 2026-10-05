@@ -1,79 +1,126 @@
 <?php
 /**
- * Verifica il token Bearer inviato dall'app mobile.
- * Se valido, imposta le variabili di sessione necessarie alle API.
- * Restituisce true se autenticato, false altrimenti.
+ * Validates mobile bearer tokens and refreshes authorization from the database.
  */
-function verify_bearer_token(): bool {
-    $headers = getallheaders();
-    $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+require_once __DIR__ . '/../../db.php';
+require_once __DIR__ . '/../../inc/security.php';
+require_once __DIR__ . '/../../inc/api_token.php';
+require_once __DIR__ . '/../../inc/subscription.php';
 
-    if (!preg_match('/^Bearer\s+(.+)$/i', $auth, $matches)) {
+function set_authenticated_user(array $user): bool {
+    $role = strtoupper((string)$user['role']);
+    $subscription = compute_subscription($user);
+    if ($subscription['status'] !== 'active' && $subscription['status'] !== 'trial') {
+        $_SESSION['api_auth_error'] = 'subscription_expired';
         return false;
     }
 
-    $token = $matches[1];
-
-    // Decodifica il token (base64 di JSON)
-    $decoded = base64_decode($token, true);
-    if ($decoded === false) {
-        return false;
-    }
-
-    $payload = json_decode($decoded, true);
-    if (!$payload || !isset($payload['user_id'], $payload['username'], $payload['timestamp'])) {
-        return false;
-    }
-
-    // Scadenza token: 24 ore
-    if (time() - $payload['timestamp'] > 86400) {
-        return false;
-    }
-
-    // Imposta sessione compatibile con le API esistenti
-    $role = strtoupper($payload['role'] ?? 'USER');
-    $_SESSION['user_id']   = $payload['user_id'];
-    $_SESSION['username']  = $payload['username'];
+    $_SESSION['user_id'] = (int)$user['id'];
+    $_SESSION['username'] = (string)$user['username'];
     $_SESSION['user_role'] = $role;
-    $_SESSION['admin_logged'] = (strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false);
-    if (isset($payload['gym_id'])) {
-        $_SESSION['gym_id'] = (int)$payload['gym_id'];
-    }
-
+    $_SESSION['admin_logged'] = str_contains($role, 'ADMIN') || str_contains($role, 'SUPER');
+    $_SESSION['gym_id'] = isset($user['gym_id']) ? (int)$user['gym_id'] : null;
+    $_SESSION['subscription_status'] = $subscription['status'];
+    $_SESSION['trial_start_date'] = $user['trial_start_date'] ?? null;
+    $_SESSION['subscription_expires_at'] = $user['subscription_expires_at'] ?? null;
+    $_SESSION['authenticated_user'] = [
+        'id' => (int)$user['id'],
+        'name' => (string)($user['name'] ?? ''),
+        'email' => (string)($user['email'] ?? ''),
+        'username' => (string)$user['username'],
+        'role' => strtolower($role),
+        'gym_id' => isset($user['gym_id']) ? (int)$user['gym_id'] : null,
+    ];
+    $_SESSION['authenticated_subscription'] = $subscription;
+    unset($_SESSION['api_auth_error']);
     return true;
 }
 
-// If called directly via HTTP, return a JSON response usable dall'app mobile
+function verify_bearer_token(): bool {
+    $auth = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if ($auth === '' && function_exists('getallheaders')) {
+        $headers = getallheaders();
+        $auth = $headers['Authorization'] ?? $headers['authorization'] ?? '';
+    }
+
+    try {
+        if (!preg_match('/^Bearer\s+(\S+)$/i', (string)$auth, $matches)) {
+            if (empty($_SESSION['admin_logged']) || (int)($_SESSION['user_id'] ?? 0) <= 0) {
+                return false;
+            }
+
+            $stmt = getPDO()->prepare(
+                'SELECT id, name, email, username, role, gym_id, trial_start_date, subscription_status, subscription_plan, subscription_expires_at
+                 FROM users WHERE id = ? LIMIT 1'
+            );
+            $stmt->execute([(int)$_SESSION['user_id']]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (!$user || (isset($_SESSION['username']) && !hash_equals((string)$user['username'], (string)$_SESSION['username']))) {
+                return false;
+            }
+            return set_authenticated_user($user);
+        }
+
+        $payload = decode_api_token($matches[1]);
+        if ($payload === null) {
+            return false;
+        }
+
+        $userId = $payload['user_id'];
+        if ($userId <= 0) {
+            return false;
+        }
+
+        $stmt = getPDO()->prepare(
+            'SELECT id, name, email, username, role, gym_id, trial_start_date, subscription_status, subscription_plan, subscription_expires_at
+             FROM users WHERE id = ? LIMIT 1'
+        );
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        if (!$user
+            || !hash_equals((string)$user['username'], $payload['username'])
+            || strtoupper((string)$user['role']) !== $payload['role']
+            || (isset($payload['gym_id']) ? (int)$payload['gym_id'] : null) !== (isset($user['gym_id']) ? (int)$user['gym_id'] : null)) {
+            return false;
+        }
+
+        return set_authenticated_user($user);
+    } catch (RuntimeException $e) {
+        error_log('API token configuration error: ' . $e->getMessage());
+        return false;
+    } catch (PDOException $e) {
+        error_log('API token user lookup failed: ' . $e->getMessage());
+        return false;
+    }
+}
+
+// Direct endpoint used by the mobile app when restoring a saved bearer token.
 $isDirectRequest = isset($_SERVER['SCRIPT_FILENAME'])
     && realpath($_SERVER['SCRIPT_FILENAME']) === __FILE__;
-if (php_sapi_name() !== 'cli' && $isDirectRequest) {
+if (PHP_SAPI !== 'cli' && $isDirectRequest) {
     header('Content-Type: application/json');
-    session_start();
-    $ok = verify_bearer_token();
-    if ($ok) {
-        $user = [
-            'id' => $_SESSION['user_id'] ?? null,
-            'username' => $_SESSION['username'] ?? null,
-            'role' => $_SESSION['user_role'] ?? null,
-            'gym_id' => $_SESSION['gym_id'] ?? null,
-        ];
-        require_once __DIR__ . '/../../db.php';
-        require_once __DIR__ . '/../../inc/subscription.php';
-        $subRow = ['role' => $user['role']];
-        if ((int)$user['id'] > 0) {
-            try {
-                $q = getPDO()->prepare("SELECT role, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE id = ?");
-                $q->execute([(int)$user['id']]);
-                $subRow = $q->fetch(PDO::FETCH_ASSOC) ?: $subRow;
-            } catch (Exception $e) {
-                // stato non disponibile: tratta come scaduto
-            }
-        } else {
-            $subRow['role'] = 'ADMIN';
-        }
-        echo json_encode(['success' => true, 'user' => $user, 'subscription' => compute_subscription($subRow)]);
+    header('Access-Control-Allow-Origin: *');
+    header('Access-Control-Allow-Methods: POST, OPTIONS');
+    header('Access-Control-Allow-Headers: Content-Type, Authorization');
+    if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+        http_response_code(200);
+        exit;
+    }
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+        exit;
+    }
+
+    if (verify_bearer_token()) {
+        echo json_encode([
+            'success' => true,
+            'user' => $_SESSION['authenticated_user'],
+            'subscription' => $_SESSION['authenticated_subscription'],
+        ]);
     } else {
-        echo json_encode(['success' => false]);
+        http_response_code(401);
+        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     }
     exit;
 }

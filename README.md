@@ -16,7 +16,7 @@ A professional, secure business management system for gyms, salons, studios, and
 
 ## Tech Stack
 
-- **Backend**: PHP 7.4+ with PDO for database access
+- **Backend**: PHP 8.2+ with PDO for database access
 - **Database**: MySQL 5.7+ / MariaDB
 - **Containerization**: Docker & Docker Compose
 - **Testing**: PHPUnit 10.x
@@ -41,11 +41,9 @@ docker-compose up -d
 open http://localhost:8083
 ```
 
-**Default Credentials**:
-- Admin: `admin` / `admin123`
-- Operator: `op` / `op123`
+Set `ADMIN_INITIAL_PASSWORD` to a unique password of at least 12 characters before the first start. API bearer tokens also require a random `APP_TOKEN_SECRET` of at least 32 characters. Never use development/demo credentials in production.
 
-⚠️ **Change these immediately in a production environment!**
+Generate the signing key with `openssl rand -hex 32`, store it only in `.env`, and keep it unchanged across deployments. Existing mobile sessions issued before signed tokens are enabled must sign in again. Existing administrator passwords are not reset automatically; change any previously used default password before exposing the service publicly.
 
 ## Session Checkpoint (Fast Resume)
 

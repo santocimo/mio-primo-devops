@@ -1,22 +1,27 @@
 import { test, expect, Page } from '@playwright/test';
 
 const BASE = 'http://localhost:4200';
-const API_BASE = 'http://localhost:8081';
+const API_BASE = 'http://localhost:8083';
+const ADMIN_USERNAME = process.env.E2E_ADMIN_USERNAME;
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD;
 
 async function login(page: Page) {
+  test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD');
   await page.goto(`${BASE}/login`);
   await page.waitForSelector('ion-input', { timeout: 10000 });
   await page.locator('ion-input').first().click();
-  await page.keyboard.type('admin');
+  await page.keyboard.type(ADMIN_USERNAME!);
   await page.locator('ion-input').nth(1).click();
-  await page.keyboard.type('admin123');
+  await page.keyboard.type(ADMIN_PASSWORD!);
   await page.locator('ion-button[type="submit"], ion-button').first().click();
-  await page.waitForURL(/\/(dashboard|paywall)/, { timeout: 10000 });
+  await page.waitForURL(/\/(contacts|paywall)/, { timeout: 15000 });
 }
 
 async function openContactsPage(page: Page) {
+  test.skip(page.url().includes('/paywall'), 'Account does not have app access');
+  if (page.url().endsWith('/contacts')) return;
   await page.locator('ion-menu-button').first().click();
-  const contactsMenuItem = page.locator('.menu-nav-item:has-text("Contatti")').first();
+  const contactsMenuItem = page.locator('.menu-nav-item:has-text("Iscritti")').first();
   await expect(contactsMenuItem).toBeVisible({ timeout: 5000 });
   await contactsMenuItem.click();
   await expect(page).toHaveURL(/\/contacts/, { timeout: 10000 });
@@ -39,8 +44,9 @@ test('screenshot popup nuovo contatto', async ({ page }) => {
 });
 
 test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) => {
-  const loginResponse = await request.post(`${API_BASE}/api/auth/login`, {
-    data: { username: 'admin', password: 'admin123' },
+  test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD');
+  const loginResponse = await request.post(`${API_BASE}/api/auth/login.php`, {
+    data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
   });
   expect(loginResponse.ok()).toBeTruthy();
 
@@ -49,7 +55,7 @@ test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) =
   const uniqueSuffix = Date.now();
   const cognome = `MODAL${uniqueSuffix}`;
 
-  const createResponse = await request.post(`${API_BASE}/api/contacts`, {
+  const createResponse = await request.post(`${API_BASE}/api/contacts.php`, {
     headers: { Authorization: `Bearer ${token}` },
     data: {
       nome: 'AUTO',
@@ -90,7 +96,7 @@ test('modifica contatto riapre suggerimenti comuni', async ({ page, request }) =
     await expect(modal.locator('ion-title')).toContainText('Modifica contatto');
     await expect(page.locator('.suggestion-item').first()).toHaveText('ROMA (RM)', { timeout: 5000 });
   } finally {
-    await request.delete(`${API_BASE}/api/contacts/${contactId}`, {
+    await request.delete(`${API_BASE}/api/contacts.php/${contactId}`, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => undefined);
   }

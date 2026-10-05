@@ -24,9 +24,7 @@ npm --version   # 9+
 npm start
 
 # L'app sarà disponibile a http://localhost:4200
-# Login fallback disponibili:
-# - admin / admin123 (ADMIN)
-# - op / op123 (OPERATORE)
+# Accedi con un utente creato nel database.
 ```
 
 ### 1.3 Configurare endpoint API

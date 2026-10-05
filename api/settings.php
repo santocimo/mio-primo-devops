@@ -11,10 +11,8 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 // Auth via bearer token
-if (!isset($_SESSION['admin_logged'])) {
-    if (!verify_bearer_token()) {
-        http_response_code(401); echo json_encode(['error' => 'Unauthorized']); exit;
-    }
+if (!verify_bearer_token()) {
+    http_response_code(401); echo json_encode(['error' => 'Unauthorized']); exit;
 }
 
 // Admin only

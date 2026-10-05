@@ -14,13 +14,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $u = $_POST['username'] ?? '';
     $p = $_POST['password'] ?? '';
 
-    // Try DB-backed users first
     try {
         $pdo = getPDO();
         $stmt = $pdo->prepare("SELECT * FROM users WHERE username = ? LIMIT 1");
         $stmt->execute([$u]);
         $user = $stmt->fetch();
         if ($user && password_verify($p, $user['password_hash'])) {
+            session_regenerate_id(true);
             $_SESSION['user_role'] = strtoupper($user['role']);
             $_SESSION['admin_logged'] = true;
             $_SESSION['user_id'] = (int)$user['id'];
@@ -44,26 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header("Location: index.php"); exit;
         }
     } catch (Exception $e) {
-        // ignore DB errors and fallback to static
+        error_log('Web login failed: ' . $e->getMessage());
+        http_response_code(503);
+        $error = "Servizio di accesso temporaneamente non disponibile.";
     }
-
-    // Fallback (static credentials for legacy installs)
-    if ($u === 'admin' && $p === 'admin123') {
-        // legacy super-admin (no gym binding)
-        $_SESSION['user_role'] = 'ADMIN';
-        $_SESSION['admin_logged'] = true;
-        header("Location: index.php"); 
-        exit;
-    } elseif ($u === 'op' && $p === 'op123') {
-        // legacy operator bound to default gym 1
-        $_SESSION['user_role'] = 'OPERATORE';
-        $_SESSION['admin_logged'] = true;
-        $_SESSION['gym_id'] = 1;
-        header("Location: index.php"); 
-        exit;
-    } else {
-        $error = "Credenziali errate!";
-    }
+    if ($error === '') $error = "Credenziali errate!";
 }
 ?>
 <!DOCTYPE html>

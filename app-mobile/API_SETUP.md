@@ -24,12 +24,12 @@ Il backend DEVE esporre i seguenti endpoint:
 
 ### 1. Authentication
 
-**POST /api/auth/login**
+**POST /api/auth/login.php**
 ```json
 Request:
 {
-  "username": "admin",
-  "password": "admin123"
+  "username": "<your database username>",
+  "password": "<your account password>"
 }
 
 Response:
@@ -269,4 +269,3 @@ Codici HTTP suggeriti:
 - [ ] Implementa rate limiting
 - [ ] Aggiungi logging per debug
 - [ ] Testa con rete lenta/fluttuante
-

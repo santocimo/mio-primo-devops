@@ -10,12 +10,10 @@ require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/auth/verify_token.php';
 
 // Auth: sessione web o Bearer token app
-if (!isset($_SESSION['admin_logged'])) {
-    if (!verify_bearer_token()) {
-        http_response_code(401);
-        echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-        exit;
-    }
+if (!verify_bearer_token()) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit;
 }
 
 $pdo = getPDO();
