@@ -56,6 +56,6 @@ Ultimo aggiornamento: 2026-10-07
 - Verifiche: PHPUnit OK (8 test), build Angular production OK (`npm ci --ignore-scripts && npm run build`).
 - Backend Docker: container `santo-web-automatico-1` (porta 8083) + `santo-database-santo-1` (MariaDB, db `mio_database`). Se la 8083 da' connection reset: `docker restart santo-web-automatico-1`.
 - Frontend dev: `cd app-mobile && npx ng serve --host 0.0.0.0` (porta 4200, API su http://localhost:8083).
-- Account di sviluppo locali (solo locale, password deboli): `devtest/devtest123` (ADMIN), `admin/admin123` (SUPER), `ope/op123` (operatore).
+- Account di sviluppo locali: devtest (ADMIN), admin (SUPER), ope (operatore); password deboli solo locali, non riportate qui.
 - DB: backup con `scripts/db_backup.sh` (dump in `~/backups-db`, fuori dal repo e non versionato). Ultimo dump: 2026-10-07. Fare un backup prima di ogni modifica allo schema/dati.
 - Regola: a fine sessione `git status`, commit e `git push` sul branch di lavoro (o `scripts/checkpoint_session.sh`); verificare con `git ls-remote origin work/clean-app-2026-10-04`.

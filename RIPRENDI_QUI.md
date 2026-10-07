@@ -9,6 +9,6 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - DB: MariaDB in Docker (santo-database-santo-1, db mio_database). Backup: scripts/db_backup.sh -> ~/backups-db (fuori da git). Backup PRIMA di toccare dati/schema. Non mostrare mai segreti/hash.
 - Backend: container santo-web-automatico-1 su 8083 (se connection reset: docker restart santo-web-automatico-1). Frontend: app-mobile, `npx ng serve --host 0.0.0.0` (4200).
 - Install mobile: npm ci --ignore-scripts. Test: composer test. Build: npm run build.
-- Account locali di sviluppo: devtest/devtest123, admin/admin123, ope/op123.
+- Account locali di sviluppo: devtest (ADMIN), admin (SUPER), ope (operatore); password nel DB locale / scripts/create_test_user.php, chiedile a me.
 - Da fare: Stripe test + PayPal sandbox end-to-end, prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
 - Operatori in trial scadono ~2026-10-11.
