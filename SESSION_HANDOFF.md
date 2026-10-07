@@ -1,6 +1,6 @@
 # Session Handoff
 
-Ultimo aggiornamento: 2026-10-05
+Ultimo aggiornamento: 2026-10-07
 
 ## Stato consegna
 - Branch di lavoro (pulito, basato su origin/master): `work/clean-app-2026-10-04`
@@ -50,3 +50,12 @@ Ultimo aggiornamento: 2026-10-05
   l'ambiente disponibile usa Node 18 (richiesto Node 20+).
 - Operatori esistenti backfillati in trial dal 2026-10-04 (scadono ~2026-10-11).
 - Per installare le dipendenze legacy di Ionic usare `npm ci --ignore-scripts` (node-sass richiede Python 2).
+
+## Checkpoint 2026-10-07
+- Lavoro del 4-5 ottobre recuperato: il repo vero e' `/home/santo/progetti/mio-primo-devops` (la home `/home/santo` NON e' un repo git). Branch `work/clean-app-2026-10-04`, presente su origin. Non lavorare su `master`.
+- Verifiche: PHPUnit OK (8 test), build Angular production OK (`npm ci --ignore-scripts && npm run build`).
+- Backend Docker: container `santo-web-automatico-1` (porta 8083) + `santo-database-santo-1` (MariaDB, db `mio_database`). Se la 8083 da' connection reset: `docker restart santo-web-automatico-1`.
+- Frontend dev: `cd app-mobile && npx ng serve --host 0.0.0.0` (porta 4200, API su http://localhost:8083).
+- Account di sviluppo locali (solo locale, password deboli): `devtest/devtest123` (ADMIN), `admin/admin123` (SUPER), `ope/op123` (operatore).
+- DB: backup con `scripts/db_backup.sh` (dump in `~/backups-db`, fuori dal repo e non versionato). Ultimo dump: 2026-10-07. Fare un backup prima di ogni modifica allo schema/dati.
+- Regola: a fine sessione `git status`, commit e `git push` sul branch di lavoro (o `scripts/checkpoint_session.sh`); verificare con `git ls-remote origin work/clean-app-2026-10-04`.
