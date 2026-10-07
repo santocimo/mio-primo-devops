@@ -12,3 +12,14 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Account locali di sviluppo: devtest (ADMIN), admin (SUPER), ope (operatore); password nel DB locale / scripts/create_test_user.php, vedi /home/santo/CREDENZIALI_DEV.txt (fuori dal repo).
 - Da fare: Stripe test + PayPal sandbox end-to-end, prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
 - Operatori in trial scadono ~2026-10-11.
+
+## Dettagli utili
+- Stato 2026-10-07: Git allineato (branch = origin), PHPUnit 8 test OK, build mobile OK, login verificato per tutti gli 8 utenti di test. Non testati: pagamenti Stripe/PayPal, e2e Playwright, dispositivi reali, registrazione completa.
+- Utenti nel DB (tutti di test): devtest, admin, ope, operator1, testuser1, testop_20261005, santo.santo, orilio. Password in /home/santo/CREDENZIALI_DEV.txt (fuori dal repo).
+- Docker: i container vengono da /tmp/santo-clean/docker-compose.yml (cartella temporanea: se sparisce, usare docker-compose.yml del repo). Altri container: santo-dashboard-db-1.
+- Segreti (APP_TOKEN_SECRET, DB_PASSWORD, MAIL_*) stanno in /home/santo/.env: il repo non ha .env. Mai mostrare i valori.
+- Login API: POST api/auth/login.php {username,password}; 401 = credenziali errate, "errore di connessione" = backend giù (vedi restart sopra).
+- Trucchi: non lanciare test API in parallelo a UPDATE sul DB (falsi 401); dopo reload Ionic puo' dare pagina bianca -> riaprire la pagina; `rg` e `apply_patch` non disponibili, usare grep/edit.
+- Backup DB piu' recenti in ~/backups-db (dump 22:56 e 23:04 del 2026-10-07); ripristino: docker exec -i santo-database-santo-1 sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD"' < file.sql
+- Il vecchio backup_db.sh nella root contiene una password in chiaro: usare scripts/db_backup.sh.
+- Password deboli = solo sviluppo locale; in produzione cambiarle (e le password sono nei commit 7916f2e/fd940ed, quindi da considerare note).
