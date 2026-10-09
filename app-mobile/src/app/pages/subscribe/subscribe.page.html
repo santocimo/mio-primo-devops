@@ -42,10 +42,10 @@
     </p>
 
     <p class="legal-links">
-      L'abbonamento si rinnova automaticamente fino ad annullamento.
-      <a routerLink="/legal/subscription">Dettagli</a> ·
-      <a routerLink="/legal/terms">Termini</a> ·
-      <a routerLink="/legal/privacy">Privacy</a>
+      {{ 'legal.renewalNotice' | translate }}
+      <a routerLink="/legal/subscription">{{ 'legal.details' | translate }}</a> ·
+      <a routerLink="/legal/terms">{{ 'legal.termsShort' | translate }}</a> ·
+      <a routerLink="/legal/privacy">{{ 'legal.privacy' | translate }}</a>
     </p>
 
     <ion-button

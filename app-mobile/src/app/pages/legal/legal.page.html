@@ -9,7 +9,7 @@
 
 <ion-content>
   <div class="page-shell legal-container">
-    <p class="legal-draft">Bozza da far revisionare a un professionista legale prima della pubblicazione.</p>
+    <p class="legal-draft">{{ 'legal.draft' | translate }}</p>
     <section *ngFor="let section of document.sections" class="section-card">
       <h2 class="section-title">{{ section.heading }}</h2>
       <p *ngFor="let paragraph of section.paragraphs">{{ paragraph }}</p>

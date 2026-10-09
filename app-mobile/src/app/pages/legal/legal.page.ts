@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { LanguageService } from '../../i18n/language.service';
 import { LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
 
 @Component({
@@ -8,10 +9,14 @@ import { LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
   styleUrls: ['./legal.page.scss'],
 })
 export class LegalPage {
-  readonly document: LegalDocument;
+  private readonly key: string;
 
-  constructor(route: ActivatedRoute) {
-    const key = route.snapshot.paramMap.get('doc') ?? '';
-    this.document = LEGAL_DOCUMENTS[key] ?? LEGAL_DOCUMENTS['terms'];
+  constructor(route: ActivatedRoute, private language: LanguageService) {
+    this.key = route.snapshot.paramMap.get('doc') ?? '';
+  }
+
+  get document(): LegalDocument {
+    const docs = LEGAL_DOCUMENTS[this.language.currentLanguage];
+    return docs[this.key] ?? docs['terms'];
   }
 }
