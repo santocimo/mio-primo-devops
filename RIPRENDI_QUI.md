@@ -45,3 +45,4 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 ## Deep link / Android
 - Preparato: `@capacitor/app` + `@capacitor/browser`, schema `businessregistry://`, listener in app.component, flag `native` in stripe.php, progetto `app-mobile/android` generato e versionato. Verificato: Stripe accetta il success_url e il backend lo restituisce con native=true. NON provato: build Gradle e giro su dispositivo (manca JDK/SDK). Vedi `app-mobile/ANDROID.md`.
 - Android: JDK17+SDK installati in home; `scripts/build-android-debug.sh` produce l APK (build riuscita, copia in C:\Users\Public\BusinessRegistry-debug.apk). Da provare su telefono: serve API raggiungibile dal telefono (WSL2: port proxy Windows o dominio HTTPS).
+- Prova su telefono: port proxy Windows 8083->WSL attivo (si perde al riavvio WSL: IP WSL cambia) + regola firewall; IP Wi-Fi Windows 172.20.10.9; APK in C:\Users\Public\BusinessRegistry-debug.apk; debug manifest con usesCleartextTraffic.
