@@ -32,19 +32,31 @@ $isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') 
 $userGymId = (int)($_SESSION['gym_id'] ?? 0);
 
 if ($method === 'GET') {
+    if (!$isAdmin && !$isOperator) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Forbidden']);
+        exit;
+    }
+
     $selectedGymId = null;
     // Only allow gym_id override from query when the user is admin
     if ($isAdmin && isset($_GET['gym_id']) && (int)$_GET['gym_id'] > 0) {
         $selectedGymId = (int)$_GET['gym_id'];
-    } elseif (!empty($_SESSION['gym_id'])) {
-        $selectedGymId = (int)$_SESSION['gym_id'];
+    } elseif ($userGymId > 0) {
+        $selectedGymId = $userGymId;
+    }
+
+    if (!$isAdmin && $selectedGymId === null) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Gym context missing']);
+        exit;
     }
 
     if ($isAdmin && $selectedGymId === null) {
         // Admin: tutti i servizi con nome gym
         $stmt = $pdo->query("SELECT s.*, g.name AS gym_name FROM services s JOIN gyms g ON g.id=s.gym_id ORDER BY g.name, s.name");
     } else {
-        $gym_id = $selectedGymId ?? (int)($_SESSION['gym_id'] ?? 1);
+        $gym_id = $selectedGymId;
         $stmt = $pdo->prepare("SELECT s.*, g.name AS gym_name FROM services s JOIN gyms g ON g.id=s.gym_id WHERE s.gym_id=? ORDER BY s.name");
         $stmt->execute([$gym_id]);
     }

@@ -69,7 +69,7 @@ if ($method === 'GET') {
 $operatorGymId = (int)($_SESSION['gym_id'] ?? 0);
 $isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false || $role === 'GESTORE';
 $canUpdateOwnGym = $method === 'PUT' && $isOperator && $operatorGymId > 0;
-if ($method !== 'GET' && $method !== 'POST' && !$isAdmin && !$canUpdateOwnGym) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); exit; }
+if ($method !== 'GET' && !$isAdmin && !$canUpdateOwnGym) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); exit; }
 
 if ($method === 'POST') {
     $d = json_decode(file_get_contents('php://input'), true);
@@ -85,28 +85,8 @@ if ($method === 'POST') {
         exit;
     }
 
-    // Non-admin: create gym and attach manager info + trial start in settings
-    $managerId = (int)($_SESSION['user_id'] ?? 0);
-    $managerUsername = $_SESSION['username'] ?? '';
-    $managerEmail = $_SESSION['email'] ?? '';
-    $settings = json_encode([
-        'manager_user_id' => $managerId,
-        'manager_username' => $managerUsername,
-        'manager_email' => $managerEmail,
-        'trial_started_at' => date('c'),
-    ]);
-
-    $stmt = $pdo->prepare("INSERT INTO gyms (name,slug,category,settings) VALUES (?,?,?,?)");
-    $stmt->execute([$name,$slug,$category,$settings]);
-    $newId = (int)$pdo->lastInsertId();
-
-    // Assign the created gym to the current user (operator)
-    if ($managerId > 0) {
-        $u = $pdo->prepare("UPDATE users SET gym_id=? WHERE id=?");
-        $u->execute([$newId, $managerId]);
-    }
-
-    echo json_encode(['success'=>true,'id'=>$newId]);
+    http_response_code(403);
+    echo json_encode(['success'=>false,'message'=>'Forbidden']);
     exit;
 }
 

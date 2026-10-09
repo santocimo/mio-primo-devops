@@ -69,13 +69,24 @@ function formatApt($a) {
 }
 
 if ($method === 'GET') {
+    if (!$isAdmin && !$isOperator) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Forbidden']);
+        exit;
+    }
+
     $selectedGymId = null;
     $selectedServiceId = null;
     // Only allow admin to request arbitrary gym_id via query param
     if ($isAdmin && isset($_GET['gym_id']) && (int)$_GET['gym_id'] > 0) {
         $selectedGymId = (int)$_GET['gym_id'];
-    } elseif (!empty($_SESSION['gym_id'])) {
+    } elseif (!empty($_SESSION['gym_id']) && (int)$_SESSION['gym_id'] > 0) {
         $selectedGymId = (int)$_SESSION['gym_id'];
+    }
+    if (!$isAdmin && $selectedGymId === null) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Gym context missing']);
+        exit;
     }
     if (isset($_GET['service_id']) && (int)$_GET['service_id'] > 0) {
         $selectedServiceId = (int)$_GET['service_id'];
@@ -89,7 +100,7 @@ if ($method === 'GET') {
             $stmt = $pdo->query("SELECT a.*, s.gym_id AS service_gym_id, s.name AS service_name, s.provider_name AS service_provider_name, s.provider_type AS service_provider_type, g.name AS gym_name FROM appointments a LEFT JOIN services s ON s.id=a.service_id LEFT JOIN gyms g ON g.id=s.gym_id ORDER BY a.scheduled_at DESC LIMIT 200");
         }
     } else {
-        $gymId = $selectedGymId ?? (int)($_SESSION['gym_id'] ?? 1);
+        $gymId = $selectedGymId;
         if ($selectedServiceId !== null) {
             $stmt = $pdo->prepare("SELECT a.*, s.gym_id AS service_gym_id, s.name AS service_name, s.provider_name AS service_provider_name, s.provider_type AS service_provider_type, g.name AS gym_name FROM appointments a LEFT JOIN services s ON s.id=a.service_id LEFT JOIN gyms g ON g.id=s.gym_id WHERE {$aptGymExpr}=? AND a.service_id=? ORDER BY a.scheduled_at DESC LIMIT 200");
             $stmt->execute([$gymId, $selectedServiceId]);
@@ -103,6 +114,12 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    if (!$isAdmin && !$isOperator) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Forbidden']);
+        exit;
+    }
+
     $d = json_decode(file_get_contents('php://input'), true);
     $service_id     = (int)($d['service_id'] ?? 0);
     $contact_id     = (int)($d['contact_id'] ?? 0);

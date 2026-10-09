@@ -42,7 +42,12 @@ if ($use_gym && $isAdmin) {
         $gym_id = null; // admin senza filtro = tutte le sedi
     }
 } elseif ($use_gym) {
-    $gym_id = (int)($_SESSION['gym_id'] ?? 1);
+    $gym_id = (int)($_SESSION['gym_id'] ?? 0);
+    if ($gym_id <= 0) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Gym context missing']);
+        exit;
+    }
 } else {
     $gym_id = null;
 }
