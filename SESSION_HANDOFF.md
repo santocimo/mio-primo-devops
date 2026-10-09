@@ -50,7 +50,7 @@ Ultimo aggiornamento: 2026-10-09 (sera: Stripe test verificato, vedi RIPRENDI_QU
 
 ## Da fare alla prossima sessione
 1. Verificare accesso condiviso, identità del referente migrato e permessi per ciascun caso.
-2. Stripe test: provare il rinnovo (test clock); checkout, disdetta, webhook duplicato e firma errata gia' OK;
+2. Stripe test completo (checkout, rinnovo, disdetta, webhook duplicato, firma errata: OK);
    configurare PayPal sandbox con piani/webhook. Non attivare live.
 3. Decidere i prezzi definitivi prima del lancio e provare su dispositivo il redirect
    mobile (attualmente il callback usa route web; manca deep link nativo).

@@ -12,7 +12,7 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Backend: container santo-web-automatico-1 su 8083 (se connection reset: docker restart santo-web-automatico-1). Frontend: app-mobile, `npx ng serve --host 0.0.0.0` (4200).
 - Install mobile: npm ci --ignore-scripts. Test: composer test. Build: npm run build.
 - Account locali di sviluppo: devtest (ADMIN), admin (SUPER), ope (operatore); password nel DB locale / scripts/create_test_user.php, vedi /home/santo/CREDENZIALI_DEV.txt (fuori dal repo).
-- Da fare: Stripe (solo rinnovo ancora da provare, es. test clock) + PayPal sandbox, prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
+- Da fare: PayPal sandbox (Stripe completo), prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
 - Operatori in trial scadono ~2026-10-11 (gym 1 ora ha abbonamento Stripe di test attivo fino al 2026-11-09).
 
 ## Stato 2026-10-09 (Stripe test)
@@ -23,4 +23,5 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Checkout di prova riuscito (utente `ope`, piano mensile, carta 4242 4242 4242 4242): abbonamento `active`. Fix fatti: rimosso `payment_method_types` (non piu' supportato) e `current_period_end` letto dagli item (helper `stripe_subscription_period_end_timestamp`).
 - Provati OK (2026-10-09): firma errata/assente -> 400; webhook firmato inviato due volte -> 200 e una sola riga in `subscription_payments` (idempotente); disdetta via `api/payments/manage.php` solo dal referente (`ope`; devtest -> 403): `cancel_at_period_end=1`, accesso fino a fine periodo, Stripe allineato.
 - Il 400 iniziale su `invoice.paid` e' ordine di arrivo: l'evento precede `checkout.session.completed`, quindi l'abbonamento non e' ancora in DB ("Unknown recurring subscription invoice"). Con Stripe reale viene ritentato; con `stripe listen` no (il primo pagamento non e' nel ledger se succede cosi').
-- Non ancora provati: rinnovo (Stripe test clock); PayPal (nessuna credenziale).
+- Rinnovo provato con Stripe test clock (palestra 12, poi ripulita): +32 giorni -> `invoice.paid` 200, `current_period_end` avanzato di un mese, pagamento di rinnovo nel ledger. Il primo pagamento non entra nel ledger per l'ordine degli eventi (vedi sopra).
+- Non ancora provato: PayPal (nessuna credenziale).
