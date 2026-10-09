@@ -4,6 +4,7 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 
 **Appena incollato: riavvia `ng serve` (app-mobile, porta 4200) e verifica che il backend su 8083 risponda (se no: docker restart santo-web-automatico-1).**
 
+- Questo file esiste in due copie: nel repo (versionata) e in /home/santo/RIPRENDI_QUI.md. A ogni aggiornamento, modificare quella nel repo, poi `cp RIPRENDI_QUI.md /home/santo/RIPRENDI_QUI.md` e verificare con `cmp`.
 - Repo vero: /home/santo/progetti/mio-primo-devops (NON /home/santo, che non e' un repo git).
 - Branch di lavoro: work/clean-app-2026-10-04 (su GitHub santocimo/mio-primo-devops). Mai lavorare/pushare su master.
 - Prima di iniziare: git status, git branch --show-current, git log --oneline -3; confronta con `git ls-remote origin work/clean-app-2026-10-04`.
