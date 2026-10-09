@@ -1,10 +1,9 @@
 # Session Handoff
 
-Ultimo aggiornamento: 2026-10-09
+Ultimo aggiornamento: 2026-10-09 (sera: Stripe test verificato, vedi RIPRENDI_QUI.md)
 
 ## Stato consegna
 - Branch di lavoro: `work/clean-app-2026-10-04` (allineato a origin all'inizio della sessione).
-- Le modifiche di questa sessione sono ancora nel worktree e non sono committate.
 - Non fare lavoro su `master` della HOME (`/home/santo`): e' divergente da origin (traccia file di home/cache). Lavorare solo su questo branch, in un worktree pulito:
   `git clone -b work/clean-app-2026-10-04 https://github.com/santocimo/mio-primo-devops.git` oppure `git worktree add /tmp/santo-clean work/clean-app-2026-10-04`
 
@@ -45,17 +44,14 @@ Ultimo aggiornamento: 2026-10-09
   9 asserzioni), suite PHPUnit completa (12 test / 31 asserzioni), build Angular production,
   lint sintassi PHP sugli endpoint/helper modificati e `git diff --check`.
 - Creato backup DB prima della migrazione schema: `~/backups-db/mio_database_20261009_104649.sql`.
-- La migrazione non è stata applicata: il container backend attivo non monta questo checkout
-  e nel container mancano tutte le credenziali/ID provider di sandbox. Non riavviare quel
-  container aspettandosi di caricare queste modifiche; prima preparare una build sandbox.
+- Migrazione applicata e backend ricreato dal repo (2026-10-09); checkout Stripe test riuscito.
 - I provider non sono stati provati; nessuna transazione live è stata avviata.
   I prezzi restano provvisori. Le modifiche di implementazione sono complete e verificate.
 
 ## Da fare alla prossima sessione
-1. Con il backup eseguito, applicare la migrazione `gym_subscriptions`; verificare lo stato
-   di accesso condiviso, l'identità del referente migrato e i permessi per ciascun caso.
-2. Configurare Stripe test mode e PayPal sandbox con piani/webhook, quindi provare checkout,
-   rinnovo, disdetta, webhook duplicato e firma errata. Non attivare live.
+1. Verificare accesso condiviso, identità del referente migrato e permessi per ciascun caso.
+2. Stripe test: provare disdetta, rinnovo, webhook duplicato e firma errata (checkout gia' OK);
+   configurare PayPal sandbox con piani/webhook. Non attivare live.
 3. Decidere i prezzi definitivi prima del lancio e provare su dispositivo il redirect
    mobile (attualmente il callback usa route web; manca deep link nativo).
 4. Cambiare in ogni ambiente esistente le password amministrative e impostare APP_TOKEN_SECRET

@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/verify_token.php';
 require_once __DIR__ . '/../../inc/recurring_subscriptions.php';
 require_once __DIR__ . '/../../inc/subscription.php';
+require_once __DIR__ . '/../../inc/stripe_webhook.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -94,7 +95,7 @@ try {
             subscription_manage_fail(502, 'Could not schedule Stripe cancellation');
         }
         $statusValue = (string)($response['status'] ?? $current['status']);
-        $periodEnd = (int)($response['current_period_end'] ?? 0);
+        $periodEnd = stripe_subscription_period_end_timestamp($response);
         $cancelAtPeriodEnd = !empty($response['cancel_at_period_end']);
     } elseif ($current['provider'] === 'paypal') {
         $clientId = getenv('PAYPAL_CLIENT_ID') ?: '';

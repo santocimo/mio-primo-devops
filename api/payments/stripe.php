@@ -4,6 +4,7 @@ require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/verify_token.php';
 require_once __DIR__ . '/../../inc/subscription_plans.php';
 require_once __DIR__ . '/../../inc/recurring_subscriptions.php';
+require_once __DIR__ . '/../../inc/stripe_webhook.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -103,7 +104,6 @@ try {
             'metadata[user_id]' => (string)$userId,
             'metadata[gym_id]' => (string)$gymId,
             'metadata[plan]' => $planKey,
-            'payment_method_types[0]' => 'card',
             'line_items[0][quantity]' => '1',
             'line_items[0][price_data][currency]' => strtolower($currency),
             'line_items[0][price_data][unit_amount]' => (string)$plans[$planKey]['amount_minor'],
@@ -161,7 +161,7 @@ try {
         }
         $item = $subscriptionData['items']['data'][0] ?? [];
         $price = $item['price'] ?? [];
-        $periodEnd = (int)($subscriptionData['current_period_end'] ?? 0);
+        $periodEnd = stripe_subscription_period_end_timestamp($subscriptionData);
         if (!in_array($subscriptionData['status'] ?? '', ['active', 'trialing'], true)
             || (int)($subscriptionData['metadata']['user_id'] ?? 0) !== $userId
             || (int)($subscriptionData['metadata']['gym_id'] ?? 0) !== $gymId

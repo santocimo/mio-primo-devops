@@ -1,5 +1,21 @@
 <?php
 
+// Stripe >= 2025-03-31 espone la scadenza del periodo sugli item, non sulla sottoscrizione.
+function stripe_subscription_period_end_timestamp(array $subscription): int {
+    $end = (int)($subscription['current_period_end'] ?? 0);
+    if ($end > 0) {
+        return $end;
+    }
+    $ends = [];
+    foreach ($subscription['items']['data'] ?? [] as $item) {
+        $itemEnd = (int)($item['current_period_end'] ?? 0);
+        if ($itemEnd > 0) {
+            $ends[] = $itemEnd;
+        }
+    }
+    return $ends ? max($ends) : 0;
+}
+
 function verify_stripe_webhook_signature(
     string $payload,
     string $signatureHeader,

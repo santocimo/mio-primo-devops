@@ -33,4 +33,19 @@ class StripeWebhookTest extends TestCase
             verify_stripe_webhook_signature($payload, $header, $secret, $timestamp + 301)
         );
     }
+
+    public function testPeriodEndIsReadFromSubscriptionItemsOnNewApiVersions(): void
+    {
+        $this->assertSame(
+            1794219737,
+            stripe_subscription_period_end_timestamp([
+                'items' => ['data' => [['current_period_end' => 1794219737]]],
+            ])
+        );
+        $this->assertSame(
+            1700000000,
+            stripe_subscription_period_end_timestamp(['current_period_end' => 1700000000])
+        );
+        $this->assertSame(0, stripe_subscription_period_end_timestamp([]));
+    }
 }

@@ -36,7 +36,7 @@ function stripe_webhook_request(string $path, string $secret): array {
 }
 
 function stripe_subscription_period_end(array $subscription): ?string {
-    $end = (int)($subscription['current_period_end'] ?? 0);
+    $end = stripe_subscription_period_end_timestamp($subscription);
     return $end > 0 ? date('Y-m-d H:i:s', $end) : null;
 }
 
