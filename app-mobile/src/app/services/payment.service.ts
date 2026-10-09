@@ -1,6 +1,8 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
+import { Capacitor } from '@capacitor/core';
+import { Browser } from '@capacitor/browser';
 import { map } from 'rxjs/operators';
 import { environment } from '@env';
 import { SubscriptionUpdate } from '../models/auth.model';
@@ -110,6 +112,7 @@ export class PaymentService {
       .post<Record<string, string>>(`${environment.apiUrl}/api/payments/${provider}.php`, {
         action: 'create',
         plan: planId,
+        ...(provider === 'stripe' && Capacitor.isNativePlatform() ? { native: true } : {}),
       })
       .pipe(
         map((response) => {
@@ -117,7 +120,11 @@ export class PaymentService {
           if (!url) {
             throw new Error(`${provider} checkout URL is missing`);
           }
-          window.location.assign(url);
+          if (provider === 'stripe' && Capacitor.isNativePlatform()) {
+            void Browser.open({ url });
+          } else {
+            window.location.assign(url);
+          }
         })
       );
   }

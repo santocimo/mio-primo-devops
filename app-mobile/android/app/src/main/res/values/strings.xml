@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BusinessRegistry</string>
+    <string name="title_activity_main">BusinessRegistry</string>
+    <string name="package_name">com.businessregistry.app</string>
+    <string name="custom_url_scheme">com.businessregistry.app</string>
+</resources>

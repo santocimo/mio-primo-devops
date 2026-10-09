@@ -41,3 +41,6 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 
 - Pagine legali (bozze IT, da far revisionare a un legale): route `/legal/:doc` (terms, privacy, subscription) in `app-mobile/src/app/pages/legal`, link da registrazione e da `/subscribe`. Build OK.
 - Pagine legali ora anche in inglese (segue la lingua scelta nell app).
+
+## Deep link / Android
+- Preparato: `@capacitor/app` + `@capacitor/browser`, schema `businessregistry://`, listener in app.component, flag `native` in stripe.php, progetto `app-mobile/android` generato e versionato. Verificato: Stripe accetta il success_url e il backend lo restituisce con native=true. NON provato: build Gradle e giro su dispositivo (manca JDK/SDK). Vedi `app-mobile/ANDROID.md`.

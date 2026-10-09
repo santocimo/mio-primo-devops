@@ -1,4 +1,7 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, NgZone, OnInit, OnDestroy } from '@angular/core';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Browser } from '@capacitor/browser';
+import { Capacitor, PluginListenerHandle } from '@capacitor/core';
 import { Router } from '@angular/router';
 import { MenuController, NavController } from '@ionic/angular';
 import { AuthService } from './services/auth.service';
@@ -20,6 +23,7 @@ export class AppComponent implements OnInit, OnDestroy {
   selectedGymId: number | null = null;
   selectedGymName = '';
   currentLanguage: AppLanguage = 'it';
+  private deepLinkListener?: PluginListenerHandle;
   private readonly onBusinessTypeChanged = () => {
     if (this.authService.isLoggedIn()) {
       this.loadGyms();
@@ -32,6 +36,7 @@ export class AppComponent implements OnInit, OnDestroy {
     private languageService: LanguageService,
     private menuCtrl: MenuController,
     private navCtrl: NavController,
+    private zone: NgZone,
     public router: Router
   ) {}
 
@@ -58,10 +63,37 @@ export class AppComponent implements OnInit, OnDestroy {
     });
 
     window.addEventListener('business-type-changed', this.onBusinessTypeChanged);
+    this.listenForDeepLinks();
+  }
+
+  // Dopo il checkout nel browser, businessregistry://subscribe?... riporta nell'app
+  private listenForDeepLinks(): void {
+    if (!Capacitor.isNativePlatform()) {
+      return;
+    }
+    void CapacitorApp.addListener('appUrlOpen', ({ url }) => {
+      const parsed = new URL(url);
+      if (parsed.protocol !== 'businessregistry:') {
+        return;
+      }
+      const path = parsed.hostname === 'subscribe' || parsed.hostname === 'paywall'
+        ? `/${parsed.hostname}`
+        : null;
+      if (!path) {
+        return;
+      }
+      void Browser.close().catch(() => undefined);
+      const queryParams: Record<string, string> = {};
+      parsed.searchParams.forEach((value, key) => (queryParams[key] = value));
+      this.zone.run(() => {
+        void this.router.navigate([path], { queryParams });
+      });
+    }).then((handle) => (this.deepLinkListener = handle));
   }
 
   ngOnDestroy(): void {
     window.removeEventListener('business-type-changed', this.onBusinessTypeChanged);
+    void this.deepLinkListener?.remove();
   }
 
   loadGyms(): void {

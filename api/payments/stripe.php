@@ -96,10 +96,12 @@ try {
         if (!$frontend || !in_array(parse_url($frontendUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
             stripe_fail(503, 'Checkout return URL is not configured');
         }
+        // L'app nativa torna a sé stessa tramite deep link invece che via web
+        $returnBase = !empty($request['native']) ? 'businessregistry:/' : $frontendUrl;
         $form = [
             'mode' => 'subscription',
-            'success_url' => $frontendUrl . '/subscribe?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url' => $frontendUrl . '/paywall?cancelled=1',
+            'success_url' => $returnBase . '/subscribe?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $returnBase . '/paywall?cancelled=1',
             'client_reference_id' => (string)$userId,
             'metadata[user_id]' => (string)$userId,
             'metadata[gym_id]' => (string)$gymId,
