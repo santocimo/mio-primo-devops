@@ -63,12 +63,21 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Ricostruito solo il backend web locale dopo i fix (nessuna migrazione o modifica dati): `docker compose -p santo --env-file /home/santo/.env up -d --build --no-deps web-automatico`.
 - Validazioni: `npm run build` OK; `php -l api/contacts.php` e `php -l cerca_comuni.php` OK; suite Playwright completa seriale 8/8 OK, inclusi selezione comune, CF generato/aggiornato, campo CF singolo e rifiuto API di contatto incompleto. Gli account/record di test sono stati ripuliti.
 - Servizi locali verificati: Angular su 4200 HTTP 200; backend su 8083 HTTP 302 (redirect previsto).
-- File `.phpunit.result.cache` risulta modificato localmente da prima di questo lavoro: non includerlo nel commit.
+- `.phpunit.result.cache` è una cache generata dai test; è stata inclusa nel commit solo su richiesta esplicita di salvare e committare tutto.
 
 ## Punti ancora aperti da affrontare
-- Restano da fare, nell'ordine sopra: verifica condivisa/accesso e permessi; PayPal sandbox (rimandato); decisione prezzi; deploy HTTPS e segreti/password di produzione; release Android/iOS e policy store; dati titolare e revisione legale.
+- Restano da fare, nell'ordine sopra: PayPal sandbox (rimandato); decisione prezzi; deploy HTTPS e segreti/password di produzione; release Android/iOS e policy store; dati titolare e revisione legale.
 - Restano inoltre da implementare i test automatici per rinnovo/cancellazione webhook Stripe; i flussi sono stati provati manualmente, non in mock automatizzati.
 - Non attivare Stripe live né modificare schema/dati senza backup e approvazione dei dettagli commerciali.
 
 ## Commit del 2026-10-09 (tutto pushato su origin/work/clean-app-2026-10-04)
 Stripe fix e robustezza, test PHPUnit e Playwright, pagine legali IT/EN, deploy checklist, Android + deep link, target SDK 35, fix conferma checkout al rientro.
+
+## Aggiornamento 2026-10-09 (permessi API)
+- Verificati i confini tenant degli endpoint contatti, servizi, appuntamenti, utenti e palestre.
+- `api/contacts.php`, `api/services.php` e `api/appointments.php` non usano più la palestra 1 come fallback per un utente senza `gym_id`; rispondono 403 per contesto palestra assente. Letture servizi/appuntamenti rifiutano ruoli diversi da admin/operator; anche POST appuntamenti applica il controllo di ruolo.
+- `api/gyms.php` riserva la creazione di palestre agli admin; la registrazione pubblica continua tramite il flusso dedicato `api/register.php`.
+- Backend ricostruito localmente con `docker compose -p santo --env-file /home/santo/.env up -d --build --no-deps web-automatico`; nessuna modifica a schema o dati. Verificato: frontend 4200 HTTP 200, backend 8083 HTTP 302.
+- PHP lint sui quattro endpoint modificati e `composer test` (17 test, 44 assertion) OK; `git diff --check` OK.
+- L'aggiornamento è stato committato e pushato su `work/clean-app-2026-10-04`; la copia `/home/santo/RIPRENDI_QUI.md` deve essere sincronizzata con quella versionata.
+- Prossimi punti: decidere prezzi e se procedere con PayPal sandbox; non attivare pagamenti live senza approvazione.
