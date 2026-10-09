@@ -8,7 +8,7 @@ App iOS/Android per la gestione di appuntamenti e servizi. Versione **a pagament
 - ✅ **Dashboard intuitiva** - Visualizza appuntamenti e azioni rapide
 - ✅ **Gestione appuntamenti** - Prenota e cancella appuntamenti
 - ✅ **Paywall integrato** - Sottoscrizione per accesso alle funzioni
-- ✅ **In-app purchase** - Pagamenti integrati (RevenueCat)
+- ✅ **Checkout in hosting** - Pagamenti ricorrenti via Stripe/PayPal (configurazione sandbox richiesta)
 - ✅ **Offline support** - Sincronizzazione quando disponibile
 - ✅ **Responsive design** - Ottimizzato per tutti i dispositivi
 
@@ -16,7 +16,7 @@ App iOS/Android per la gestione di appuntamenti e servizi. Versione **a pagament
 
 - **Frontend**: Angular 15 + Ionic 7
 - **Mobile**: Capacitor 5
-- **Pagamenti**: RevenueCat (easy in-app purchase integration)
+- **Pagamenti**: Stripe Checkout e PayPal Subscriptions lato server; StoreKit/Play Billing non ancora integrati
 - **Backend**: PHP API (BusinessRegistry)
 - **Database**: MySQL (tramite backend)
 
@@ -113,25 +113,13 @@ src/
 
 ## Monetizzazione
 
-### RevenueCat Integration
+### Pagamenti ricorrenti
 
-1. **Registrati su RevenueCat**:
-   - https://www.revenuecat.com/
+Il referente della palestra acquista un piano mensile o annuale con rinnovo automatico. Il rinnovo si gestisce nel provider; la cancellazione è disponibile dal profilo dell'app e mantiene l'accesso fino alla fine del periodo pagato. Le credenziali e i webhook si configurano esclusivamente sul backend, seguendo la sezione "Recurring gym subscriptions" del README principale.
 
-2. **Crea i prodotti**:
-   - Pro Monthly ($4.99)
-   - Pro Yearly ($49.99)
+Il referente può avere un account separato con ruolo "Referente fatturazione", oppure essere un operatore. Dalla gestione utenti si può creare il referente o trasferire l'incarico a un account della stessa palestra; la registrazione assegna inizialmente il ruolo al primo operatore.
 
-3. **Configura API key** in `environment.ts`:
-```typescript
-inAppPurchaseConfig: {
-  revenueCatApiKey: 'YOUR_API_KEY',
-}
-```
-
-4. **Configurare App Store / Google Play**:
-   - Crea gli stessi SKU / Product IDs in entrambi i store
-   - Collega gli account a RevenueCat
+L'app usa checkout web ospitato. Gli acquisti nativi StoreKit e Google Play Billing non sono integrati: verificare le regole applicabili alla distribuzione B2B e completare la soluzione di pagamento richiesta prima dell'invio agli store.
 
 ## API Integration
 

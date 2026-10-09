@@ -45,11 +45,15 @@ Set `ADMIN_INITIAL_PASSWORD` to a unique password of at least 12 characters befo
 
 Generate the signing key with `openssl rand -hex 32`, store it only in `.env`, and keep it unchanged across deployments. Existing mobile sessions issued before signed tokens are enabled must sign in again. Existing administrator passwords are not reset automatically; change any previously used default password before exposing the service publicly.
 
-### One-time payments
+### Recurring gym subscriptions
 
-The monthly and yearly plans are single purchases with no automatic renewal. The current amounts (`4.99` and `49.99` EUR) are provisional; approve final prices before launch. Configure PayPal sandbox credentials to test PayPal. Hosted Stripe Checkout is offered only after both `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` are configured; card details are handled by Stripe, not this application.
+Billing belongs to the gym: its billing owner purchases one monthly or yearly auto-renewing plan, and operator accounts assigned to that gym share its access. The owner can cancel renewal from the mobile profile; access remains through the paid period. Amounts (`4.99` and `49.99` EUR) are still provisional. Do not enable live mode until prices, taxes, invoicing, cancellation/refund terms, and provider sandbox flows have been approved and tested.
 
-Configure the public frontend URL with `APP_FRONTEND_URL`, then register Stripe's webhook endpoint at `https://<api-host>/api/payments/stripe_webhook.php` for `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Keep provider secrets out of source control and use test credentials until an end-to-end sandbox purchase and webhook have been verified. The `subscription_payments` ledger prevents duplicate webhook/callback delivery from granting the same payment twice.
+The billing owner can be a separate `GESTORE` account or an operator account. In **User management**, create a billing contact or mark an existing gym account as the billing owner. Only the current owner or a platform admin can transfer billing ownership; transfer it before deleting the current owner. A newly registered small business starts with its first operator as billing owner.
+
+Set `APP_FRONTEND_URL` to the public HTTPS app URL. Configure Stripe test-mode credentials and a webhook at `https://<api-host>/api/payments/stripe_webhook.php` for checkout session completion, subscription create/update/delete, and invoice paid/payment-failed events. Configure PayPal sandbox credentials, create monthly/yearly billing plans matching `PLAN_MONTHLY_PRICE`, `PLAN_YEARLY_PRICE`, and `PAYMENT_CURRENCY`, set their IDs in `PAYPAL_PLAN_MONTHLY_ID` and `PAYPAL_PLAN_YEARLY_ID`, and register `https://<api-host>/api/payments/paypal_webhook.php`; set its webhook ID in `PAYPAL_WEBHOOK_ID` and subscribe to billing subscription and sale payment events. Use test credentials only until checkout, renewal, cancellation, duplicate delivery, and signature verification have passed end-to-end. Never place provider secrets in the mobile app or source control.
+
+The mobile client currently uses hosted web checkout. Native StoreKit and Google Play Billing have not been implemented; confirm the applicable B2B store-policy treatment before submitting the app. A B2B model is not itself a guarantee of store approval.
 
 ## Session Checkpoint (Fast Resume)
 

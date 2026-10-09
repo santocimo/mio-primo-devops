@@ -50,6 +50,7 @@
           <div class="entity-subline">{{ userSubtitle(u) }}</div>
           <div class="entity-tags">
             <span class="pill-badge">{{ userBadgeLabel(u) | translate }}</span>
+            <span *ngIf="u.is_billing_owner" class="pill-badge">{{ 'adminUsers.billingOwner' | translate }}</span>
             <span class="pill-badge">{{ u.gym_id ? gymName(u.gym_id) : ('menu.allActivities' | translate) }}</span>
           </div>
           <div class="entity-subline">{{ 'adminUsers.created' | translate:{date: (u.created_at | date:(language.currentLanguage === 'en' ? 'MMM d, y' : 'dd/MM/yyyy'))} }}</div>
@@ -101,9 +102,10 @@
         <ion-input [label]="('adminUsers.password' | translate) + (editingUser ? ' ' + ('adminUsers.passwordHelp' | translate) : ' *')" labelPlacement="stacked" [attr.aria-label]="'adminUsers.password' | translate" type="password" [(ngModel)]="formData.password" [placeholder]="'adminUsers.passwordPlaceholder' | translate"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select [label]="'adminUsers.role' | translate" labelPlacement="stacked" [(ngModel)]="formData.role" interface="popover">
+        <ion-select [label]="'adminUsers.role' | translate" labelPlacement="stacked" [(ngModel)]="formData.role" (ionChange)="onRoleChange()" interface="popover">
           <ion-select-option value="OPERATORE">{{ (isAdminUser ? 'adminUsers.manager' : 'adminUsers.member') | translate }}</ion-select-option>
-          <ion-select-option value="ADMIN">{{ 'adminUsers.admin' | translate }}</ion-select-option>
+          <ion-select-option value="GESTORE">{{ 'adminUsers.billingManager' | translate }}</ion-select-option>
+          <ion-select-option *ngIf="isAdminUser" value="ADMIN">{{ 'adminUsers.admin' | translate }}</ion-select-option>
         </ion-select>
       </ion-item>
       <ion-item *ngIf="isAdminUser">
@@ -115,6 +117,10 @@
       <ion-item *ngIf="!isAdminUser">
         <ion-label class="ion-text-wrap">{{ 'adminUsers.assignedLocation' | translate }}</ion-label>
         <ion-note slot="end">{{ gymName(formData.gym_id) }}</ion-note>
+      </ion-item>
+      <ion-item *ngIf="formData.gym_id">
+        <ion-checkbox slot="start" [(ngModel)]="formData.is_billing_owner"></ion-checkbox>
+        <ion-label class="ion-text-wrap">{{ 'adminUsers.billingOwner' | translate }}</ion-label>
       </ion-item>
       <div class="ion-padding-top">
         <ion-button expand="block" (click)="save()">{{ 'adminUsers.save' | translate }}</ion-button>

@@ -59,7 +59,7 @@ try {
                 'gym_id' => $user['gym_id']
             ],
             'token' => $token,
-            'subscription' => compute_subscription($user)
+            'subscription' => compute_gym_subscription($user, $pdo)
         ]);
         exit;
     }

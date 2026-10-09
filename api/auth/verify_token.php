@@ -9,7 +9,7 @@ require_once __DIR__ . '/../../inc/subscription.php';
 
 function set_authenticated_user(array $user): bool {
     $role = strtoupper((string)$user['role']);
-    $subscription = compute_subscription($user);
+    $subscription = compute_gym_subscription($user, getPDO());
 
     $_SESSION['user_id'] = (int)$user['id'];
     $_SESSION['username'] = (string)$user['username'];

@@ -14,7 +14,16 @@ const TRIAL_DAYS = 7;
 function compute_subscription(array $user): array {
     $role = strtoupper($user['role'] ?? '');
     if (str_contains($role, 'ADMIN') || str_contains($role, 'SUPER')) {
-        return ['status' => 'active', 'trial_start_date' => null, 'trial_ends_at' => null, 'trial_days_remaining' => 0, 'expires_at' => null, 'plan' => null];
+        return [
+            'status' => 'active',
+            'trial_start_date' => null,
+            'trial_ends_at' => null,
+            'trial_days_remaining' => 0,
+            'expires_at' => null,
+            'plan' => null,
+            'auto_renew' => false,
+            'cancel_at_period_end' => false,
+        ];
     }
 
     $start = $user['trial_start_date'] ?? null;
@@ -38,7 +47,51 @@ function compute_subscription(array $user): array {
         'trial_days_remaining' => $daysLeft,
         'expires_at' => $expires ? date('c', strtotime($expires)) : null,
         'plan' => $user['subscription_plan'] ?? null,
+        'auto_renew' => false,
+        'cancel_at_period_end' => false,
     ];
+}
+
+function compute_gym_subscription(array $user, PDO $pdo): array {
+    $role = strtoupper((string)($user['role'] ?? ''));
+    if (str_contains($role, 'ADMIN') || str_contains($role, 'SUPER')) {
+        return compute_subscription($user);
+    }
+
+    $gymId = (int)($user['gym_id'] ?? 0);
+    if ($gymId <= 0) {
+        return compute_subscription($user);
+    }
+    $stmt = $pdo->prepare(
+        'SELECT trial_start_date, status, plan, current_period_end, provider, cancel_at_period_end
+         FROM gym_subscriptions WHERE gym_id = ? LIMIT 1'
+    );
+    $stmt->execute([$gymId]);
+    $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$subscription) {
+        return compute_subscription($user);
+    }
+
+    return compute_gym_subscription_state($user, $subscription);
+}
+
+function compute_gym_subscription_state(array $user, array $subscription): array {
+    $effectiveStatus = (string)$subscription['status'];
+    if (in_array($effectiveStatus, ['canceled', 'past_due'], true)
+        && !empty($subscription['current_period_end'])
+        && strtotime($subscription['current_period_end']) >= time()) {
+        $effectiveStatus = 'active';
+    }
+    $effective = compute_subscription([
+        'role' => $user['role'] ?? '',
+        'trial_start_date' => $subscription['trial_start_date'],
+        'subscription_status' => $effectiveStatus,
+        'subscription_plan' => $subscription['plan'],
+        'subscription_expires_at' => $subscription['current_period_end'],
+    ]);
+    $effective['auto_renew'] = !empty($subscription['provider']) && empty($subscription['cancel_at_period_end']);
+    $effective['cancel_at_period_end'] = (bool)$subscription['cancel_at_period_end'];
+    return $effective;
 }
 
 function get_subscription_status(): string {

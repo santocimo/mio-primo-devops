@@ -4,7 +4,7 @@ export interface User {
   email: string;
   username?: string;
   phone?: string;
-  role: 'admin' | 'manager' | 'operator' | 'user';
+  role: 'admin' | 'manager' | 'operator' | 'gestore' | 'user';
   gym_id?: number;
   created_at: string;
   updated_at: string;
@@ -22,6 +22,8 @@ export interface ServerSubscription {
   trial_days_remaining: number;
   expires_at: string | null;
   plan: string | null;
+  auto_renew: boolean;
+  cancel_at_period_end: boolean;
 }
 
 export interface SubscriptionUpdate {
@@ -31,6 +33,8 @@ export interface SubscriptionUpdate {
   trial_days_remaining?: number;
   expires_at?: string | null;
   plan?: string | null;
+  auto_renew?: boolean;
+  cancel_at_period_end?: boolean;
 }
 
 export interface LoginResponse {

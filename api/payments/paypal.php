@@ -3,7 +3,8 @@ require_once __DIR__ . '/../../inc/security.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/verify_token.php';
 require_once __DIR__ . '/../../inc/subscription_plans.php';
-require_once __DIR__ . '/../../inc/subscription_payments.php';
+require_once __DIR__ . '/../../inc/recurring_subscriptions.php';
+require_once __DIR__ . '/../../inc/subscription.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -43,13 +44,6 @@ function paypal_request(string $method, string $url, array $headers, ?string $bo
     return [$status, $response];
 }
 
-function paypal_amount_to_minor(string $amount): ?int {
-    if (!preg_match('/^\d{1,7}\.\d{2}$/', $amount)) {
-        return null;
-    }
-    return (int)str_replace('.', '', $amount);
-}
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit;
@@ -61,8 +55,9 @@ if (!verify_bearer_token()) {
     paypal_fail(401, 'Unauthorized');
 }
 $userId = (int)($_SESSION['user_id'] ?? 0);
-if ($userId <= 0) {
-    paypal_fail(403, 'Only registered operators can subscribe');
+$gymId = (int)($_SESSION['gym_id'] ?? 0);
+if ($userId <= 0 || $gymId <= 0 || !is_gym_billing_owner(getPDO(), $userId, $gymId)) {
+    paypal_fail(403, 'Only the billing owner can manage this gym subscription');
 }
 
 $clientId = getenv('PAYPAL_CLIENT_ID') ?: '';
@@ -101,6 +96,9 @@ try {
     ];
 
     if (($input['action'] ?? '') === 'create') {
+        if (gym_has_current_paid_subscription(getPDO(), $gymId)) {
+            paypal_fail(409, 'This gym already has an active subscription');
+        }
         $plan = (string)($input['plan'] ?? '');
         $plan = str_starts_with($plan, 'businessregistry_')
             ? substr($plan, strlen('businessregistry_'))
@@ -108,97 +106,119 @@ try {
         if (!isset($plans[$plan])) {
             paypal_fail(400, 'Invalid plan');
         }
+        $paypalPlanId = getenv('PAYPAL_PLAN_' . strtoupper($plan) . '_ID') ?: '';
+        if ($paypalPlanId === '') {
+            paypal_fail(503, 'PayPal recurring plan is not configured');
+        }
+        [$planStatus, $providerPlan] = paypal_request(
+            'GET',
+            "$base/v1/billing/plans/" . rawurlencode($paypalPlanId),
+            $headers
+        );
+        $regularCycle = null;
+        foreach ($providerPlan['billing_cycles'] ?? [] as $cycle) {
+            if (($cycle['tenure_type'] ?? '') === 'REGULAR') {
+                $regularCycle = $cycle;
+                break;
+            }
+        }
+        if ($planStatus >= 300
+            || ($providerPlan['status'] ?? '') !== 'ACTIVE'
+            || !$regularCycle
+            || ($regularCycle['frequency']['interval_unit'] ?? '') !== strtoupper($plans[$plan]['interval'])
+            || (int)($regularCycle['frequency']['interval_count'] ?? 0) !== 1
+            || (int)($regularCycle['total_cycles'] ?? -1) !== 0
+            || ($regularCycle['pricing_scheme']['fixed_price']['value'] ?? '') !== $plans[$plan]['price']
+            || ($regularCycle['pricing_scheme']['fixed_price']['currency_code'] ?? '') !== $currency) {
+            error_log('Configured PayPal plan does not match the recurring plan price/currency/interval');
+            paypal_fail(503, 'PayPal recurring plan does not match the configured price');
+        }
         $frontendUrl = rtrim(getenv('APP_FRONTEND_URL') ?: 'http://localhost:4200', '/');
         if (!filter_var($frontendUrl, FILTER_VALIDATE_URL)
             || !in_array(parse_url($frontendUrl, PHP_URL_SCHEME), ['http', 'https'], true)) {
             paypal_fail(503, 'Checkout return URL is not configured');
         }
         $returnUrl = $frontendUrl . '/subscribe';
-        $order = [
-            'intent' => 'CAPTURE',
-            'purchase_units' => [[
-                'custom_id' => "$userId|$plan",
-                'description' => $plans[$plan]['label'],
-                'amount' => ['currency_code' => $currency, 'value' => $plans[$plan]['price']],
-            ]],
-            'payment_source' => ['paypal' => ['experience_context' => [
+        $subscriptionRequest = [
+            'plan_id' => $paypalPlanId,
+            'custom_id' => "$gymId|$userId|$plan",
+            'application_context' => [
+                'brand_name' => 'BusinessRegistry',
+                'user_action' => 'SUBSCRIBE_NOW',
                 'return_url' => $returnUrl,
                 'cancel_url' => $frontendUrl . '/paywall?cancelled=1',
-                'user_action' => 'PAY_NOW',
-            ]]],
+            ],
         ];
         [$status, $response] = paypal_request(
             'POST',
-            "$base/v2/checkout/orders",
-            $headers,
-            json_encode($order, JSON_THROW_ON_ERROR)
+            "$base/v1/billing/subscriptions",
+            array_merge($headers, ['Prefer: return=representation']),
+            json_encode($subscriptionRequest, JSON_THROW_ON_ERROR)
         );
         if ($status >= 300 || empty($response['id'])) {
-            error_log('PayPal order creation failed with HTTP ' . $status);
-            paypal_fail(502, 'PayPal order creation failed');
+            error_log('PayPal subscription creation failed with HTTP ' . $status);
+            paypal_fail(502, 'PayPal subscription creation failed');
         }
         foreach ($response['links'] ?? [] as $link) {
-            if (in_array($link['rel'] ?? '', ['payer-action', 'approve'], true) && !empty($link['href'])) {
-                echo json_encode(['success' => true, 'order_id' => $response['id'], 'approve_url' => $link['href']]);
+            if (($link['rel'] ?? '') === 'approve' && !empty($link['href'])) {
+                echo json_encode(['success' => true, 'subscription_id' => $response['id'], 'approve_url' => $link['href']]);
                 exit;
             }
         }
-        paypal_fail(502, 'PayPal approval link missing');
+        paypal_fail(502, 'PayPal subscription approval link missing');
     }
 
-    if (($input['action'] ?? '') === 'capture') {
-        $orderId = (string)($input['order_id'] ?? '');
-        if (!preg_match('/^[A-Za-z0-9]{8,32}$/', $orderId)) {
-            paypal_fail(400, 'Invalid order');
+    if (($input['action'] ?? '') === 'confirm') {
+        $subscriptionId = (string)($input['subscription_id'] ?? '');
+        if (!preg_match('/^[A-Za-z0-9-]{8,64}$/', $subscriptionId)) {
+            paypal_fail(400, 'Invalid subscription');
         }
 
-        [$orderStatus, $order] = paypal_request('GET', "$base/v2/checkout/orders/$orderId", $headers);
-        if ($orderStatus >= 300 || !in_array($order['status'] ?? '', ['APPROVED', 'COMPLETED'], true)) {
-            paypal_fail(402, 'PayPal order is not approved');
+        [$subscriptionStatus, $subscription] = paypal_request(
+            'GET',
+            "$base/v1/billing/subscriptions/$subscriptionId",
+            $headers
+        );
+        if ($subscriptionStatus >= 300 || ($subscription['status'] ?? '') !== 'ACTIVE') {
+            paypal_fail(402, 'PayPal subscription is not active');
         }
-        $purchaseUnit = $order['purchase_units'][0] ?? [];
-        [$ownerId, $plan] = array_pad(explode('|', (string)($purchaseUnit['custom_id'] ?? ''), 2), 2, '');
-        $amount = $purchaseUnit['amount'] ?? [];
-        if ((int)$ownerId !== $userId
+        [$ownerGymId, $ownerId, $plan] = array_pad(
+            explode('|', (string)($subscription['custom_id'] ?? ''), 3),
+            3,
+            ''
+        );
+        $paypalPlanId = getenv('PAYPAL_PLAN_' . strtoupper($plan) . '_ID') ?: '';
+        $lastPayment = $subscription['billing_info']['last_payment'] ?? [];
+        if ((int)$ownerGymId !== $gymId
+            || (int)$ownerId !== $userId
             || !isset($plans[$plan])
-            || ($amount['value'] ?? '') !== $plans[$plan]['price']
-            || ($amount['currency_code'] ?? '') !== $currency) {
-            paypal_fail(403, 'Order does not belong to this user or configured plan');
+            || $paypalPlanId === ''
+            || ($subscription['plan_id'] ?? '') !== $paypalPlanId
+            || ($lastPayment['amount']['value'] ?? '') !== $plans[$plan]['price']
+            || ($lastPayment['amount']['currency_code'] ?? '') !== $currency) {
+            paypal_fail(403, 'Subscription does not belong to this gym or configured plan');
         }
 
-        if (($order['status'] ?? '') === 'COMPLETED') {
-            $captureResponse = $order;
-        } else {
-            [$captureStatus, $captureResponse] = paypal_request(
-                'POST',
-                "$base/v2/checkout/orders/$orderId/capture",
-                $headers,
-                '{}'
-            );
-            if ($captureStatus >= 300 || ($captureResponse['status'] ?? '') !== 'COMPLETED') {
-                paypal_fail(402, 'Payment capture failed');
-            }
-        }
-        $capture = $captureResponse['purchase_units'][0]['payments']['captures'][0] ?? [];
-        if (($capture['status'] ?? '') !== 'COMPLETED'
-            || ($capture['amount']['currency_code'] ?? '') !== $currency
-            || paypal_amount_to_minor((string)($capture['amount']['value'] ?? '')) !== $plans[$plan]['amount_minor']) {
-            paypal_fail(402, 'Payment amount mismatch');
-        }
-
-        $subscription = activate_subscription_payment(
+        $nextBillingTime = strtotime((string)($subscription['billing_info']['next_billing_time'] ?? ''));
+        save_gym_recurring_subscription(
             getPDO(),
+            $gymId,
             'paypal',
-            (string)($capture['id'] ?? $orderId),
-            $userId,
+            $subscriptionId,
             $plan,
-            $plans[$plan]['amount_minor'],
-            $currency
+            'active',
+            $nextBillingTime ? date('Y-m-d H:i:s', $nextBillingTime) : null,
+            (string)($subscription['subscriber']['payer_id'] ?? ''),
+            false
         );
         echo json_encode([
             'success' => true,
-            'transaction_id' => $capture['id'] ?? $orderId,
-            'subscription' => $subscription,
+            'transaction_id' => $subscriptionId,
+            'subscription' => compute_gym_subscription([
+                'id' => $userId,
+                'gym_id' => $gymId,
+                'role' => $_SESSION['user_role'] ?? '',
+            ], getPDO()),
         ]);
         exit;
     }

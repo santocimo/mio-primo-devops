@@ -145,11 +145,17 @@ try {
     $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'trial')");
     $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id]);
     $user_id = (int)$pdo->lastInsertId();
+    $setBillingOwner = $pdo->prepare('UPDATE gyms SET billing_owner_user_id = ? WHERE id = ?');
+    $setBillingOwner->execute([$user_id, $gym_id]);
+    $createGymSubscription = $pdo->prepare(
+        "INSERT INTO gym_subscriptions (gym_id, trial_start_date, status) VALUES (?, NOW(), 'trial')"
+    );
+    $createGymSubscription->execute([$gym_id]);
 
     $subRow = $pdo->prepare("SELECT role, trial_start_date, subscription_status, subscription_plan, subscription_expires_at FROM users WHERE id = ?");
     $subRow->execute([$user_id]);
     $user = $subRow->fetch(PDO::FETCH_ASSOC) ?: [];
-    $subscription = compute_subscription($user);
+    $subscription = compute_gym_subscription($user, $pdo);
     $token = create_api_token([
         'id' => $user_id,
         'username' => $username,

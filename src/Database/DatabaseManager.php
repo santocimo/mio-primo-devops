@@ -79,6 +79,7 @@ class DatabaseManager {
             $this->ensureGymCategory();
             $this->ensureVisitorSchema();
             $this->ensureUsersSchema();
+            $this->ensureGymSubscriptionsSchema();
             $this->ensureServiceSchema();
             $this->ensureAppointmentSchema();
             $this->ensureSettingsSchema();
@@ -126,6 +127,59 @@ class DatabaseManager {
             "INSERT INTO gyms (name, slug, category)
              SELECT 'Default Gym', 'default', 'gym'
              WHERE NOT EXISTS (SELECT 1 FROM gyms WHERE slug = 'default')"
+        );
+    }
+
+    private function ensureGymSubscriptionsSchema() {
+        $gymColumns = $this->pdo->query("SHOW COLUMNS FROM gyms")->fetchAll(PDO::FETCH_COLUMN);
+        if (!in_array('billing_owner_user_id', $gymColumns, true)) {
+            $this->pdo->exec('ALTER TABLE gyms ADD COLUMN billing_owner_user_id INT NULL');
+        }
+        $this->pdo->exec(
+            "UPDATE gyms g
+             JOIN (
+               SELECT gym_id, MIN(id) AS owner_id
+               FROM users
+               WHERE gym_id IS NOT NULL AND LOWER(role) IN ('operatore', 'operator')
+               GROUP BY gym_id
+             ) owners ON owners.gym_id = g.id
+             SET g.billing_owner_user_id = owners.owner_id
+             WHERE g.billing_owner_user_id IS NULL"
+        );
+        $this->pdo->exec(
+            "CREATE TABLE IF NOT EXISTS gym_subscriptions (
+              gym_id INT PRIMARY KEY,
+              trial_start_date DATETIME NULL,
+              status VARCHAR(20) NOT NULL DEFAULT 'trial',
+              plan VARCHAR(20) NULL,
+              provider VARCHAR(20) NULL,
+              provider_subscription_id VARCHAR(255) NULL,
+              provider_customer_id VARCHAR(255) NULL,
+              current_period_end DATETIME NULL,
+              cancel_at_period_end TINYINT(1) NOT NULL DEFAULT 0,
+              created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+              updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+              UNIQUE KEY uq_gym_subscription_provider_id (provider, provider_subscription_id),
+              CONSTRAINT fk_gym_subscription_gym FOREIGN KEY (gym_id) REFERENCES gyms(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB CHARSET=utf8mb4"
+        );
+        $this->pdo->exec(
+            "INSERT INTO gym_subscriptions (gym_id, trial_start_date, status, plan, current_period_end)
+             SELECT g.id,
+                    COALESCE(MIN(u.trial_start_date), g.created_at),
+                    CASE
+                      WHEN MAX(CASE WHEN u.subscription_status = 'active'
+                                     AND (u.subscription_expires_at IS NULL OR u.subscription_expires_at > NOW())
+                                    THEN 1 ELSE 0 END) = 1 THEN 'active'
+                      WHEN COALESCE(MIN(u.trial_start_date), g.created_at) > DATE_SUB(NOW(), INTERVAL 7 DAY) THEN 'trial'
+                      ELSE 'expired'
+                    END,
+                    MAX(CASE WHEN u.subscription_status = 'active' THEN u.subscription_plan ELSE NULL END),
+                    MAX(CASE WHEN u.subscription_status = 'active' THEN u.subscription_expires_at ELSE NULL END)
+             FROM gyms g
+             LEFT JOIN users u ON u.gym_id = g.id
+             GROUP BY g.id, g.created_at
+             ON DUPLICATE KEY UPDATE gym_id = VALUES(gym_id)"
         );
     }
 
@@ -283,6 +337,7 @@ class DatabaseManager {
               provider VARCHAR(20) NOT NULL,
               provider_payment_id VARCHAR(255) NOT NULL,
               user_id INT NULL,
+              gym_id INT NULL,
               plan VARCHAR(20) NOT NULL,
               amount_minor INT UNSIGNED NOT NULL,
               currency CHAR(3) NOT NULL,
@@ -294,11 +349,21 @@ class DatabaseManager {
         );
 
         $columns = $this->pdo->query("SHOW COLUMNS FROM subscription_payments")->fetchAll(PDO::FETCH_ASSOC);
+        $hasGymId = false;
         foreach ($columns as $column) {
+            if ($column['Field'] === 'gym_id') {
+                $hasGymId = true;
+            }
             if ($column['Field'] === 'user_id' && strtoupper((string)$column['Null']) !== 'YES') {
                 $this->pdo->exec('ALTER TABLE subscription_payments MODIFY COLUMN user_id INT NULL');
-                break;
             }
+        }
+        if (!$hasGymId) {
+            $this->pdo->exec('ALTER TABLE subscription_payments ADD COLUMN gym_id INT NULL AFTER user_id');
+            $this->pdo->exec(
+                'UPDATE subscription_payments p JOIN users u ON u.id = p.user_id
+                 SET p.gym_id = u.gym_id WHERE p.gym_id IS NULL'
+            );
         }
     }
 }

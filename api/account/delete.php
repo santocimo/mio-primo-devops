@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../inc/security.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/verify_token.php';
+require_once __DIR__ . '/../../inc/recurring_subscriptions.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -52,7 +53,14 @@ try {
     $role = strtoupper((string)$user['role']);
     $isGlobalAdmin = str_contains($role, 'ADMIN') || str_contains($role, 'SUPER');
     $gymId = isset($user['gym_id']) ? (int)$user['gym_id'] : 0;
-    $deletesActivity = $gymId > 0 && !$isGlobalAdmin;
+    $ownerQuery = $gymId > 0
+        ? $pdo->prepare('SELECT billing_owner_user_id FROM gyms WHERE id = ? LIMIT 1')
+        : null;
+    if ($ownerQuery) {
+        $ownerQuery->execute([$gymId]);
+    }
+    $isBillingOwner = $ownerQuery && (int)$ownerQuery->fetchColumn() === $userId;
+    $deletesActivity = $gymId > 0 && !$isGlobalAdmin && $isBillingOwner;
 
     if ($deletesActivity) {
         $gymQuery = $pdo->prepare('SELECT slug FROM gyms WHERE id = ? FOR UPDATE');
@@ -66,12 +74,34 @@ try {
             $pdo->rollBack();
             account_deletion_fail(409, 'The shared default activity cannot be deleted from an account');
         }
+        if (gym_has_current_paid_subscription($pdo, $gymId)) {
+            $pdo->rollBack();
+            account_deletion_fail(
+                409,
+                'Cancel the gym subscription and wait until the paid period ends before deleting this account'
+            );
+        }
+        $otherUsers = $pdo->prepare(
+            'SELECT id FROM users WHERE gym_id = ? AND id <> ? LIMIT 1 FOR UPDATE'
+        );
+        $otherUsers->execute([$gymId, $userId]);
+        if ($otherUsers->fetchColumn()) {
+            $pdo->rollBack();
+            account_deletion_fail(
+                409,
+                'Transfer billing ownership to another gym account before deleting this account'
+            );
+        }
 
         $preservePayments = $pdo->prepare(
-            'UPDATE subscription_payments SET user_id = NULL
+            'UPDATE subscription_payments SET user_id = NULL, gym_id = NULL
              WHERE user_id IN (SELECT id FROM users WHERE gym_id = ?)'
         );
         $preservePayments->execute([$gymId]);
+        $preserveGymPayments = $pdo->prepare(
+            'UPDATE subscription_payments SET gym_id = NULL WHERE gym_id = ?'
+        );
+        $preserveGymPayments->execute([$gymId]);
 
         $deleteContacts = $pdo->prepare('DELETE FROM visitatori WHERE gym_id = ?');
         $deleteContacts->execute([$gymId]);

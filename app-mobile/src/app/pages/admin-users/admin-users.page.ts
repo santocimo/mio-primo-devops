@@ -15,6 +15,7 @@ export interface AppUser {
   role: string;
   gym_id: number | null;
   created_at: string;
+  is_billing_owner: boolean;
 }
 
 @Component({
@@ -70,7 +71,15 @@ export class AdminUsersPage implements OnInit, OnDestroy {
 
   openEdit(u: AppUser): void {
     this.editingUser = u;
-    this.formData = { name: u.name ?? '', email: u.email ?? '', username: u.username, password: '', role: u.role, gym_id: u.gym_id };
+    this.formData = {
+      name: u.name ?? '',
+      email: u.email ?? '',
+      username: u.username,
+      password: '',
+      role: u.role,
+      gym_id: u.gym_id,
+      is_billing_owner: u.is_billing_owner,
+    };
     if (!this.isAdminUser) {
       this.formData.gym_id = this.authService.getSelectedGymId();
     }
@@ -79,12 +88,27 @@ export class AdminUsersPage implements OnInit, OnDestroy {
 
   closeForm(): void { this.showForm = false; this.editingUser = null; }
 
+  onRoleChange(): void {
+    if (this.formData.role === 'GESTORE') {
+      this.formData.is_billing_owner = true;
+    }
+  }
+
   save(): void {
     if (!this.formData.username) return;
     const call = this.editingUser
       ? this.apiService.updateUser(this.editingUser.id, this.formData)
       : this.apiService.createUser(this.formData);
-    call.pipe(takeUntil(this.destroy$)).subscribe(() => { this.closeForm(); this.load(); });
+    call.pipe(takeUntil(this.destroy$)).subscribe({
+      next: () => {
+        this.closeForm();
+        this.load();
+      },
+      error: error => {
+        const message = error?.error?.message || this.language.instant('adminUsers.saveError');
+        void this.presentToast(message, 'danger');
+      },
+    });
   }
 
   async del(u: AppUser): Promise<void> {
@@ -93,7 +117,13 @@ export class AdminUsersPage implements OnInit, OnDestroy {
       buttons: [
         { text: this.language.instant('common.cancel'), role: 'cancel' },
         { text: this.language.instant('common.delete'), role: 'destructive', handler: () => {
-            this.apiService.deleteUser(u.id).pipe(takeUntil(this.destroy$)).subscribe(() => this.load());
+            this.apiService.deleteUser(u.id).pipe(takeUntil(this.destroy$)).subscribe({
+              next: () => this.load(),
+              error: async error => {
+                const message = error?.error?.message || this.language.instant('adminUsers.deleteError');
+                await this.presentToast(message, 'danger');
+              },
+            });
           }
         },
       ],
@@ -129,6 +159,7 @@ export class AdminUsersPage implements OnInit, OnDestroy {
               username: u.username,
               role: u.role,
               gym_id: u.gym_id,
+              is_billing_owner: u.is_billing_owner,
               password: newPassword,
             }).pipe(takeUntil(this.destroy$)).subscribe({
               next: async () => {
@@ -150,6 +181,7 @@ export class AdminUsersPage implements OnInit, OnDestroy {
   roleLabel(role: string): string {
     const r = (role || '').toUpperCase();
     if (r.includes('ADMIN') || r.includes('SUPER')) return 'adminUsers.admin';
+    if (r === 'GESTORE') return 'adminUsers.billingManager';
     return this.isAdminUser ? 'adminUsers.manager' : 'adminUsers.member';
   }
 
@@ -184,5 +216,15 @@ export class AdminUsersPage implements OnInit, OnDestroy {
     await toast.present();
   }
 
-  private emptyForm() { return { name: '', email: '', username: '', password: '', role: 'OPERATORE', gym_id: null as number | null }; }
+  private emptyForm() {
+    return {
+      name: '',
+      email: '',
+      username: '',
+      password: '',
+      role: 'OPERATORE',
+      gym_id: null as number | null,
+      is_billing_owner: false,
+    };
+  }
 }

@@ -14,6 +14,7 @@
       <h1>{{ 'paywall.heading' | translate }}</h1>
       <p *ngIf="!isTrialExpired">{{ 'paywall.trial' | translate }}</p>
       <p *ngIf="isTrialExpired">{{ 'paywall.choosePlan' | translate }}</p>
+      <p>{{ 'paywall.gymCoverage' | translate }}</p>
     </div>
 
     <div class="features-list">
@@ -64,12 +65,15 @@
         <ion-button
           expand="block"
           (click)="onPurchase(product.id); $event.stopPropagation()"
-          [disabled]="purchaseInProgress || loadingPlans || plansUnavailable || (!providers.paypal && !providers.stripe)"
+          [disabled]="purchaseInProgress || loadingPlans || plansUnavailable || !canManageSubscription || (!providers.paypal && !providers.stripe)"
           class="purchase-button"
         >
           {{ 'paywall.subscribeNow' | translate }}
         </ion-button>
       </div>
+      <p *ngIf="!loadingPlans && !canManageSubscription" class="plans-error" role="status">
+        {{ 'paywall.billingOwnerOnly' | translate }}
+      </p>
     </div>
 
     <div class="terms-text">

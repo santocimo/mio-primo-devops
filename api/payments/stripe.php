@@ -3,7 +3,7 @@ require_once __DIR__ . '/../../inc/security.php';
 require_once __DIR__ . '/../../db.php';
 require_once __DIR__ . '/../auth/verify_token.php';
 require_once __DIR__ . '/../../inc/subscription_plans.php';
-require_once __DIR__ . '/../../inc/subscription_payments.php';
+require_once __DIR__ . '/../../inc/recurring_subscriptions.php';
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -58,8 +58,9 @@ if (!verify_bearer_token()) {
     stripe_fail(401, 'Unauthorized');
 }
 $userId = (int)($_SESSION['user_id'] ?? 0);
-if ($userId <= 0) {
-    stripe_fail(403, 'Only registered operators can subscribe');
+$gymId = (int)($_SESSION['gym_id'] ?? 0);
+if ($userId <= 0 || $gymId <= 0 || !is_gym_billing_owner(getPDO(), $userId, $gymId)) {
+    stripe_fail(403, 'Only the billing owner can manage this gym subscription');
 }
 
 $secret = getenv('STRIPE_SECRET_KEY') ?: '';
@@ -79,6 +80,9 @@ try {
     $currency = $plans['_currency'];
 
     if ($action === 'create') {
+        if (gym_has_current_paid_subscription(getPDO(), $gymId)) {
+            stripe_fail(409, 'This gym already has an active subscription');
+        }
         $planId = (string)($request['plan'] ?? '');
         $planKey = str_starts_with($planId, 'businessregistry_')
             ? substr($planId, strlen('businessregistry_'))
@@ -92,18 +96,22 @@ try {
             stripe_fail(503, 'Checkout return URL is not configured');
         }
         $form = [
-            'mode' => 'payment',
+            'mode' => 'subscription',
             'success_url' => $frontendUrl . '/subscribe?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $frontendUrl . '/paywall?cancelled=1',
             'client_reference_id' => (string)$userId,
-            'customer_creation' => 'if_required',
             'metadata[user_id]' => (string)$userId,
+            'metadata[gym_id]' => (string)$gymId,
             'metadata[plan]' => $planKey,
             'payment_method_types[0]' => 'card',
             'line_items[0][quantity]' => '1',
             'line_items[0][price_data][currency]' => strtolower($currency),
             'line_items[0][price_data][unit_amount]' => (string)$plans[$planKey]['amount_minor'],
             'line_items[0][price_data][product_data][name]' => $plans[$planKey]['label'],
+            'line_items[0][price_data][recurring][interval]' => $plans[$planKey]['interval'],
+            'subscription_data[metadata][user_id]' => (string)$userId,
+            'subscription_data[metadata][gym_id]' => (string)$gymId,
+            'subscription_data[metadata][plan]' => $planKey,
         ];
         [$status, $session] = stripe_api_request('POST', '/v1/checkout/sessions', $secret, $form);
         if ($status >= 300 || empty($session['id']) || empty($session['url'])) {
@@ -119,34 +127,70 @@ try {
         if (!preg_match('/^cs_(test|live)_[A-Za-z0-9]+$/', $sessionId)) {
             stripe_fail(400, 'Invalid checkout session');
         }
-        [$status, $session] = stripe_api_request('GET', '/v1/checkout/sessions/' . rawurlencode($sessionId), $secret);
+        [$status, $session] = stripe_api_request('GET', '/v1/checkout/sessions/' . rawurlencode($sessionId) . '?expand[]=subscription', $secret);
         if ($status >= 300) {
             stripe_fail(402, 'Could not verify card payment');
         }
         $planKey = (string)($session['metadata']['plan'] ?? '');
         $ownerId = (int)($session['metadata']['user_id'] ?? 0);
+        $subscriptionData = $session['subscription'] ?? null;
+        $subscriptionId = is_array($subscriptionData)
+            ? (string)($subscriptionData['id'] ?? '')
+            : (string)$subscriptionData;
         if (($session['status'] ?? '') !== 'complete'
-            || ($session['payment_status'] ?? '') !== 'paid'
+            || !in_array($session['payment_status'] ?? '', ['paid', 'no_payment_required'], true)
+            || ($session['mode'] ?? '') !== 'subscription'
             || (int)($session['client_reference_id'] ?? 0) !== $userId
             || $ownerId !== $userId
+            || (int)($session['metadata']['gym_id'] ?? 0) !== $gymId
             || !isset($plans[$planKey])
             || (int)($session['amount_total'] ?? 0) !== $plans[$planKey]['amount_minor']
-            || strtoupper((string)($session['currency'] ?? '')) !== $currency) {
+            || strtoupper((string)($session['currency'] ?? '')) !== $currency
+            || $subscriptionId === '') {
             stripe_fail(402, 'Payment details could not be verified');
         }
-        $subscription = activate_subscription_payment(
+        if (!is_array($subscriptionData)) {
+            [$subscriptionStatus, $subscriptionData] = stripe_api_request(
+                'GET',
+                '/v1/subscriptions/' . rawurlencode($subscriptionId),
+                $secret
+            );
+            if ($subscriptionStatus >= 300) {
+                stripe_fail(402, 'Could not verify recurring subscription');
+            }
+        }
+        $item = $subscriptionData['items']['data'][0] ?? [];
+        $price = $item['price'] ?? [];
+        $periodEnd = (int)($subscriptionData['current_period_end'] ?? 0);
+        if (!in_array($subscriptionData['status'] ?? '', ['active', 'trialing'], true)
+            || (int)($subscriptionData['metadata']['user_id'] ?? 0) !== $userId
+            || (int)($subscriptionData['metadata']['gym_id'] ?? 0) !== $gymId
+            || (string)($subscriptionData['metadata']['plan'] ?? '') !== $planKey
+            || (int)($price['unit_amount'] ?? 0) !== $plans[$planKey]['amount_minor']
+            || strtoupper((string)($price['currency'] ?? '')) !== $currency
+            || ($price['recurring']['interval'] ?? '') !== $plans[$planKey]['interval']
+            || $periodEnd <= 0) {
+            stripe_fail(402, 'Recurring subscription details could not be verified');
+        }
+        save_gym_recurring_subscription(
             getPDO(),
+            $gymId,
             'stripe',
-            $sessionId,
-            $userId,
+            $subscriptionId,
             $planKey,
-            (int)$session['amount_total'],
-            strtoupper((string)$session['currency'])
+            (string)$subscriptionData['status'],
+            date('Y-m-d H:i:s', $periodEnd),
+            (string)($subscriptionData['customer'] ?? ''),
+            !empty($subscriptionData['cancel_at_period_end'])
         );
         echo json_encode([
             'success' => true,
-            'transaction_id' => $session['payment_intent'] ?? $sessionId,
-            'subscription' => $subscription,
+            'transaction_id' => $subscriptionId,
+            'subscription' => compute_gym_subscription([
+                'id' => $userId,
+                'gym_id' => $gymId,
+                'role' => $_SESSION['user_role'] ?? '',
+            ], getPDO()),
         ]);
         exit;
     }

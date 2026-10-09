@@ -22,6 +22,8 @@ export interface CheckoutConfig {
     paypal: boolean;
     stripe: boolean;
   };
+  subscription: SubscriptionUpdate | null;
+  canManageSubscription: boolean;
 }
 
 export interface PurchaseResult {
@@ -37,12 +39,15 @@ interface ServerPlan {
   duration: 'monthly' | 'yearly';
   amount_minor: number;
   currency: string;
+  interval: 'month' | 'year';
 }
 
 interface PlansResponse {
   success: boolean;
   currency: string;
   providers: CheckoutConfig['providers'];
+  subscription: SubscriptionUpdate | null;
+  can_manage_subscription: boolean;
   plans: ServerPlan[];
 }
 
@@ -67,6 +72,8 @@ export class PaymentService {
           const locale = this.language.currentLanguage === 'en' ? 'en-IE' : 'it-IT';
           return {
             providers: response.providers,
+            subscription: response.subscription,
+            canManageSubscription: response.can_manage_subscription,
             products: response.plans.map((plan) => ({
               id: plan.id,
               name: this.language.instant(plan.duration === 'yearly' ? 'paywall.yearlyPlan' : 'paywall.monthlyPlan'),
@@ -115,11 +122,11 @@ export class PaymentService {
       );
   }
 
-  capturePayPalOrder(orderId: string): Observable<PurchaseResult> {
+  confirmPayPalSubscription(subscriptionId: string): Observable<PurchaseResult> {
     return this.http
       .post<PurchaseResult>(`${environment.apiUrl}/api/payments/paypal.php`, {
-        action: 'capture',
-        order_id: orderId,
+        action: 'confirm',
+        subscription_id: subscriptionId,
       })
       .pipe(map((result) => this.applyPurchaseResult(result)));
   }
@@ -130,6 +137,12 @@ export class PaymentService {
         action: 'confirm',
         session_id: sessionId,
       })
+      .pipe(map((result) => this.applyPurchaseResult(result)));
+  }
+
+  cancelSubscription(): Observable<PurchaseResult> {
+    return this.http
+      .post<PurchaseResult>(`${environment.apiUrl}/api/payments/manage.php`, { action: 'cancel' })
       .pipe(map((result) => this.applyPurchaseResult(result)));
   }
 

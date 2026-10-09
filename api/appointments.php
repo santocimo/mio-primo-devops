@@ -28,7 +28,7 @@ $pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 $role = strtoupper($_SESSION['user_role'] ?? '');
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
-$isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false;
+$isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false || $role === 'GESTORE';
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 
 $appointmentsHasGymId = false;

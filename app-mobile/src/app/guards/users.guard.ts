@@ -12,7 +12,7 @@ export class UsersGuard implements CanActivate {
     const user = this.authService.getCurrentUser();
     const role = (user?.role ?? '').toUpperCase();
 
-    if (role.includes('ADMIN') || role.includes('SUPER') || role.includes('OPERATORE')) {
+    if (role.includes('ADMIN') || role.includes('SUPER') || role.includes('OPERATORE') || role === 'GESTORE') {
       return true;
     }
 

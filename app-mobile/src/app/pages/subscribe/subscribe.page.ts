@@ -35,9 +35,9 @@ export class SubscribePage implements OnInit, OnDestroy {
       return;
     }
 
-    const orderId = this.route.snapshot.queryParamMap.get('token');
-    if (orderId) {
-      void this.finalizePayPal(orderId);
+    const paypalSubscriptionId = this.route.snapshot.queryParamMap.get('subscription_id');
+    if (paypalSubscriptionId) {
+      void this.finalizePayPal(paypalSubscriptionId);
       return;
     }
     if (this.route.snapshot.queryParamMap.get('cancelled')) {
@@ -72,13 +72,13 @@ export class SubscribePage implements OnInit, OnDestroy {
     this.router.navigate(['/paywall']);
   }
 
-  private async finalizePayPal(orderId: string): Promise<void> {
+  private async finalizePayPal(subscriptionId: string): Promise<void> {
     const loader = await this.loadingController.create({
       message: this.language.instant('subscribe.loading'),
     });
     await loader.present();
     this.paymentService
-      .capturePayPalOrder(orderId)
+      .confirmPayPalSubscription(subscriptionId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: async () => {

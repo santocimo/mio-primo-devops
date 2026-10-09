@@ -18,6 +18,24 @@
       <p class="hero-subtitle">{{ 'profile.accountDescription' | translate }}</p>
     </section>
 
+    <section class="section-card" *ngIf="subscriptionLoadError">
+      <p role="alert">{{ 'profile.subscriptionLoadError' | translate }}</p>
+    </section>
+
+    <section class="section-card" *ngIf="canManageSubscription && subscription">
+      <h2 class="section-title">{{ 'profile.subscription' | translate }}</h2>
+      <p *ngIf="subscription.auto_renew">{{ 'profile.subscriptionRenews' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
+      <p *ngIf="subscription.cancel_at_period_end">{{ 'profile.subscriptionEnds' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
+      <ion-button
+        *ngIf="subscription.auto_renew"
+        fill="outline"
+        color="danger"
+        [disabled]="managingSubscription"
+        (click)="cancelSubscription()">
+        {{ 'profile.cancelSubscriptionAction' | translate }}
+      </ion-button>
+    </section>
+
     <section class="section-card">
       <h2 class="section-title">{{ 'profile.accountDetails' | translate }}</h2>
       <dl class="profile-details">
@@ -31,7 +49,7 @@
         </div>
         <div>
           <dt>{{ 'profile.accessRole' | translate }}</dt>
-          <dd>{{ (isAdmin() ? 'menu.adminRole' : 'menu.operatorRole') | translate }}</dd>
+          <dd>{{ (isAdmin() ? 'menu.adminRole' : (isBillingManager() ? 'menu.billingManagerRole' : 'menu.operatorRole')) | translate }}</dd>
         </div>
       </dl>
     </section>

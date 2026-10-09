@@ -141,7 +141,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   canManageUsers(): boolean {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
-    return role.includes('ADMIN') || role.includes('SUPER') || role.includes('OPERATORE');
+    return role.includes('ADMIN') || role.includes('SUPER') || role.includes('OPERATORE') || role === 'GESTORE';
   }
 
   get trialDaysRemaining(): number {

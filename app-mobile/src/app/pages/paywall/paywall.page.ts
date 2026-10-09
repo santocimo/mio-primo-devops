@@ -20,6 +20,7 @@ export class PaywallPage implements OnInit, OnDestroy {
   loadingPlans = true;
   plansUnavailable = false;
   providers: CheckoutConfig['providers'] = { paypal: false, stripe: false };
+  canManageSubscription = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -53,6 +54,7 @@ export class PaywallPage implements OnInit, OnDestroy {
         next: (config) => {
           this.products = config.products;
           this.providers = config.providers;
+          this.canManageSubscription = config.canManageSubscription;
           this.loadingPlans = false;
         // Seleziona il piano annuale per default
           if (this.products.length > 1) {

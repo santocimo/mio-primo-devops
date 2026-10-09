@@ -67,7 +67,7 @@ if ($method === 'GET') {
 
 // Operators may update only their own gym profile.
 $operatorGymId = (int)($_SESSION['gym_id'] ?? 0);
-$isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false;
+$isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false || $role === 'GESTORE';
 $canUpdateOwnGym = $method === 'PUT' && $isOperator && $operatorGymId > 0;
 if ($method !== 'GET' && $method !== 'POST' && !$isAdmin && !$canUpdateOwnGym) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); exit; }
 
