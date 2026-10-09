@@ -47,3 +47,4 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Android: JDK17+SDK installati in home; `scripts/build-android-debug.sh` produce l APK (build riuscita, copia in C:\Users\Public\BusinessRegistry-debug.apk). Da provare su telefono: serve API raggiungibile dal telefono (WSL2: port proxy Windows o dominio HTTPS).
 - Prova su telefono: port proxy Windows 8083->WSL attivo (si perde al riavvio WSL: IP WSL cambia) + regola firewall; IP Wi-Fi Windows 172.20.10.9; APK in C:\Users\Public\BusinessRegistry-debug.apk; debug manifest con usesCleartextTraffic.
 - Android: targetSdk/compileSdk 35, AGP 8.7.3, Gradle 8.9 (per avviso "app per versione precedente di Android"). Android 15 impone edge-to-edge: controllare il layout sul telefono.
+- Fix: pagina subscribe ora legge session_id in modo reattivo (al rientro dal deep link la pagina era gia viva e non confermava). Test telefono: account prova.tel (abbonato, da ripulire) e prova.tel2 (trial).

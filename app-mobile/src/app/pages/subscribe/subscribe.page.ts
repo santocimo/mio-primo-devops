@@ -17,6 +17,7 @@ export class SubscribePage implements OnInit, OnDestroy {
   planPrice: string = '';
   providers: CheckoutConfig['providers'] = { paypal: false, stripe: false };
   processing = false;
+  private finalizedSessionId = '';
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -29,9 +30,15 @@ export class SubscribePage implements OnInit, OnDestroy {
   ) {}
 
   ngOnInit(): void {
-    const sessionId = this.route.snapshot.queryParamMap.get('session_id');
-    if (sessionId) {
-      void this.finalizeStripe(sessionId);
+    // La pagina può restare viva durante il checkout: il deep link cambia solo i query param
+    this.route.queryParamMap.pipe(takeUntil(this.destroy$)).subscribe((params) => {
+      const returnedSessionId = params.get('session_id');
+      if (returnedSessionId && returnedSessionId !== this.finalizedSessionId) {
+        this.finalizedSessionId = returnedSessionId;
+        void this.finalizeStripe(returnedSessionId);
+      }
+    });
+    if (this.route.snapshot.queryParamMap.get('session_id')) {
       return;
     }
 
