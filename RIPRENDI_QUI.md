@@ -34,3 +34,5 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 
 ## E2E registrazione
 - `app-mobile/e2e/register.spec.ts`: registra una palestra, verifica trial e redirect a checkout.stripe.com (senza pagare). Passa. Lascia dati di test (utente `e2e.*`, palestra `Palestra E2E *`) da eliminare a mano nel DB.
+
+- Aggiunti `tests/RecurringSubscriptionsTest.php` (referente, validazioni, conflitto tra palestre, importo). Sync `invoice.paid` e cancellazione restano verificati solo a mano (richiedono Stripe/DB).
