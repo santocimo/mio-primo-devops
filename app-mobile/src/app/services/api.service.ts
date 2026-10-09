@@ -161,6 +161,12 @@ export class ApiService {
     );
   }
 
+  searchComuni(term: string): Observable<{ label: string; value: string; codice: string }[]> {
+    return this.http.get<{ label: string; value: string; codice: string }[]>(
+      `${environment.apiUrl}/cerca_comuni.php?term=${encodeURIComponent(term)}`
+    );
+  }
+
   // ── Users (Admin only) ──────────────────────────────────────────────────
 
   getUsers(): Observable<any[]> {

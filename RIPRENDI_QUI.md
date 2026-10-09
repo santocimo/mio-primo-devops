@@ -54,5 +54,21 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Rete telefono (WSL2): il telefono raggiunge il backend via port proxy Windows 8083 -> IP WSL (`172.29.120.160`, cambia al riavvio WSL) + regola firewall. Ricrearlo da PowerShell admin: `netsh interface portproxy add v4tov4 listenport=8083 listenaddress=0.0.0.0 connectport=8083 connectaddress=<IP WSL>`. IP Wi-Fi Windows al momento: 172.20.10.9 (hotspot, puo' cambiare: in tal caso ricompilare l'APK).
 - Account di prova per il telefono: crearli con `POST /api/register` e poi eliminarli (Stripe: `DELETE /v1/subscriptions/<id>`; DB: users, gym_subscriptions, subscription_payments, gyms). Quelli di oggi (`prova.tel`, `prova.tel2`) sono gia' stati eliminati.
 
+## Aggiornamento 2026-10-09 sera: iscritti e codice fiscale
+- Ripristinati nel popup iscritti ricerca e selezione esplicita del comune con provincia; la lista è resa visibile nel viewport anche su schermi piccoli.
+- Il CF viene calcolato/ricalcolato usando nome, cognome, data di nascita, sesso e codice catastale del comune selezionato. CF resta modificabile manualmente.
+- Il popup mostra il codice fiscale una sola volta. Sono obbligatori nome, cognome, data di nascita, sesso, comune selezionato e CF valido; indirizzo e telefono restano facoltativi.
+- `api/contacts.php` rifiuta POST/PUT con dati obbligatori mancanti, data non valida o checksum CF errato.
+- Fix CORS in `cerca_comuni.php`: abilita Authorization nel preflight. Senza questo, il browser non riusciva a fare lookup cross-origin anche se l'endpoint rispondeva via curl.
+- Ricostruito solo il backend web locale dopo i fix (nessuna migrazione o modifica dati): `docker compose -p santo --env-file /home/santo/.env up -d --build --no-deps web-automatico`.
+- Validazioni: `npm run build` OK; `php -l api/contacts.php` e `php -l cerca_comuni.php` OK; suite Playwright completa seriale 8/8 OK, inclusi selezione comune, CF generato/aggiornato, campo CF singolo e rifiuto API di contatto incompleto. Gli account/record di test sono stati ripuliti.
+- Servizi locali verificati: Angular su 4200 HTTP 200; backend su 8083 HTTP 302 (redirect previsto).
+- File `.phpunit.result.cache` risulta modificato localmente da prima di questo lavoro: non includerlo nel commit.
+
+## Punti ancora aperti da affrontare
+- Restano da fare, nell'ordine sopra: verifica condivisa/accesso e permessi; PayPal sandbox (rimandato); decisione prezzi; deploy HTTPS e segreti/password di produzione; release Android/iOS e policy store; dati titolare e revisione legale.
+- Restano inoltre da implementare i test automatici per rinnovo/cancellazione webhook Stripe; i flussi sono stati provati manualmente, non in mock automatizzati.
+- Non attivare Stripe live né modificare schema/dati senza backup e approvazione dei dettagli commerciali.
+
 ## Commit del 2026-10-09 (tutto pushato su origin/work/clean-app-2026-10-04)
 Stripe fix e robustezza, test PHPUnit e Playwright, pagine legali IT/EN, deploy checklist, Android + deep link, target SDK 35, fix conferma checkout al rientro.

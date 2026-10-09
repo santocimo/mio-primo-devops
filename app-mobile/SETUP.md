@@ -165,7 +165,7 @@ Prima di promuovere l'app, validare l'esperienza con gestori di palestre, centri
 
 ## Privacy dei dati dei clienti
 
-Nel modulo iscritti/clienti sono obbligatori solo nome e cognome. Codice fiscale, data e luogo di nascita, sesso, indirizzo e telefono sono facoltativi; il codice fiscale non viene più calcolato automaticamente. Raccogliere questi dati solo quando servono davvero all'attività e spiegare ai clienti finalità e tempi di conservazione nell'informativa privacy.
+Nel modulo iscritti/clienti sono obbligatori nome, cognome, codice fiscale, data e comune di nascita e sesso. Selezionando un comune dai risultati, l'app calcola il codice fiscale, che resta modificabile e va verificato dall'utente. Indirizzo e telefono sono facoltativi. Raccogliere i dati solo quando servono davvero all'attività e spiegare ai clienti finalità e tempi di conservazione nell'informativa privacy.
 
 Per i database esistenti, applicare la migration `migrations/011_make_contact_gender_optional.sql` per rimuovere il valore predefinito "M" dai nuovi record senza modificare i dati già salvati.
 

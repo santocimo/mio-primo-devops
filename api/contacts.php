@@ -76,6 +76,39 @@ function cf_is_valid(string $cf): bool {
     return $cf[15] === $expectedControl;
 }
 
+function contact_required_fields_error(
+    string $nome,
+    string $cognome,
+    ?string $cf,
+    ?string $nascita,
+    ?string $luogo,
+    ?string $sesso
+): ?string {
+    if ($nome === '' || $cognome === '') {
+        return 'Nome e cognome obbligatori';
+    }
+    if ($cf === null) {
+        return 'Codice fiscale obbligatorio';
+    }
+    if (!cf_is_valid($cf)) {
+        return 'Codice fiscale non valido';
+    }
+    if ($nascita === null || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $nascita)) {
+        return 'Data di nascita obbligatoria e non valida';
+    }
+    [$year, $month, $day] = array_map('intval', explode('-', $nascita));
+    if (!checkdate($month, $day, $year)) {
+        return 'Data di nascita obbligatoria e non valida';
+    }
+    if ($luogo === null) {
+        return 'Comune di nascita obbligatorio';
+    }
+    if ($sesso === null || !in_array($sesso, ['M', 'F'], true)) {
+        return 'Sesso obbligatorio e non valido';
+    }
+    return null;
+}
+
 // ── GET ──────────────────────────────────────────────────────────────────────
 if ($method === 'GET') {
     if (isset($_GET['export']) && $_GET['export'] === 'csv') {
@@ -158,19 +191,10 @@ if ($method === 'POST') {
     $sesso = strtoupper(trim($d['sesso'] ?? ''));
     $sesso = $sesso !== '' ? $sesso : null;
 
-    if (!$nome || !$cognome) {
+    $validationError = contact_required_fields_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
+    if ($validationError !== null) {
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Nome e cognome obbligatori']);
-        exit;
-    }
-    if ($cf !== null && !cf_is_valid($cf)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
-        exit;
-    }
-    if ($sesso !== null && !in_array($sesso, ['M', 'F'], true)) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Sesso non valido']);
+        echo json_encode(['success' => false, 'message' => $validationError]);
         exit;
     }
 
@@ -212,14 +236,10 @@ if ($method === 'PUT') {
     $sesso = strtoupper(trim($d['sesso'] ?? ''));
     $sesso = $sesso !== '' ? $sesso : null;
 
-    if ($cf !== null && !cf_is_valid($cf)) {
+    $validationError = contact_required_fields_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
+    if ($validationError !== null) {
         http_response_code(400);
-        echo json_encode(['success'=>false,'message'=>'Codice fiscale non valido']);
-        exit;
-    }
-    if ($sesso !== null && !in_array($sesso, ['M', 'F'], true)) {
-        http_response_code(400);
-        echo json_encode(['success'=>false,'message'=>'Sesso non valido']);
+        echo json_encode(['success'=>false,'message'=>$validationError]);
         exit;
     }
 

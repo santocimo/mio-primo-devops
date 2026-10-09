@@ -124,17 +124,16 @@
     <p class="data-minimization-note">{{ 'contacts.dataMinimization' | translate }}</p>
     <ion-list>
       <ion-item>
-        <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" [placeholder]="'contacts.firstName' | translate"></ion-input>
+        <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.firstName' | translate" required></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" [placeholder]="'contacts.lastName' | translate"></ion-input>
+        <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.lastName' | translate" required></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita"></ion-input>
+        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionChange)="onFormFieldChange()" required></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" interface="popover">
-          <ion-select-option value="">{{ 'contacts.notSpecified' | translate }}</ion-select-option>
+        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover" required>
           <ion-select-option value="M">{{ 'contacts.male' | translate }}</ion-select-option>
           <ion-select-option value="F">{{ 'contacts.female' | translate }}</ion-select-option>
         </ion-select>
@@ -144,10 +143,25 @@
         <ion-input
           [label]="'contacts.birthCity' | translate"
           labelPlacement="stacked"
-          [(ngModel)]="formData.luogo_nascita"
-          [placeholder]="'contacts.birthCity' | translate">
+          [value]="comuneSearch"
+          (ionInput)="onComuneInput($event)"
+          [placeholder]="'contacts.searchCity' | translate"
+          required>
         </ion-input>
       </ion-item>
+      <p class="city-search-hint">{{ 'contacts.citySearchHint' | translate }}</p>
+      <div class="suggestions" *ngIf="showSuggestions" role="listbox" [attr.aria-label]="'contacts.birthCity' | translate">
+        <button
+          type="button"
+          class="suggestion-item"
+          role="option"
+          *ngFor="let comune of comuniSuggestions"
+          (click)="selectComune(comune)">
+          <span>{{ comune.value }}</span>
+          <small>{{ comune.label.substring(comune.value.length) }}</small>
+        </button>
+      </div>
+      <p class="city-search-message" *ngIf="citySearchFailed">{{ 'contacts.citySearchError' | translate }}</p>
 
       <ion-item>
         <ion-input [label]="'contacts.address' | translate" labelPlacement="stacked" [(ngModel)]="formData.indirizzo" [placeholder]="'contacts.addressPlaceholder' | translate"></ion-input>
@@ -160,15 +174,17 @@
           [label]="'contacts.taxCode' | translate"
           labelPlacement="stacked"
           [(ngModel)]="formData.codice_fiscale"
-          (ionInput)="formData.codice_fiscale = ($any($event.target).value ?? '').toUpperCase()"
+          (ionInput)="formData.codice_fiscale = ($any($event.detail).value ?? '').toUpperCase()"
           [placeholder]="'contacts.manualTaxCode' | translate"
-          style="text-transform:uppercase;">
+          style="text-transform:uppercase;"
+          maxlength="16"
+          required>
         </ion-input>
       </ion-item>
     </ion-list>
 
     <div class="ion-padding">
-      <ion-button expand="block" (click)="save()" [disabled]="!formData.nome || !formData.cognome">
+      <ion-button expand="block" (click)="save()" [disabled]="!isFormValid()">
         {{ (editingContact ? 'contacts.update' : 'contacts.save') | translate }}
       </ion-button>
     </div>

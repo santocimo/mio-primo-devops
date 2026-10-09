@@ -136,6 +136,53 @@ ion-content.contacts-content {
   font-size: 0.85rem;
 }
 
+.suggestions {
+  background: #fff;
+  border: 1px solid #94a3b8;
+  border-radius: 16px;
+  margin: 0 16px 8px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.18);
+  max-height: 220px;
+  overflow-y: auto;
+  position: relative;
+  z-index: 2;
+
+  .suggestion-item {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    border: 0;
+    background: transparent;
+    color: #0f172a;
+    text-align: left;
+    cursor: pointer;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 0.9rem;
+    min-height: 44px;
+
+    &:last-child { border-bottom: none; }
+    &:hover, &:focus-visible { background: #ccfbf1; color: #115e59; outline: 2px solid #0f766e; outline-offset: -2px; }
+
+    small {
+      margin-left: 6px;
+      color: #475569;
+      font-size: 0.8rem;
+    }
+  }
+}
+
+.city-search-hint {
+  margin: 2px 16px 8px;
+  color: #475569;
+  font-size: 0.8rem;
+}
+
+.city-search-message {
+  margin: 4px 16px 8px;
+  color: var(--ion-color-danger);
+  font-size: 0.85rem;
+}
+
 // Responsive: hide columns on small screens
 @media (max-width: 600px) {
   .hide-sm { display: none !important; }

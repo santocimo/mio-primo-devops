@@ -60,7 +60,7 @@ test('modifica contatto mostra i dati facoltativi salvati', async ({ page, reque
     data: {
       nome: 'AUTO',
       cognome,
-      codice_fiscale: '',
+      codice_fiscale: 'RSSMRA80A01H501U',
       data_nascita: '1990-01-01',
       luogo_nascita: 'ROMA',
       indirizzo: 'VIA TEST',
@@ -90,5 +90,77 @@ test('modifica contatto mostra i dati facoltativi salvati', async ({ page, reque
     await request.delete(`${API_BASE}/api/contacts.php/${contactId}`, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => undefined);
+  }
+});
+
+test('calcola e aggiorna il codice fiscale usando il comune selezionato', async ({ page, request }) => {
+  test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD');
+  const loginResponse = await request.post(`${API_BASE}/api/auth/login.php`, {
+    data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+  });
+  expect(loginResponse.ok()).toBeTruthy();
+  const token = (await loginResponse.json()).token;
+  const incompleteContact = await request.post(`${API_BASE}/api/contacts.php`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { nome: 'TEST', cognome: 'INCOMPLETO' },
+  });
+  expect(incompleteContact.status()).toBe(400);
+
+  const uniqueSuffix = Date.now();
+  const cognome = `ROSSI${uniqueSuffix}`;
+
+  try {
+    await login(page);
+    await openContactsPage(page);
+
+    const addButton = page.locator('ion-header ion-button:has(ion-icon[name="add-outline"])').first();
+    await addButton.click();
+    const modal = page.locator('.modal-sheet');
+    await expect(modal).toBeVisible();
+
+    const inputs = modal.locator('ion-input input');
+    await expect(modal.getByLabel('Codice fiscale *')).toBeVisible();
+    await expect(modal.getByLabel('Codice fiscale *')).toHaveCount(1);
+    await expect(modal.getByLabel('Comune di nascita *')).toBeVisible();
+    await expect(modal.locator('ion-button').last()).toHaveAttribute('aria-disabled', 'true');
+    await inputs.nth(0).fill('Mario');
+    await inputs.nth(1).fill(cognome);
+    await inputs.nth(2).fill('1980-01-01');
+
+    await modal.locator('ion-select').click();
+    await page.getByRole('radio', { name: 'Maschio' }).click();
+
+    await inputs.nth(3).fill('Roma');
+    const romaOption = modal.locator('.suggestion-item').filter({ hasText: 'ROMA (RM)' });
+    await expect(romaOption).toBeVisible();
+    await expect(romaOption).toBeInViewport();
+    await romaOption.click();
+    await expect(inputs.last()).toHaveValue('RSSMRA80A01H501U');
+    await modal.locator('ion-button').last().click();
+
+    const row = page.locator('table.contacts-table tbody tr').filter({ hasText: cognome }).first();
+    await expect(row).toBeVisible({ timeout: 10000 });
+    await row.locator('ion-button').first().evaluate((element: HTMLElement) => element.click());
+    await expect(modal).toBeVisible();
+
+    await modal.locator('ion-select').click();
+    await page.getByRole('radio', { name: 'Femmina' }).click();
+    await expect(inputs.last()).toHaveValue(/^RSSMRA80A41H501[A-Z]$/);
+    await modal.locator('ion-button').last().click();
+  } finally {
+    const response = await request.get(`${API_BASE}/api/contacts.php`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (response.ok()) {
+      const contacts = await response.json();
+      const created = Array.isArray(contacts)
+        ? contacts.find((contact: { cognome?: string }) => contact.cognome === cognome)
+        : undefined;
+      if (created?.id) {
+        await request.delete(`${API_BASE}/api/contacts.php/${created.id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    }
   }
 });
