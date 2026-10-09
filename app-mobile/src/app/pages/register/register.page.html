@@ -123,6 +123,12 @@
       </form>
     </div>
 
+    <p class="legal-links">
+      <a routerLink="/legal/terms">Termini di servizio</a> ·
+      <a routerLink="/legal/privacy">Privacy</a> ·
+      <a routerLink="/legal/subscription">Rinnovo automatico</a>
+    </p>
+
     <div class="login-link">
       {{ 'register.haveAccount' | translate }}
       <a (click)="router.navigate(['/login'])">{{ 'register.login' | translate }}</a>

@@ -38,3 +38,5 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Aggiunti `tests/RecurringSubscriptionsTest.php` (referente, validazioni, conflitto tra palestre, importo). Sync `invoice.paid` e cancellazione restano verificati solo a mano (richiedono Stripe/DB).
 
 - Aggiunta `DEPLOY_CHECKLIST.md` (segreti, passaggio Stripe live, webhook, infrastruttura). Prossimo: pagine legali.
+
+- Pagine legali (bozze IT, da far revisionare a un legale): route `/legal/:doc` (terms, privacy, subscription) in `app-mobile/src/app/pages/legal`, link da registrazione e da `/subscribe`. Build OK.

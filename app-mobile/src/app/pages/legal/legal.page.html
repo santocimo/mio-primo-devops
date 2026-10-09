@@ -1,0 +1,18 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/login"></ion-back-button>
+    </ion-buttons>
+    <ion-title>{{ document.title }}</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="page-shell legal-container">
+    <p class="legal-draft">Bozza da far revisionare a un professionista legale prima della pubblicazione.</p>
+    <section *ngFor="let section of document.sections" class="section-card">
+      <h2 class="section-title">{{ section.heading }}</h2>
+      <p *ngFor="let paragraph of section.paragraphs">{{ paragraph }}</p>
+    </section>
+  </div>
+</ion-content>
