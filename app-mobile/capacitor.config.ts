@@ -12,6 +12,10 @@ const config: CapacitorConfig = {
       // Configurato in runtime per iOS/Android
     },
   },
+  android: {
+    // Solo per le build di prova con API in http su rete locale
+    allowMixedContent: Boolean(process.env['ANDROID_ALLOW_HTTP']),
+  },
   server: {
     // In development, punta al server di sviluppo
     url: process.env['IONIC_SERVER_URL'] || undefined,
