@@ -12,7 +12,7 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Backend: container santo-web-automatico-1 su 8083 (se connection reset: docker restart santo-web-automatico-1). Frontend: app-mobile, `npx ng serve --host 0.0.0.0` (4200).
 - Install mobile: npm ci --ignore-scripts. Test: composer test. Build: npm run build.
 - Account locali di sviluppo: devtest (ADMIN), admin (SUPER), ope (operatore); password nel DB locale / scripts/create_test_user.php, vedi /home/santo/CREDENZIALI_DEV.txt (fuori dal repo).
-- Da fare: PayPal sandbox (Stripe completo), prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
+- Da fare: PayPal sandbox (rimandato) e prezzi definitivi (rimandati) (Stripe completo), prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
 - Operatori in trial scadono ~2026-10-11 (gym 1 ora ha abbonamento Stripe di test attivo fino al 2026-11-09).
 
 ## Stato 2026-10-09 (Stripe test)
@@ -25,5 +25,8 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Ordine eventi Stripe RISOLTO: se `invoice.paid` arriva prima del salvataggio dell'abbonamento, il webhook lo recupera da Stripe (`stripe_webhook_sync_subscription`), lo verifica (metadata, referente, prezzo, valuta, intervallo) e poi registra il pagamento. Provato: 200 e riga nel ledger; sottoscrizione inesistente -> 400.
 - Rinnovo provato con Stripe test clock (palestra 12, poi ripulita): +32 giorni -> `invoice.paid` 200, `current_period_end` avanzato di un mese, pagamento di rinnovo nel ledger. 
 - PayPal: RIMANDATO su richiesta (2026-10-09). Per la sandbox basta un login su developer.paypal.com (non serve account Business reale): Apps & Credentials > Sandbox > Create App (Merchant), poi Client ID/Secret nel .env (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE=sandbox), creare piani mensile/annuale (PAYPAL_PLAN_MONTHLY_ID/PAYPAL_PLAN_YEARLY_ID) e webhook (PAYPAL_WEBHOOK_ID, serve URL HTTPS raggiungibile).
+- Playwright (2026-10-09): Node 20 installato in ~/.local/node20 (nessun sudo). Esecuzione: `cd app-mobile; export PATH=$HOME/.local/node20/bin:$PATH; E2E_ADMIN_USERNAME=devtest E2E_ADMIN_PASSWORD=<da CREDENZIALI_DEV.txt> npx playwright test` -> 6/6 OK. Corretti in modal.spec.ts il selettore del login (cliccava "Registrati") e il titolo atteso ("Modifica iscritto").
+- Produzione: nessuna password predefinita nel codice (admin solo da ADMIN_INITIAL_PASSWORD >= 12 caratteri; APP_TOKEN_SECRET >= 32 caratteri). Da fare a deploy: impostare segreti nuovi nello store del deployment e cambiare le password degli account admin esistenti.
+- Deep link nativo: NON iniziato. Mancano cartelle android/ios, @capacitor/app e @capacitor/browser; il checkout usa window.location.assign e torna a APP_FRONTEND_URL/subscribe. Serve decidere dominio HTTPS (universal/app link) e provarlo su dispositivo reale.
 - Dopo riavvio PC: rilanciare `stripe listen` (comando sopra) e `ng serve`; il backend Docker riparte da solo.
 - Stato DB di prova: gym 1 abbonamento Stripe test attivo con disdetta a fine periodo (referente `ope`, scade 2026-11-09); gym 12 rimessa in trial.

@@ -13,7 +13,7 @@ async function login(page: Page) {
   await page.keyboard.type(ADMIN_USERNAME!);
   await page.locator('ion-input').nth(1).click();
   await page.keyboard.type(ADMIN_PASSWORD!);
-  await page.locator('ion-button[type="submit"], ion-button').first().click();
+  await page.locator('ion-button[type="submit"]').click();
   await page.waitForURL(/\/(contacts|paywall)/, { timeout: 15000 });
 }
 
@@ -84,7 +84,7 @@ test('modifica contatto mostra i dati facoltativi salvati', async ({ page, reque
 
     const modal = page.locator('.modal-sheet');
     await expect(modal).toBeVisible({ timeout: 5000 });
-    await expect(modal.locator('ion-title')).toContainText('Modifica contatto');
+    await expect(modal.locator('ion-title')).toContainText('Modifica iscritto');
     await expect(modal.locator('ion-input').nth(3)).toHaveJSProperty('value', 'ROMA');
   } finally {
     await request.delete(`${API_BASE}/api/contacts.php/${contactId}`, {
