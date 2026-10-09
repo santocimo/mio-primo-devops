@@ -35,13 +35,23 @@ test('registrazione palestra: trial attivo e checkout Stripe raggiungibile', asy
     data: { username, password },
   });
   const body = await login.json();
-  expect(body.success).toBe(true);
-  expect(body.subscription.status).toBe('trial');
-  expect(body.subscription.trial_days_remaining).toBeGreaterThanOrEqual(6);
+  const token: string = body.token;
+  try {
+    expect(body.success).toBe(true);
+    expect(body.subscription.status).toBe('trial');
+    expect(body.subscription.trial_days_remaining).toBeGreaterThanOrEqual(6);
 
-  await page.goto(`${BASE}/paywall`);
-  await expect(page.getByRole('heading', { name: /Sblocca tutte le funzioni/i })).toBeVisible();
-  await page.getByRole('button', { name: 'Scegli il piano' }).first().click();
-  await page.getByRole('button', { name: 'Paga con carta' }).click();
-  await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20000 });
+    await page.goto(`${BASE}/paywall`);
+    await expect(page.getByRole('heading', { name: /Sblocca tutte le funzioni/i })).toBeVisible();
+    await page.getByRole('button', { name: 'Scegli il piano' }).first().click();
+    await page.getByRole('button', { name: 'Paga con carta' }).click();
+    await page.waitForURL(/checkout\.stripe\.com/, { timeout: 20000 });
+  } finally {
+    // Elimina palestra e utente creati dal test (account unico in trial)
+    const del = await request.post(`${API_BASE}/api/account/delete.php`, {
+      headers: { Authorization: `Bearer ${token}` },
+      data: { password, confirmation: 'ELIMINA' },
+    });
+    expect((await del.json()).activity_deleted).toBe(true);
+  }
 });
