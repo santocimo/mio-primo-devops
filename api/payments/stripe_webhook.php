@@ -40,6 +40,36 @@ function stripe_subscription_period_end(array $subscription): ?string {
     return $end > 0 ? date('Y-m-d H:i:s', $end) : null;
 }
 
+// invoice.paid puo' arrivare prima degli eventi di checkout: in quel caso la sottoscrizione
+// va recuperata da Stripe e verificata come negli altri handler prima di salvarla.
+function stripe_webhook_sync_subscription(PDO $pdo, array $plans, string $subscriptionId, string $apiSecret): ?array {
+    [$status, $subscription] = stripe_webhook_request('/v1/subscriptions/' . rawurlencode($subscriptionId), $apiSecret);
+    $gymId = (int)($subscription['metadata']['gym_id'] ?? 0);
+    $ownerId = (int)($subscription['metadata']['user_id'] ?? 0);
+    $plan = (string)($subscription['metadata']['plan'] ?? '');
+    $price = $subscription['items']['data'][0]['price'] ?? [];
+    if ($status >= 300 || ($subscription['id'] ?? '') !== $subscriptionId
+        || $gymId <= 0 || !isset($plans[$plan])
+        || !is_gym_billing_owner($pdo, $ownerId, $gymId)
+        || (int)($price['unit_amount'] ?? 0) !== $plans[$plan]['amount_minor']
+        || strtoupper((string)($price['currency'] ?? '')) !== $plans['_currency']
+        || ($price['recurring']['interval'] ?? '') !== $plans[$plan]['interval']) {
+        return null;
+    }
+    save_gym_recurring_subscription(
+        $pdo,
+        $gymId,
+        'stripe',
+        $subscriptionId,
+        $plan,
+        (string)($subscription['status'] ?? ''),
+        stripe_subscription_period_end($subscription),
+        (string)($subscription['customer'] ?? ''),
+        !empty($subscription['cancel_at_period_end'])
+    );
+    return find_gym_subscription_by_provider_id($pdo, 'stripe', $subscriptionId);
+}
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     stripe_webhook_fail(405, 'Method not allowed');
 }
@@ -154,6 +184,9 @@ try {
         $subscription = $subscriptionId !== ''
             ? find_gym_subscription_by_provider_id($pdo, 'stripe', $subscriptionId)
             : null;
+        if (!$subscription && $subscriptionId !== '') {
+            $subscription = stripe_webhook_sync_subscription($pdo, $plans, $subscriptionId, $apiSecret);
+        }
         if (!$subscription) {
             stripe_webhook_fail(400, 'Unknown recurring subscription invoice');
         }
