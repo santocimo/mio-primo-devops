@@ -30,3 +30,7 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Deep link nativo: NON iniziato. Mancano cartelle android/ios, @capacitor/app e @capacitor/browser; il checkout usa window.location.assign e torna a APP_FRONTEND_URL/subscribe. Serve decidere dominio HTTPS (universal/app link) e provarlo su dispositivo reale.
 - Dopo riavvio PC: rilanciare `stripe listen` (comando sopra) e `ng serve`; il backend Docker riparte da solo.
 - Stato DB di prova: gym 1 abbonamento Stripe test attivo con disdetta a fine periodo (referente `ope`, scade 2026-11-09); gym 12 rimessa in trial.
+
+
+## E2E registrazione
+- `app-mobile/e2e/register.spec.ts`: registra una palestra, verifica trial e redirect a checkout.stripe.com (senza pagare). Passa. Lascia dati di test (utente `e2e.*`, palestra `Palestra E2E *`) da eliminare a mano nel DB.
