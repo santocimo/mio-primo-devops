@@ -1,4 +1,4 @@
-# Promemoria da incollare a inizio sessione (aggiornato 2026-10-09)
+# Promemoria da incollare a inizio sessione (aggiornato 2026-10-09, sera)
 
 Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 
@@ -12,8 +12,16 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - Backend: container santo-web-automatico-1 su 8083 (se connection reset: docker restart santo-web-automatico-1). Frontend: app-mobile, `npx ng serve --host 0.0.0.0` (4200).
 - Install mobile: npm ci --ignore-scripts. Test: composer test. Build: npm run build.
 - Account locali di sviluppo: devtest (ADMIN), admin (SUPER), ope (operatore); password nel DB locale / scripts/create_test_user.php, vedi /home/santo/CREDENZIALI_DEV.txt (fuori dal repo).
-- Da fare: PayPal sandbox (rimandato) e prezzi definitivi (rimandati) (Stripe completo), prezzi definitivi, deep link nativo, cambiare password admin/APP_TOKEN_SECRET in produzione, test Playwright (Node 20+).
 - Operatori in trial scadono ~2026-10-11 (gym 1 ora ha abbonamento Stripe di test attivo fino al 2026-11-09).
+
+## Da fare (in ordine di probabile priorita)
+1. Prezzi definitivi (ora provvisori 4,99 EUR/mese, 49,99 EUR/anno in .env/compose) e PayPal (rimandati dall'utente).
+2. Pubblicazione: API pubblica in HTTPS (dominio), Stripe live (vedi `DEPLOY_CHECKLIST.md`), segreti nuovi, password admin cambiate.
+3. Android per lo store: keystore e firma release, icone/splash, versionCode, AAB, eventuali App Links https (`app-mobile/ANDROID.md`). Controllare layout edge-to-edge (Android 15) sul telefono.
+4. iOS: serve un Mac con Xcode (`npx cap add ios`, URL scheme in Info.plist). Verificare regole degli store sui pagamenti esterni per abbonamenti B2B.
+5. Pagine legali: sono bozze IT/EN (`app-mobile/src/app/pages/legal`); mancano dati del titolare e revisione di un legale.
+6. PayPal: il ritorno nell'app via deep link vale solo per Stripe.
+7. Test automatici non scritti: sync `invoice.paid` e cancellazione (solo provati a mano; manca sqlite in PHP per mockare il DB).
 
 ## Stato 2026-10-09 (Stripe test)
 - Backend ricreato dal repo: `docker compose -p santo --env-file /home/santo/.env up -d --build --no-deps web-automatico` (da questa cartella). /tmp/santo-clean non serve piu'.
@@ -27,25 +35,23 @@ Progetto BusinessRegistry. Leggi prima SESSION_HANDOFF.md nel repo.
 - PayPal: RIMANDATO su richiesta (2026-10-09). Per la sandbox basta un login su developer.paypal.com (non serve account Business reale): Apps & Credentials > Sandbox > Create App (Merchant), poi Client ID/Secret nel .env (PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET, PAYPAL_MODE=sandbox), creare piani mensile/annuale (PAYPAL_PLAN_MONTHLY_ID/PAYPAL_PLAN_YEARLY_ID) e webhook (PAYPAL_WEBHOOK_ID, serve URL HTTPS raggiungibile).
 - Playwright (2026-10-09): Node 20 installato in ~/.local/node20 (nessun sudo). Esecuzione: `cd app-mobile; export PATH=$HOME/.local/node20/bin:$PATH; E2E_ADMIN_USERNAME=devtest E2E_ADMIN_PASSWORD=<da CREDENZIALI_DEV.txt> npx playwright test` -> 6/6 OK. Corretti in modal.spec.ts il selettore del login (cliccava "Registrati") e il titolo atteso ("Modifica iscritto").
 - Produzione: nessuna password predefinita nel codice (admin solo da ADMIN_INITIAL_PASSWORD >= 12 caratteri; APP_TOKEN_SECRET >= 32 caratteri). Da fare a deploy: impostare segreti nuovi nello store del deployment e cambiare le password degli account admin esistenti.
-- Deep link nativo: NON iniziato. Mancano cartelle android/ios, @capacitor/app e @capacitor/browser; il checkout usa window.location.assign e torna a APP_FRONTEND_URL/subscribe. Serve decidere dominio HTTPS (universal/app link) e provarlo su dispositivo reale.
 - Dopo riavvio PC: rilanciare `stripe listen` (comando sopra) e `ng serve`; il backend Docker riparte da solo.
 - Stato DB di prova: gym 1 abbonamento Stripe test attivo con disdetta a fine periodo (referente `ope`, scade 2026-11-09); gym 12 rimessa in trial.
 
+## Test e qualita
+- PHPUnit: `composer test` (17 test). Playwright: vedi sopra (Node 20); `register.spec.ts` registra una palestra, verifica trial e redirect a checkout.stripe.com senza pagare, e si pulisce da solo (elimina l'account via API).
+- Backup DB prima di toccare dati: `scripts/db_backup.sh`. Pulizia dati di test in MariaDB: `docker exec santo-database-santo-1 sh -c 'mariadb -uroot -p"$MYSQL_ROOT_PASSWORD" mio_database -e "..."'`.
 
-## E2E registrazione
-- `app-mobile/e2e/register.spec.ts`: registra una palestra, verifica trial e redirect a checkout.stripe.com (senza pagare). Passa. Si pulisce da solo (elimina l account via API a fine test).
+## Pagine legali
+- Bozze IT/EN, route `/legal/:doc` (terms, privacy, subscription), link da registrazione e da `/subscribe`; seguono la lingua scelta nell'app.
 
-- Aggiunti `tests/RecurringSubscriptionsTest.php` (referente, validazioni, conflitto tra palestre, importo). Sync `invoice.paid` e cancellazione restano verificati solo a mano (richiedono Stripe/DB).
+## Android / deep link (provato su telefono reale il 2026-10-09: login, checkout Stripe, ritorno nell'app, abbonamento attivo)
+- Schema `businessregistry://`. L'app invia `native: true` a `api/payments/stripe.php`, che usa il deep link come success/cancel URL. Listener `appUrlOpen` in `app.component.ts`; la pagina `/subscribe` legge `session_id` in modo reattivo.
+- Progetto `app-mobile/android` versionato; targetSdk/compileSdk 35, AGP 8.7.3, Gradle 8.9. Guida: `app-mobile/ANDROID.md`.
+- Strumenti in home (senza sudo): JDK 17 `~/.local/jdk17`, SDK `~/Android/sdk` (platform 33/34/35). Non c'e' accesso a KVM: niente emulatore.
+- Build APK di prova: `cd app-mobile; DEVICE_API_URL=http://<IP-Windows-Wi-Fi>:8083 ./scripts/build-android-debug.sh`, poi copiare l'APK in `C:\Users\Public\BusinessRegistry-debug.apk`. Debug manifest con `usesCleartextTraffic`.
+- Rete telefono (WSL2): il telefono raggiunge il backend via port proxy Windows 8083 -> IP WSL (`172.29.120.160`, cambia al riavvio WSL) + regola firewall. Ricrearlo da PowerShell admin: `netsh interface portproxy add v4tov4 listenport=8083 listenaddress=0.0.0.0 connectport=8083 connectaddress=<IP WSL>`. IP Wi-Fi Windows al momento: 172.20.10.9 (hotspot, puo' cambiare: in tal caso ricompilare l'APK).
+- Account di prova per il telefono: crearli con `POST /api/register` e poi eliminarli (Stripe: `DELETE /v1/subscriptions/<id>`; DB: users, gym_subscriptions, subscription_payments, gyms). Quelli di oggi (`prova.tel`, `prova.tel2`) sono gia' stati eliminati.
 
-- Aggiunta `DEPLOY_CHECKLIST.md` (segreti, passaggio Stripe live, webhook, infrastruttura). Prossimo: pagine legali.
-
-- Pagine legali (bozze IT, da far revisionare a un legale): route `/legal/:doc` (terms, privacy, subscription) in `app-mobile/src/app/pages/legal`, link da registrazione e da `/subscribe`. Build OK.
-- Pagine legali ora anche in inglese (segue la lingua scelta nell app).
-
-## Deep link / Android
-- Preparato: `@capacitor/app` + `@capacitor/browser`, schema `businessregistry://`, listener in app.component, flag `native` in stripe.php, progetto `app-mobile/android` generato e versionato. Verificato: Stripe accetta il success_url e il backend lo restituisce con native=true. NON provato: build Gradle e giro su dispositivo (manca JDK/SDK). Vedi `app-mobile/ANDROID.md`.
-- Android: JDK17+SDK installati in home; `scripts/build-android-debug.sh` produce l APK (build riuscita, copia in C:\Users\Public\BusinessRegistry-debug.apk). Da provare su telefono: serve API raggiungibile dal telefono (WSL2: port proxy Windows o dominio HTTPS).
-- Prova su telefono: port proxy Windows 8083->WSL attivo (si perde al riavvio WSL: IP WSL cambia) + regola firewall; IP Wi-Fi Windows 172.20.10.9; APK in C:\Users\Public\BusinessRegistry-debug.apk; debug manifest con usesCleartextTraffic.
-- Android: targetSdk/compileSdk 35, AGP 8.7.3, Gradle 8.9 (per avviso "app per versione precedente di Android"). Android 15 impone edge-to-edge: controllare il layout sul telefono.
-- Fix: pagina subscribe ora legge session_id in modo reattivo (al rientro dal deep link la pagina era gia viva e non confermava). Test telefono: account prova.tel (abbonato, da ripulire) e prova.tel2 (trial).
-- Test su telefono Android riuscito (login, checkout Stripe, ritorno via deep link, abbonamento attivo). Account prova.tel/prova.tel2 e relativi abbonamenti Stripe di test eliminati.
+## Commit del 2026-10-09 (tutto pushato su origin/work/clean-app-2026-10-04)
+Stripe fix e robustezza, test PHPUnit e Playwright, pagine legali IT/EN, deploy checklist, Android + deep link, target SDK 35, fix conferma checkout al rientro.
