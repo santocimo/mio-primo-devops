@@ -203,10 +203,23 @@ if ($method === 'POST') {
         exit;
     }
 
-    // Admin può specificare una gym_id nel body per creare per una sede specifica
+    // Admin deve specificare la sede scelta per evitare salvataggi nel tenant predefinito.
     $effective_gym_id = $gym_id;
-    if ($isAdmin && $use_gym && isset($d['gym_id']) && (int)$d['gym_id'] > 0) {
-        $effective_gym_id = (int)$d['gym_id'];
+    if ($isAdmin && $use_gym) {
+        $requestedGymId = isset($d['gym_id']) ? (int)$d['gym_id'] : 0;
+        if ($requestedGymId <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Selezionare un’attività prima di aggiungere un iscritto']);
+            exit;
+        }
+        $gymStmt = $pdo->prepare('SELECT id FROM gyms WHERE id = ? LIMIT 1');
+        $gymStmt->execute([$requestedGymId]);
+        if (!$gymStmt->fetchColumn()) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Attività non valida']);
+            exit;
+        }
+        $effective_gym_id = $requestedGymId;
     }
     if ($use_gym) {
         $stmt = $pdo->prepare("INSERT INTO visitatori (nome,cognome,codice_fiscale,data_nascita,luogo_nascita,indirizzo,recapito,sesso,gym_id) VALUES (?,?,?,?,?,?,?,?,?)");

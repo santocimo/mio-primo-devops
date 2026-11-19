@@ -81,3 +81,15 @@ Stripe fix e robustezza, test PHPUnit e Playwright, pagine legali IT/EN, deploy 
 - PHP lint sui quattro endpoint modificati e `composer test` (17 test, 44 assertion) OK; `git diff --check` OK.
 - L'aggiornamento è stato committato e pushato su `work/clean-app-2026-10-04`; la copia `/home/santo/RIPRENDI_QUI.md` deve essere sincronizzata con quella versionata.
 - Prossimi punti: decidere prezzi e se procedere con PayPal sandbox; non attivare pagamenti live senza approvazione.
+
+## Aggiornamento 2026-11-19 (profilo admin e selezione attività)
+- Per l'amministratore, il login porta al profilo (`/profile`); gli operatori continuano a entrare negli iscritti (`/contacts`).
+- Distinti i dati del profilo amministratore dai dati del gestore nelle schede delle attività. Nessun CF inventato per i gestori fittizi; i CF degli iscritti restano calcolati dal flusso di registrazione.
+- Sistemato il payload di registrazione per inviare nome e cognome separatamente, evitando la ripetizione del cognome; corretti i dati della registrazione di test già salvata.
+- Corretta la traduzione della categoria di appuntamento individuale, che veniva mostrata come chiave `services.category.appointment`.
+- La tendina admin non offre più “Tutte le attività”: seleziona la prima attività se manca una selezione valida e mantiene la scelta corrente. Se manca un'attività selezionata, contatti e appuntamenti non mostrano dati di tutte le palestre; gli appuntamenti sono filtrati anche quando si cambia palestra.
+- La creazione admin di un iscritto invia `gym_id` e l'API rifiuta la richiesta se la palestra non è valida, invece di usare silenziosamente la palestra 1. I servizi e le prenotazioni admin usano la palestra selezionata.
+- Dati locali aggiornati dopo backup DB: amministratore `admin` con nome Santo Cimò; gestori fittizi univoci dove mancanti; contatto di test associato alla palestra 13; nome della registrazione di test corretto. Backup conservati in `~/backups-db` (fuori dal repository).
+- Verifiche: build Angular production OK; PHPUnit 17 test / 44 assertion OK; lint PHP, Problems e `git diff --check` OK. App locale su 4200 HTTP 200. Smoke test autenticato con admin e operatore ancora da fare.
+- Modifiche codice e questo promemoria sono stati committati localmente su `work/clean-app-2026-10-04`; nessun push richiesto/eseguito.
+- Prossima ripresa: controllare `git status` e il commit; riaprire l'app su `http://localhost:4200`, verificare login admin (profilo, tendina senza “Tutte le attività”, cambio palestra e filtri) e login operatore (contesto limitato alla propria palestra). Poi affrontare solo i punti commerciali ancora aperti sopra.

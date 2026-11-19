@@ -61,7 +61,7 @@ export class LoginPage implements OnInit {
         if (currentState.subscriptionStatus === SubscriptionStatus.EXPIRED || currentState.subscriptionStatus === SubscriptionStatus.NONE) {
           this.navCtrl.navigateRoot('/paywall');
         } else {
-          this.navCtrl.navigateRoot('/contacts');
+          this.navCtrl.navigateRoot(isAdmin ? '/profile' : '/contacts');
         }
       } else {
         await this.showToast(this.language.instant('login.error'), 'danger');

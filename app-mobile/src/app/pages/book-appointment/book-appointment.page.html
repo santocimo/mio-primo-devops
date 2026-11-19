@@ -41,7 +41,7 @@
 
         <ion-select [label]="'booking.service' | translate" labelPlacement="stacked" [placeholder]="'booking.selectService' | translate" interface="popover" [(ngModel)]="selectedServiceId">
           <ion-select-option *ngFor="let service of services" [value]="service.id">
-            {{ service.name }} · {{ serviceModeLabel(service) }}{{ service.provider_name ? ' · ' + service.provider_name : '' }}
+            {{ service.name }} · {{ serviceModeLabel(service) | translate }}{{ service.provider_name ? ' · ' + service.provider_name : '' }}
           </ion-select-option>
         </ion-select>
       </div>

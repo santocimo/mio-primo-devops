@@ -1,6 +1,7 @@
 import { Component, OnInit, OnDestroy } from '@angular/core';
 import { AlertController, NavController, ToastController, ViewWillEnter } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
+import { AuthService } from '../../services/auth.service';
 import { Appointment } from '../../models/business.model';
 import { LanguageService } from '../../i18n/language.service';
 import { Subject } from 'rxjs';
@@ -11,18 +12,35 @@ import { takeUntil } from 'rxjs/operators';
   templateUrl: './appointments.page.html',
   styleUrls: ['./appointments.page.scss'],
 })
-export class AppointmentsPage implements OnDestroy, ViewWillEnter {
+export class AppointmentsPage implements OnInit, OnDestroy, ViewWillEnter {
   appointments: Appointment[] = [];
   loading = true;
   private destroy$ = new Subject<void>();
+  private lastSelectedGymId: number | null = null;
 
   constructor(
     private apiService: ApiService,
+    private authService: AuthService,
     private navCtrl: NavController,
     private alertController: AlertController,
     private toastController: ToastController,
     public language: LanguageService
   ) {}
+
+  ngOnInit(): void {
+    const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
+    const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
+    if (!isAdmin) return;
+
+    this.lastSelectedGymId = this.authService.getSelectedGymId();
+    this.authService.getSelectedGymIdStream()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(gymId => {
+        if (gymId === this.lastSelectedGymId) return;
+        this.lastSelectedGymId = gymId;
+        this.loadAppointments();
+      });
+  }
 
   ionViewWillEnter(): void {
     this.loadAppointments();
@@ -34,9 +52,18 @@ export class AppointmentsPage implements OnDestroy, ViewWillEnter {
   }
 
   loadAppointments(): void {
+    const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
+    const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
+    const selectedGymId = this.authService.getSelectedGymId();
+    if (isAdmin && selectedGymId == null) {
+      this.appointments = [];
+      this.loading = false;
+      return;
+    }
+
     this.loading = true;
     this.apiService
-      .getAppointments()
+      .getAppointments(isAdmin ? selectedGymId : undefined)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (appointments) => {

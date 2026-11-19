@@ -50,20 +50,24 @@
             </div>
           </div>
 
-          <div class="menu-section-label" *ngIf="gyms.length > 0">{{ 'menu.context' | translate }}</div>
-          <ion-item *ngIf="gyms.length > 0" class="menu-gym-picker">
+          <div class="menu-section-label" *ngIf="isAdmin() || gyms.length > 0">{{ 'menu.context' | translate }}</div>
+          <ion-item *ngIf="isAdmin() || gyms.length > 0" class="menu-gym-picker">
             <ion-icon name="business-outline" slot="start"></ion-icon>
             <ion-select
-              [label]="'menu.activeActivity' | translate"
+              [label]="'menu.activity' | translate"
               labelPlacement="fixed"
               [value]="selectedGymId"
+              [disabled]="gymsLoading || (gymsLoadError && gyms.length === 0)"
               (ionChange)="onGymChange($any($event.detail.value))"
               interface="popover"
-              [placeholder]="'menu.allActivities' | translate">
-              <ion-select-option *ngIf="isAdmin()" [value]="null">{{ 'menu.allActivities' | translate }}</ion-select-option>
+              [placeholder]="'menu.selectActivity' | translate">
               <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
             </ion-select>
           </ion-item>
+          <div class="menu-load-error" *ngIf="gymsLoadError" role="alert">
+            <span>{{ 'menu.activitiesLoadError' | translate }}</span>
+            <ion-button fill="clear" size="small" (click)="loadGyms()">{{ 'common.retry' | translate }}</ion-button>
+          </div>
 
           <div class="menu-section-label">{{ 'menu.navigation' | translate }}</div>
           <div class="menu-nav-list">

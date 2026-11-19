@@ -55,9 +55,10 @@ export class ApiService {
   /**
    * Ottiene gli appuntamenti dell'utente
    */
-  getAppointments(): Observable<Appointment[]> {
+  getAppointments(gymId?: number | null): Observable<Appointment[]> {
+    const gymParam = gymId ? `?gym_id=${gymId}` : '';
     return this.http.get<Appointment[]>(
-      `${environment.apiUrl}/api/appointments`,
+      `${environment.apiUrl}/api/appointments${gymParam}`,
       { headers: this.getHeaders() }
     );
   }
@@ -138,7 +139,7 @@ export class ApiService {
     });
   }
 
-  createContact(data: Omit<Contact, 'id'>): Observable<{ success: boolean; id: number }> {
+  createContact(data: Omit<Contact, 'id'> & { gym_id?: number }): Observable<{ success: boolean; id: number }> {
     return this.http.post<{ success: boolean; id: number }>(
       `${environment.apiUrl}/api/contacts`,
       data,

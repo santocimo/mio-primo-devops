@@ -112,7 +112,8 @@ export class RegisterPage {
     const body = {
       ...this.step1Form.value,
       ...this.step2Form.value,
-      name: `${this.step2Form.get('name')?.value?.trim()} ${this.step2Form.get('surname')?.value?.trim()}`.trim(),
+      name: String(this.step2Form.get('name')?.value ?? '').trim(),
+      surname: String(this.step2Form.get('surname')?.value ?? '').trim(),
       codice_fiscale: String(this.step2Form.get('codice_fiscale')?.value ?? '').toUpperCase(),
     };
     delete body['password2'];

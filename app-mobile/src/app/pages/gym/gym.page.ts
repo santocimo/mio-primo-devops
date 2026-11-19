@@ -51,15 +51,21 @@ export class GymPage implements OnInit, OnDestroy {
   }
 
   managerName(): string {
-    return this.gym?.manager_name || this.auth.getCurrentUser()?.name || this.auth.getCurrentUser()?.username || '—';
+    const user = this.auth.getCurrentUser();
+    const managesCurrentGym = !this.isAdminUser && user?.gym_id === this.gym?.id;
+    return this.gym?.manager_name || (managesCurrentGym ? user?.name || user?.username : undefined) || '—';
   }
 
   managerUsername(): string {
-    return this.gym?.manager_username || this.auth.getCurrentUser()?.username || '—';
+    const user = this.auth.getCurrentUser();
+    const managesCurrentGym = !this.isAdminUser && user?.gym_id === this.gym?.id;
+    return this.gym?.manager_username || (managesCurrentGym ? user?.username : undefined) || '—';
   }
 
   managerEmail(): string {
-    return this.gym?.manager_email || this.auth.getCurrentUser()?.email || '—';
+    const user = this.auth.getCurrentUser();
+    const managesCurrentGym = !this.isAdminUser && user?.gym_id === this.gym?.id;
+    return this.gym?.manager_email || (managesCurrentGym ? user?.email : undefined) || '—';
   }
 
   startEdit(): void {
@@ -68,8 +74,8 @@ export class GymPage implements OnInit, OnDestroy {
       name: this.gym.name,
       category: this.gym.category,
       activity_name: this.gym.activity_name || '',
-      manager_name: this.managerName() === '—' ? '' : this.managerName(),
-      manager_email: this.managerEmail() === '—' ? '' : this.managerEmail(),
+      manager_name: this.gym.manager_name || (!this.isAdminUser ? this.managerName() : ''),
+      manager_email: this.gym.manager_email || (!this.isAdminUser ? this.managerEmail() : ''),
       manager_cf: this.gym.manager_cf ?? '',
       address: this.gym.address ?? '',
       city: this.gym.city ?? '',
@@ -116,7 +122,9 @@ export class GymPage implements OnInit, OnDestroy {
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: async () => {
-          this.auth.updateCurrentUser({ name: update.manager_name, email: update.manager_email });
+          if (!this.isAdminUser) {
+            this.auth.updateCurrentUser({ name: update.manager_name, email: update.manager_email });
+          }
           this.gym = {
             ...this.gym!,
             name: update.name,

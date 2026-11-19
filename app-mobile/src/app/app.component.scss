@@ -184,6 +184,16 @@ ion-router-outlet.trial-offset {
 	--color: #ffffff;
 }
 
+.menu-load-error {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	padding: 4px 8px;
+	color: #fecaca;
+	font-size: 0.82rem;
+}
+
 .menu-logout ion-icon,
 .menu-logout ion-label {
 	color: #fca5a5 !important;

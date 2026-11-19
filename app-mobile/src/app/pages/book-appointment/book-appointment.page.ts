@@ -29,6 +29,7 @@ export class BookAppointmentPage implements OnInit, OnDestroy {
   minDate = this.localToday();
 
   private destroy$ = new Subject<void>();
+  private editAppointmentLoaded = false;
 
   constructor(
     private api: ApiService,
@@ -41,18 +42,23 @@ export class BookAppointmentPage implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.editingAppointmentId = Number(this.route.snapshot.queryParamMap.get('edit')) || null;
-    if (this.editingAppointmentId) this.loadAppointmentForEdit();
 
     this.auth.getSelectedGymIdStream()
       .pipe(takeUntil(this.destroy$))
       .subscribe(selectedGymId => {
-        const assignedGymId = this.auth.getCurrentUser()?.gym_id ?? null;
-        const gymId = selectedGymId ?? assignedGymId;
+        const user = this.auth.getCurrentUser();
+        const role = (user?.role ?? '').toUpperCase();
+        const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
+        const assignedGymId = user?.gym_id ?? null;
+        const gymId = selectedGymId ?? (isAdmin ? null : assignedGymId);
         if (gymId === this.gymId) return;
         this.gymId = gymId;
         this.selectedContactId = null;
         this.selectedServiceId = null;
         this.loadOptions();
+        if (this.editingAppointmentId) {
+          this.loadAppointmentForEdit(gymId);
+        }
       });
   }
 
@@ -113,8 +119,10 @@ export class BookAppointmentPage implements OnInit, OnDestroy {
     });
   }
 
-  private loadAppointmentForEdit(): void {
-    this.api.getAppointments().pipe(takeUntil(this.destroy$)).subscribe({
+  private loadAppointmentForEdit(gymId: number | null): void {
+    if (this.editAppointmentLoaded || !gymId) return;
+    this.editAppointmentLoaded = true;
+    this.api.getAppointments(gymId).pipe(takeUntil(this.destroy$)).subscribe({
       next: appointments => {
         const appointment = appointments.find(item => item.id === this.editingAppointmentId);
         if (!appointment) {

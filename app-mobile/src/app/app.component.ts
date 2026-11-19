@@ -20,6 +20,8 @@ import { AppLanguage, LanguageService } from './i18n/language.service';
 export class AppComponent implements OnInit, OnDestroy {
   authState$!: Observable<AuthState>;
   gyms: Gym[] = [];
+  gymsLoading = false;
+  gymsLoadError = false;
   selectedGymId: number | null = null;
   selectedGymName = '';
   currentLanguage: AppLanguage = 'it';
@@ -57,6 +59,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loadGyms();
       } else {
         this.gyms = [];
+        this.gymsLoading = false;
+        this.gymsLoadError = false;
         this.selectedGymId = null;
         this.selectedGymName = '';
       }
@@ -98,16 +102,20 @@ export class AppComponent implements OnInit, OnDestroy {
 
   loadGyms(): void {
     const isAdmin = this.isAdmin();
+    this.gymsLoading = true;
+    this.gymsLoadError = false;
     this.apiService.getGyms(isAdmin).subscribe({
       next: (gyms) => {
         this.gyms = gyms;
+        this.gymsLoading = false;
         const saved = this.authService.getSelectedGymId();
         const savedStillVisible = saved != null ? gyms.some(g => g.id === saved) : false;
         const userGymId = this.authService.getCurrentUser()?.gym_id ?? null;
 
         if (savedStillVisible) {
           this.selectedGymId = saved;
-          this.selectedGymName = this.authService.getSelectedGymName();
+          this.selectedGymName = gyms.find(g => g.id === saved)?.name ?? '';
+          this.authService.setSelectedGymName(this.selectedGymName);
           return;
         }
 
@@ -121,10 +129,11 @@ export class AppComponent implements OnInit, OnDestroy {
         }
 
         if (isAdmin) {
-          this.selectedGymId = null;
-          this.selectedGymName = '';
-          this.authService.setSelectedGymName('');
-          this.authService.setSelectedGymId(null);
+          const firstGym = gyms[0];
+          this.selectedGymId = firstGym?.id ?? null;
+          this.selectedGymName = firstGym?.name ?? '';
+          this.authService.setSelectedGymName(this.selectedGymName);
+          this.authService.setSelectedGymId(this.selectedGymId);
           return;
         }
 
@@ -140,11 +149,17 @@ export class AppComponent implements OnInit, OnDestroy {
           this.authService.setSelectedGymId(null);
         }
       },
-      error: () => {},
+      error: () => {
+        this.gymsLoading = false;
+        this.gymsLoadError = true;
+      },
     });
   }
 
   onGymChange(gymId: number | null): void {
+    if (this.isAdmin() && (gymId == null || !this.gyms.some(gym => gym.id === gymId))) {
+      return;
+    }
     this.selectedGymId = gymId;
     const gym = this.gyms.find(g => g.id === gymId);
     this.selectedGymName = gym?.name ?? '';

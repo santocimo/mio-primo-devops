@@ -79,7 +79,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   loadContacts(q: string = ''): void {
     const assignedGymId = this.authService.getCurrentUser()?.gym_id ?? null;
     const gymFilter = this.selectedGymId ?? (this.isAdminUser ? null : assignedGymId);
-    if (!this.isAdminUser && !gymFilter) {
+    if (!gymFilter) {
       this.contacts = [];
       this.loading = false;
       this.cdr.detectChanges();
@@ -97,6 +97,10 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   openAdd(): void {
+    if (this.isAdminUser && this.selectedGymId == null) {
+      void this.presentToast(this.language.instant('contacts.selectActivityFirst'), 'warning');
+      return;
+    }
     this.editingContact = null;
     this.formData = this.emptyForm();
     this.resetComuneSearch();
@@ -128,6 +132,10 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   save(): void {
     if (!this.formData.nome || !this.formData.cognome) return;
+    if (!this.editingContact && this.isAdminUser && this.selectedGymId == null) {
+      void this.presentToast(this.language.instant('contacts.selectActivityFirst'), 'warning');
+      return;
+    }
     const data = {
       ...this.formData,
       codice_fiscale: this.formData.codice_fiscale.trim().toUpperCase(),
@@ -144,8 +152,11 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           error: () => { this.presentToast(this.language.instant('contacts.errorUpdate'), 'danger'); },
         });
     } else {
-      this.apiService.createContact(data)
-        .pipe(takeUntil(this.destroy$)).subscribe({
+        const createData = this.isAdminUser
+          ? { ...data, gym_id: this.selectedGymId! }
+          : data;
+        this.apiService.createContact(createData)
+          .pipe(takeUntil(this.destroy$)).subscribe({
           next: () => {
             this.closeModal();
             this.loadContacts(this.searchCtrl.value ?? '');
@@ -181,7 +192,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   exportCsv(): void {
-    if (!this.isAdminUser || this.exporting) return;
+    if (!this.isAdminUser || !this.selectedGymId || this.exporting) return;
 
     this.exporting = true;
     this.apiService.exportContactsCsv(this.selectedGymId)
@@ -405,7 +416,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     });
   }
 
-  private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {
+  private async presentToast(message: string, color: 'success' | 'danger' | 'warning'): Promise<void> {
     const toast = await this.toastController.create({
       message,
       color,
