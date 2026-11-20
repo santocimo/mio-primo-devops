@@ -82,7 +82,16 @@ test('API registrazione accetta i campi obbligatori completi', async ({ request 
   try {
     expect(response.status()).toBe(200);
     expect(body.success).toBe(true);
+    expect(body.user.role).toBe('gestore');
     expect(body.subscription.status).toBe('trial');
+    const headers = { Authorization: `Bearer ${body.token}` };
+    const login = await request.post(`${API_BASE}/api/auth/login.php`, { data: { username, password } });
+    expect((await login.json()).user.role).toBe('gestore');
+    const gyms = await (await request.get(`${API_BASE}/api/gyms.php`, { headers })).json();
+    expect(Number(gyms[0].billing_owner_user_id)).toBe(body.user.id);
+    for (const endpoint of ['contacts', 'services', 'appointments']) {
+      expect((await request.get(`${API_BASE}/api/${endpoint}.php`, { headers })).status()).toBe(200);
+    }
   } finally {
     if (body.success && body.token) {
       const deletion = await request.post(`${API_BASE}/api/account/delete.php`, {
@@ -91,6 +100,60 @@ test('API registrazione accetta i campi obbligatori completi', async ({ request 
       });
       expect((await deletion.json()).activity_deleted).toBe(true);
     }
+  }
+});
+
+test('il referente crea un operatore dalla gestione della propria attività', async ({ page, request }) => {
+  const suffix = Date.now().toString(36);
+  const username = `owner.${suffix}`;
+  const operatorUsername = `operator.${suffix}`;
+  const password = 'Test-Password123';
+  const response = await request.post(`${API_BASE}/api/register.php`, { data: {
+    gym_name: `Test ${suffix}`, gym_category: 'gym', gym_address: 'Via Test 10',
+    gym_city: 'Milano', gym_phone: '0200000000', name: 'Laura', surname: 'Test',
+    codice_fiscale: 'TEST000000000001', email: `${username}@example.test`, username, password,
+  } });
+  const owner = await response.json();
+  expect(owner.success).toBe(true);
+  const headers = { Authorization: `Bearer ${owner.token}` };
+  try {
+    await page.addInitScript(state => {
+      localStorage.setItem('authState', JSON.stringify(state));
+      localStorage.setItem('businessregistry-language', 'it');
+    }, {
+      isLoggedIn: true, subscriptionStatus: 'trial', trialStartDate: owner.subscription.trial_start_date,
+      token: owner.token, user: owner.user, selectedGymId: owner.user.gym_id,
+    });
+    await page.goto(`${BASE}/contacts`);
+    await page.locator('ion-menu-button').first().click();
+    await page.locator('.menu-nav-item').filter({ hasText: 'Gestione operatori' }).click();
+    await expect(page.locator('app-admin-users ion-title').first()).toHaveText('Gestione operatori');
+    await page.locator('app-admin-users ion-header ion-buttons[slot="end"] ion-button').click();
+    const form = page.locator('.modal-sheet');
+    await expect(form.locator('ion-title')).toHaveText('Nuovo operatore');
+    await form.getByRole('textbox', { name: 'Nome', exact: true }).fill('Marco Test');
+    await form.getByRole('textbox', { name: 'Email', exact: true }).fill(`${operatorUsername}@example.test`);
+    await form.getByRole('textbox', { name: 'Username *', exact: true }).fill(operatorUsername);
+    await form.getByLabel('Password', { exact: true }).fill(password);
+    await form.getByRole('button', { name: 'Salva' }).click();
+    await expect(page.getByText(`@${operatorUsername}`, { exact: false })).toBeVisible();
+    const login = await request.post(`${API_BASE}/api/auth/login.php`, { data: { username: operatorUsername, password } });
+    const operator = await login.json();
+    expect(operator.success).toBe(true);
+    expect(operator.user.role).toBe('operatore');
+    expect(operator.user.gym_id).toBe(owner.user.gym_id);
+  } finally {
+    const usersResponse = await request.get(`${API_BASE}/api/users.php`, { headers });
+    const users = await usersResponse.json();
+    const operator = users.find((user: { username: string }) => user.username === operatorUsername);
+    if (operator) {
+      const deletion = await request.delete(`${API_BASE}/api/users.php/${operator.id}`, { headers });
+      expect((await deletion.json()).success).toBe(true);
+    }
+    const deletion = await request.post(`${API_BASE}/api/account/delete.php`, {
+      headers, data: { password, confirmation: 'ELIMINA' },
+    });
+    expect((await deletion.json()).activity_deleted).toBe(true);
   }
 });
 
@@ -109,6 +172,8 @@ test('aggiornare la sede non confonde operatore e referente', async ({ request }
   expect(owner.success).toBe(true);
   const ownerHeaders = { Authorization: `Bearer ${owner.token}` };
   let operatorId: number | undefined;
+  let operatorHeaders: { Authorization: string } | undefined;
+  let ownershipTransferred = false;
   try {
     const creation = await request.post(`${API_BASE}/api/users.php`, {
       headers: ownerHeaders,
@@ -121,6 +186,17 @@ test('aggiornare la sede non confonde operatore e referente', async ({ request }
     const operator = await operatorLogin.json();
     expect(operator.success).toBe(true);
     const operatorToken: string = operator.token;
+    operatorHeaders = { Authorization: `Bearer ${operatorToken}` };
+    expect((await request.get(`${API_BASE}/api/users.php`, { headers: operatorHeaders })).status()).toBe(200);
+    expect((await request.post(`${API_BASE}/api/users.php`, {
+      headers: operatorHeaders, data: { username: `unauthorized.${suffix}`, password, role: 'OPERATORE' },
+    })).status()).toBe(403);
+    expect((await request.put(`${API_BASE}/api/users.php/${owner.user.id}`, {
+      headers: operatorHeaders, data: { username: ownerUsername, role: 'GESTORE' },
+    })).status()).toBe(403);
+    expect((await request.delete(`${API_BASE}/api/users.php/${operatorId}`, {
+      headers: operatorHeaders,
+    })).status()).toBe(403);
     const details = {
       name: `Test ${suffix}`, category: 'salon', activity_name: 'Centro estetico',
       address: 'Via Test 10', city: 'Milano', phone: '0200000000',
@@ -162,7 +238,7 @@ test('aggiornare la sede non confonde operatore e referente', async ({ request }
     expect(afterUpdate.find((u: { username: string }) => u.username === operatorUsername).tax_code).toBe('TEST000000000002');
     const accountUpdate = await request.put(`${API_BASE}/api/users.php/${owner.user.id}`, {
       headers: ownerHeaders,
-      data: { name: 'Laura Aggiornata', email: `${ownerUsername}@example.test`, username: ownerUsername, role: 'OPERATORE', is_billing_owner: true, tax_code: 'TEST000000000004' },
+      data: { name: 'Laura Aggiornata', email: `${ownerUsername}@example.test`, username: ownerUsername, role: 'GESTORE', is_billing_owner: true, tax_code: 'TEST000000000004' },
     });
     expect((await accountUpdate.json()).success).toBe(true);
     const afterAccountUpdate = await (await request.get(`${API_BASE}/api/gyms.php`, { headers: ownerHeaders })).json();
@@ -174,7 +250,36 @@ test('aggiornare la sede non confonde operatore e referente', async ({ request }
     const afterActivityOnly = await (await request.get(`${API_BASE}/api/gyms.php`, { headers: ownerHeaders })).json();
     expect(afterActivityOnly[0].city).toBe('Torino');
     expect(afterActivityOnly[0].manager_cf).toBe('TEST000000000004');
+    const transfer = await request.put(`${API_BASE}/api/users.php/${operatorId}`, {
+      headers: ownerHeaders,
+      data: { name: 'Marco Test', email: `${operatorUsername}@example.test`, username: operatorUsername, role: 'OPERATORE', is_billing_owner: true },
+    });
+    expect((await transfer.json()).success).toBe(true);
+    ownershipTransferred = true;
+    expect((await request.post(`${API_BASE}/api/users.php`, {
+      headers: ownerHeaders, data: { username: `unauthorized.${suffix}`, password, role: 'OPERATORE' },
+    })).status()).toBe(403);
+    const editFormerOwner = await request.put(`${API_BASE}/api/users.php/${owner.user.id}`, {
+      headers: operatorHeaders,
+      data: { name: 'Laura Aggiornata', email: `${ownerUsername}@example.test`, username: ownerUsername, role: 'GESTORE', is_billing_owner: false },
+    });
+    expect((await editFormerOwner.json()).success).toBe(true);
+    const afterFormerOwnerEdit = await (await request.get(`${API_BASE}/api/gyms.php`, { headers: operatorHeaders })).json();
+    expect(Number(afterFormerOwnerEdit[0].billing_owner_user_id)).toBe(operatorId);
+    const restoreOwner = await request.put(`${API_BASE}/api/users.php/${owner.user.id}`, {
+      headers: operatorHeaders,
+      data: { name: 'Laura Aggiornata', email: `${ownerUsername}@example.test`, username: ownerUsername, role: 'GESTORE', is_billing_owner: true },
+    });
+    expect((await restoreOwner.json()).success).toBe(true);
+    ownershipTransferred = false;
   } finally {
+    if (ownershipTransferred && operatorHeaders) {
+      const restoreOwner = await request.put(`${API_BASE}/api/users.php/${owner.user.id}`, {
+        headers: operatorHeaders,
+        data: { name: 'Laura Aggiornata', email: `${ownerUsername}@example.test`, username: ownerUsername, role: 'GESTORE', is_billing_owner: true },
+      });
+      expect((await restoreOwner.json()).success).toBe(true);
+    }
     if (operatorId) {
       const deletion = await request.delete(`${API_BASE}/api/users.php/${operatorId}`, { headers: ownerHeaders });
       expect((await deletion.json()).success).toBe(true);

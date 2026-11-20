@@ -47,17 +47,17 @@ if ($method === 'GET') {
 
     if (!$isAdmin) {
         if ($currentGymId) {
-            $stmt = $pdo->prepare("SELECT id, name, slug, category, created_at{$profileFields} FROM gyms WHERE id = ? LIMIT 1");
+            $stmt = $pdo->prepare("SELECT id, name, slug, category, billing_owner_user_id, created_at{$profileFields} FROM gyms WHERE id = ? LIMIT 1");
             $stmt->execute([$currentGymId]);
         } else {
             echo json_encode([]);
             exit;
         }
     } elseif ($allCategories) {
-        $stmt = $pdo->prepare("SELECT id, name, slug, category, created_at{$profileFields} FROM gyms ORDER BY name LIMIT 200");
+        $stmt = $pdo->prepare("SELECT id, name, slug, category, billing_owner_user_id, created_at{$profileFields} FROM gyms ORDER BY name LIMIT 200");
         $stmt->execute();
     } else {
-        $stmt = $pdo->prepare("SELECT id, name, slug, category, created_at{$profileFields} FROM gyms WHERE category = ? ORDER BY name LIMIT 200");
+        $stmt = $pdo->prepare("SELECT id, name, slug, category, billing_owner_user_id, created_at{$profileFields} FROM gyms WHERE category = ? ORDER BY name LIMIT 200");
         $stmt->execute([$configuredCategory]);
     }
 

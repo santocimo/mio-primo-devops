@@ -70,7 +70,10 @@ export class GymPage implements OnInit, OnDestroy {
   }
 
   get operators(): AppUser[] {
-    return this.users.filter(user => ['OPERATORE', 'OPERATOR'].includes(user.role.toUpperCase()));
+    return this.users.filter(user =>
+      Number(user.is_billing_owner) !== 1
+      && ['OPERATORE', 'OPERATOR', 'GESTORE'].includes(user.role.toUpperCase())
+    );
   }
 
   canEditManager(): boolean {

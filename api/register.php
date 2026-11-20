@@ -146,10 +146,10 @@ try {
     $ins_gym->execute([$gym_name, $slug, $gym_category, $settings]);
     $gym_id = (int)$pdo->lastInsertId();
 
-    // 3. Inserisce l'utente operatore
+    // 3. Inserisce il gestore e referente della nuova attività
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
     $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id, tax_code, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'trial')");
-    $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id, $codice_fiscale]);
+    $ins_user->execute([$manager_name, $email, $username, $password_hash, 'gestore', $gym_id, $codice_fiscale]);
     $user_id = (int)$pdo->lastInsertId();
     $setBillingOwner = $pdo->prepare('UPDATE gyms SET billing_owner_user_id = ? WHERE id = ?');
     $setBillingOwner->execute([$user_id, $gym_id]);
@@ -165,7 +165,7 @@ try {
     $token = create_api_token([
         'id' => $user_id,
         'username' => $username,
-        'role' => 'OPERATORE',
+        'role' => 'GESTORE',
         'gym_id' => $gym_id,
     ]);
 
@@ -179,7 +179,7 @@ try {
             'name'     => $manager_name,
             'email'    => $email,
             'username' => $username,
-            'role'     => 'operatore',
+            'role'     => 'gestore',
             'gym_id'   => $gym_id,
         ],
         'token' => $token,

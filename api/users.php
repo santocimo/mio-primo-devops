@@ -35,6 +35,13 @@ function load_user_scope(PDO $pdo, int $id): ?array {
 $pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
+if (in_array($method, ['POST', 'PUT', 'DELETE'], true) && !$isAdmin
+    && !is_gym_billing_owner($pdo, (int)($_SESSION['user_id'] ?? 0), (int)$sessionGymId)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Solo il referente può gestire gli operatori']);
+    exit;
+}
+
 function users_table_has_column(PDO $pdo, string $column): bool {
     try {
         $stmt = $pdo->prepare("SELECT COUNT(*) FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = ?");
@@ -114,7 +121,7 @@ if ($method === 'POST') {
     if ($userRole !== 'ADMIN' && $userRole !== 'SUPER' && !$gymId) {
         http_response_code(400); echo json_encode(['success' => false, 'message' => 'Per un gestore di sede la sede e obbligatoria']); exit;
     }
-    if ($userRole === 'GESTORE') {
+    if ($userRole === 'GESTORE' && !array_key_exists('is_billing_owner', $d)) {
         $isBillingOwner = true;
     }
     if ($isBillingOwner && !$gymId) {
@@ -186,6 +193,9 @@ if ($method === 'PUT') {
         if ((int)($existing['gym_id'] ?? 0) !== $sessionGymId) {
             http_response_code(403); echo json_encode(['success' => false, 'message' => 'Forbidden']); exit;
         }
+        if (in_array(strtoupper($existing['role']), ['ADMIN', 'SUPER'], true)) {
+            http_response_code(403); echo json_encode(['success' => false, 'message' => 'Forbidden']); exit;
+        }
         if (!in_array($userRole, ['OPERATORE', 'GESTORE'], true)) {
             http_response_code(400); echo json_encode(['success' => false, 'message' => 'Ruolo non consentito']); exit;
         }
@@ -202,7 +212,7 @@ if ($method === 'PUT') {
     $name = trim($d['name'] ?? '');
     $email = trim($d['email'] ?? '');
 
-    if ($userRole === 'GESTORE') {
+    if ($userRole === 'GESTORE' && !array_key_exists('is_billing_owner', $d)) {
         $isBillingOwner = true;
     }
     if ($isBillingOwner && !$gymId) {
@@ -278,6 +288,9 @@ if ($method === 'DELETE') {
         }
         $existing = load_user_scope($pdo, $id);
         if (!$existing || (int)($existing['gym_id'] ?? 0) !== $sessionGymId) {
+            http_response_code(403); echo json_encode(['success' => false, 'message' => 'Forbidden']); exit;
+        }
+        if (in_array(strtoupper($existing['role']), ['ADMIN', 'SUPER'], true)) {
             http_response_code(403); echo json_encode(['success' => false, 'message' => 'Forbidden']); exit;
         }
     }

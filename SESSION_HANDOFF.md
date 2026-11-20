@@ -12,9 +12,10 @@ Aggiornato il 2026-11-20. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md
 
 ## Cambiamenti e stato locale
 
-- Account non admin nominativi con password temporanee semplici per test; admin invariato. Credenziali ordinate per attività nel file protetto.
-- CuraPeople: Elena Viola referente fatturazione e Fabrizio Orilio operatore; abbonamento annuale Stripe di test attivo alla verifica fino al 20 novembre 2027. Lion: Sonia Sonetta e Davide Moretti operatori, Laura Greco referente. Pilates Me è uno studio.
-- Scheda attività: referente reale e operatori con CF individuali. I non referenti possono aggiornare la sede ma non i dati del referente. La gestione utenti mantiene sincronizzato il profilo legacy del referente.
+- Account non admin nominativi con password temporanee semplici per test; admin invariato. Credenziali ordinate per attività e tipologia nel file protetto, admin primo e referente prima degli operatori.
+- CuraPeople: Elena Viola referente, Fabrizio Orilio e Anna Mosca operatori; abbonamento annuale Stripe di test attivo alla verifica fino al 20 novembre 2027. Lion: Sonia Sonetta e Davide Moretti operatori, Laura Greco referente. Pilates Me e PilatesMania: rispettivamente Santo Vasta e Mimmo Luna gestori unici e referenti con funzioni operative; alla verifica del 20 novembre gli abbonamenti erano scaduti.
+- La registrazione crea un gestore/referente con funzioni operative. Il referente effettivo può gestire gli operatori della propria attività, anche se il ruolo storico è operatore; l'admin mantiene la gestione globale. Le modifiche agli account sono vietate agli operatori non referenti. Dopo un cambio di ruolo occorre rifare il login.
+- Scheda attività: referente reale e altri operatori con CF individuali; il referente non è ripetuto nell'elenco. I non referenti possono aggiornare la sede ma non i dati del referente. La gestione utenti mantiene sincronizzato il profilo legacy del referente.
 - Aggiunta `users.tax_code`: migrazione `012_add_user_tax_code.sql` già applicata localmente; su database esistenti applicarla prima dell'aggiornamento se la colonna manca. Lo schema iniziale dei nuovi database include la colonna. Il backfill associa il vecchio CF soltanto all'account indicato da `manager_username` nella stessa attività.
 - I CF segnaposto `TEST` sono dati di prova non validi per fatturazione reale e vanno sostituiti con dati verificati. Non attribuire il CF storico al referente attuale senza verifica.
 - Registrazione: città, telefono e CF richiesti insieme agli altri campi; per Altro è richiesto anche il nome attività personalizzato. Dicitura Clienti per centri estetici e Iscritti per palestre, aggiornata al cambio sede.
@@ -22,7 +23,7 @@ Aggiornato il 2026-11-20. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md
 
 ## Verifiche
 
-- Review della diff, build Angular, lint PHP, PHPUnit 17 test / 44 assertion, 7 test Playwright mirati e `git diff --check` riusciti.
+- Build Angular, lint PHP, PHPUnit 17 test / 44 assertion, test Playwright mirati e `git diff --check` riusciti. Verificati registrazione del gestore, creazione di un operatore dall'interfaccia, permessi e trasferimento referente, più visualizzazione della scheda.
 - Verificato lo schema iniziale utenti con una tabella temporanea. Playwright ha usato Node 22; Node globale 18 non è sufficiente.
 - Test mirati senza creare nuove sessioni di checkout Stripe. Pagamento annuale di test e visibilità dei due account CuraPeople verificati in precedenza; non equivale a una verifica completa dei pagamenti in produzione.
 - Per riprendere: controllare `git status`, ultimo commit e disponibilità dei servizi; proseguire con i test richiesti dall'utente.

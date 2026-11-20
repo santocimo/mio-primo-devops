@@ -100,6 +100,7 @@ test('scheda attività distingue referente e operatori', async ({ page }) => {
   await expect(details.getByText('TEST000000000025')).toBeVisible();
   await expect(details.getByText('TEST000000000016')).toHaveCount(0);
   const operators = page.locator('section').filter({ hasText: 'Operatori della sede' });
+  await expect(operators.getByText('Elena Viola')).toHaveCount(0);
   await expect(operators.getByText('Fabrizio Orilio')).toBeVisible();
   await expect(operators.getByText('TEST000000000010', { exact: false })).toBeVisible();
   await expect(operators.getByText('Altro Operatore')).toHaveCount(0);
@@ -127,8 +128,75 @@ test('scheda attività segnala errori di caricamento utenti senza nascondere la 
   await page.goto(`${BASE}/gym`);
   await expect(page.getByRole('heading', { name: 'CuraPeople' })).toBeVisible();
   await expect(page.getByRole('alert')).toContainText('Impossibile caricare il referente e gli operatori');
-  await expect(page.getByText('Nessun operatore associato.')).toHaveCount(0);
+  await expect(page.getByText('Nessun altro operatore associato.')).toHaveCount(0);
 });
+
+for (const role of ['GESTORE', 'OPERATORE']) {
+  test(`referente unico ${role} non è ripetuto tra gli operatori`, async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem('authState', JSON.stringify({
+        isLoggedIn: true, subscriptionStatus: 'active', token: 'test-token', selectedGymId: 16,
+        user: { id: 10, name: 'Referente Test', role: 'gestore', gym_id: 16 },
+      }));
+      localStorage.setItem('businessregistry-language', 'it');
+    });
+    await page.route('**/api/gyms**', route => route.fulfill({ json: [
+      { id: 16, name: 'Studio Test', category: 'studio', billing_owner_user_id: 10 },
+    ] }));
+    await page.route('**/api/users**', route => route.fulfill({ json: [
+      { id: 10, name: 'Referente Test', username: 'referente.test', role, gym_id: 16, is_billing_owner: 1 },
+    ] }));
+    await page.goto(`${BASE}/gym`);
+    await expect(page.locator('.gym-profile-grid').first().getByText('Referente Test', { exact: true })).toBeVisible();
+    const operators = page.locator('section').filter({ hasText: 'Operatori della sede' });
+    await expect(operators.getByText('Referente Test')).toHaveCount(0);
+    await expect(operators.getByText('Nessun altro operatore associato.')).toBeVisible();
+  });
+}
+
+for (const scenario of [
+  { role: 'gestore', id: 10, ownerId: 10, allowed: true, admin: false },
+  { role: 'operatore', id: 10, ownerId: 10, allowed: true, admin: false },
+  { role: 'operatore', id: 10, ownerId: 20, allowed: false, admin: false },
+  { role: 'gestore', id: 10, ownerId: 20, allowed: false, admin: false },
+  { role: 'super', id: 1, ownerId: 20, allowed: true, admin: true },
+]) {
+  test(`gestione operatori: ${scenario.role}, referente ${scenario.id === scenario.ownerId}`, async ({ page }) => {
+    await page.addInitScript(({ role, id }) => {
+      localStorage.setItem('authState', JSON.stringify({
+        isLoggedIn: true, subscriptionStatus: 'active', token: 'test-token', selectedGymId: 16,
+        user: { id, name: 'Test', username: 'test', role, gym_id: 16 },
+      }));
+      localStorage.setItem('businessregistry-language', 'it');
+    }, scenario);
+    await page.route('**/api/gyms**', route => route.fulfill({ json: [
+      { id: 16, name: 'Attività Test', category: 'gym', billing_owner_user_id: scenario.ownerId },
+    ] }));
+    await page.route('**/api/contacts**', route => route.fulfill({ json: [] }));
+    await page.route('**/api/users**', route => route.fulfill({ json: [
+      { id: scenario.id, name: 'Test', username: 'test', role: scenario.role, gym_id: 16, is_billing_owner: scenario.id === scenario.ownerId ? 1 : 0 },
+    ] }));
+    await page.goto(`${BASE}/contacts`);
+    await page.locator('ion-menu-button').first().click();
+    const operatorMenu = page.locator('.menu-nav-item').filter({ hasText: 'Gestione operatori' });
+    const adminMenu = page.locator('.menu-nav-item').filter({ hasText: 'Utenti' });
+    if (scenario.admin) {
+      await expect(adminMenu).toBeVisible();
+      await expect(operatorMenu).toHaveCount(0);
+    } else if (scenario.allowed) {
+      await expect(operatorMenu).toBeVisible();
+    } else {
+      await expect(operatorMenu).toHaveCount(0);
+    }
+    await page.goto(`${BASE}/admin/users`);
+    if (scenario.allowed) {
+      await expect(page).toHaveURL(/\/admin\/users$/);
+      await expect(page.locator('app-admin-users ion-title').first()).toHaveText(scenario.admin ? 'Gestione utenti' : 'Gestione operatori');
+    } else {
+      await expect(page).toHaveURL(/\/contacts$/);
+    }
+  });
+}
 
 test.describe('Sessione amministratore', () => {
   test.beforeEach(async ({ page }) => {

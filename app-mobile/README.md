@@ -117,9 +117,9 @@ src/
 
 Il referente della palestra acquista un piano mensile o annuale con rinnovo automatico. Il rinnovo si gestisce nel provider; la cancellazione è disponibile dal profilo dell'app e mantiene l'accesso fino alla fine del periodo pagato. Le credenziali e i webhook si configurano esclusivamente sul backend, seguendo la sezione "Recurring gym subscriptions" del README principale.
 
-Il referente può avere un account separato con ruolo "Referente fatturazione", oppure essere un operatore. Dalla gestione utenti si può creare il referente o trasferire l'incarico a un account della stessa palestra; la registrazione assegna inizialmente il ruolo al primo operatore.
+La registrazione crea il primo account come gestore e referente fatturazione. Il referente dispone anche delle normali funzioni operative e può creare e gestire gli operatori della propria attività dalla voce "Gestione operatori"; l'amministratore continua a gestire tutti gli utenti. Gli account esistenti che sono già referenti mantengono il proprio ruolo e possono comunque gestire gli operatori. Il referente o l'amministratore possono trasferire l'incarico a un account della stessa attività.
 
-La scheda attività mostra il referente di fatturazione effettivo e gli operatori della sede. Solo il referente o un amministratore può modificare i dati del referente dalla scheda; gli altri operatori possono modificare i dati dell'attività senza cambiare i propri dati personali o quelli del referente.
+La scheda attività mostra il referente di fatturazione effettivo e gli altri operatori della sede, senza ripetere il referente nell'elenco. Solo il referente o un amministratore può modificare i dati del referente dalla scheda; gli altri operatori possono modificare i dati dell'attività senza cambiare i propri dati personali o quelli del referente.
 
 In registrazione tutti i campi mostrati sono obbligatori, inclusi città, telefono e codice fiscale; il nome dell'attività personalizzata è richiesto solo scegliendo "Altro". Il codice fiscale è associato all'account, mostrato nella scheda attività e modificabile nella gestione utenti. Su un database esistente senza `users.tax_code`, prima di aggiornare l'applicazione applicare la migrazione `012_add_user_tax_code.sql`; i nuovi database includono già la colonna.
 

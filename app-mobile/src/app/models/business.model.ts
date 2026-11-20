@@ -74,6 +74,7 @@ export interface Gym {
   manager_email?: string;
   manager_username?: string;
   manager_cf?: string;
+  billing_owner_user_id?: number | null;
   activity_name?: string;
   settings?: any;
   category: 'gym' | 'salon' | 'studio' | 'other';

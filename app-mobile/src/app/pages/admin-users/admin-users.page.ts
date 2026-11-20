@@ -37,7 +37,10 @@ export class AdminUsersPage implements OnInit, OnDestroy {
     this.isAdminUser = role.includes('ADMIN') || role.includes('SUPER');
     this.load();
     const gyms$ = this.isAdminUser ? this.apiService.getGyms(true) : this.apiService.getGyms();
-    gyms$.pipe(takeUntil(this.destroy$)).subscribe({ next: g => (this.gyms = g), error: () => {} });
+    gyms$.pipe(takeUntil(this.destroy$)).subscribe({
+      next: g => (this.gyms = g),
+      error: () => void this.presentToast(this.language.instant('adminUsers.loadError'), 'danger'),
+    });
   }
 
   ngOnDestroy(): void { this.destroy$.next(); this.destroy$.complete(); }
@@ -45,8 +48,22 @@ export class AdminUsersPage implements OnInit, OnDestroy {
   load(): void {
     this.loading = true;
     this.apiService.getUsers().pipe(takeUntil(this.destroy$)).subscribe({
-      next: u => { this.users = u; this.loading = false; },
-      error: () => { this.loading = false; },
+      next: u => {
+        if (!this.isAdminUser && !u.some(user =>
+          Number(user.id) === Number(this.authService.getCurrentUser()?.id)
+          && Number(user.is_billing_owner) === 1
+        )) {
+          this.loading = false;
+          void this.router.navigateByUrl('/contacts');
+          return;
+        }
+        this.users = u;
+        this.loading = false;
+      },
+      error: () => {
+        this.loading = false;
+        void this.presentToast(this.language.instant('adminUsers.loadError'), 'danger');
+      },
     });
   }
 
@@ -67,7 +84,7 @@ export class AdminUsersPage implements OnInit, OnDestroy {
       tax_code: u.tax_code ?? '',
       username: u.username,
       password: '',
-      role: u.role,
+      role: u.role.toUpperCase(),
       gym_id: u.gym_id,
       is_billing_owner: Number(u.is_billing_owner) === 1,
     };
@@ -93,6 +110,7 @@ export class AdminUsersPage implements OnInit, OnDestroy {
     call.pipe(takeUntil(this.destroy$)).subscribe({
       next: () => {
         this.closeForm();
+        window.dispatchEvent(new Event('business-type-changed'));
         this.load();
       },
       error: error => {
@@ -189,7 +207,10 @@ export class AdminUsersPage implements OnInit, OnDestroy {
   }
 
   userBadgeLabel(u: AppUser): string {
-    return this.roleLabel(u.role);
+    if (Number(u.is_billing_owner) === 1 && !['ADMIN', 'SUPER'].includes(u.role.toUpperCase())) {
+      return 'adminUsers.billingManager';
+    }
+    return u.role.toUpperCase() === 'GESTORE' ? 'adminUsers.member' : this.roleLabel(u.role);
   }
 
   gymName(gymId: number | null): string {

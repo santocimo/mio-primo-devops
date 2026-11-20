@@ -200,7 +200,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   isBillingManager(): boolean {
-    return (this.authService.getCurrentUser()?.role ?? '').toUpperCase() === 'GESTORE';
+    const user = this.authService.getCurrentUser();
+    const gym = this.gyms.find(g => Number(g.id) === Number(user?.gym_id));
+    return !this.gymsLoadError && !!user && !!gym?.billing_owner_user_id
+      && Number(gym.billing_owner_user_id) === Number(user.id);
   }
 
   canManageUsers(): boolean {

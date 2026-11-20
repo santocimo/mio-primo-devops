@@ -70,7 +70,9 @@ export class ProfilePage implements OnInit, OnDestroy {
   }
 
   isBillingManager(): boolean {
-    return (this.user?.role ?? '').toUpperCase() === 'GESTORE';
+    const gym = this.activities.find(activity => Number(activity.id) === Number(this.user?.gym_id));
+    return !!this.user && !!gym?.billing_owner_user_id
+      && Number(gym.billing_owner_user_id) === Number(this.user.id);
   }
 
   categoryKey(activity: Gym): string {
