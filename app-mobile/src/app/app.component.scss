@@ -42,6 +42,7 @@ ion-router-outlet.trial-offset {
 }
 
 .menu-panel {
+	--color: #ffffff;
 	--background:
 		radial-gradient(circle at top right, rgba(249, 115, 22, 0.15), transparent 26%),
 		linear-gradient(180deg, #0f172a 0%, #14213d 100%);

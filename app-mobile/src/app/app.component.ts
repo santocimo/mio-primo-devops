@@ -9,7 +9,7 @@ import { ApiService } from './services/api.service';
 import { Observable } from 'rxjs';
 import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AuthState } from './models/auth.model';
-import { Gym } from './models/business.model';
+import { Gym, isSalonCategory } from './models/business.model';
 import { AppLanguage, LanguageService } from './i18n/language.service';
 
 @Component({
@@ -116,6 +116,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.selectedGymId = saved;
           this.selectedGymName = gyms.find(g => g.id === saved)?.name ?? '';
           this.authService.setSelectedGymName(this.selectedGymName);
+          this.authService.setSelectedGymCategory(gyms.find(g => g.id === saved)?.category ?? null);
           return;
         }
 
@@ -125,6 +126,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.selectedGymName = gym?.name ?? '';
           this.authService.setSelectedGymName(this.selectedGymName);
           this.authService.setSelectedGymId(this.selectedGymId);
+          this.authService.setSelectedGymCategory(gym?.category ?? null);
           return;
         }
 
@@ -134,6 +136,7 @@ export class AppComponent implements OnInit, OnDestroy {
           this.selectedGymName = firstGym?.name ?? '';
           this.authService.setSelectedGymName(this.selectedGymName);
           this.authService.setSelectedGymId(this.selectedGymId);
+          this.authService.setSelectedGymCategory(firstGym?.category ?? null);
           return;
         }
 
@@ -142,11 +145,13 @@ export class AppComponent implements OnInit, OnDestroy {
           this.selectedGymName = gyms[0].name;
           this.authService.setSelectedGymName(gyms[0].name);
           this.authService.setSelectedGymId(gyms[0].id);
+          this.authService.setSelectedGymCategory(gyms[0].category);
         } else {
           this.selectedGymId = null;
           this.selectedGymName = '';
           this.authService.setSelectedGymName('');
           this.authService.setSelectedGymId(null);
+          this.authService.setSelectedGymCategory(null);
         }
       },
       error: () => {
@@ -165,6 +170,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.selectedGymName = gym?.name ?? '';
     this.authService.setSelectedGymName(gym?.name ?? '');
     this.authService.setSelectedGymId(gymId);
+    this.authService.setSelectedGymCategory(gym?.category ?? null);
+  }
+
+  get contactsNavLabelKey(): string {
+    const category = this.gyms.find(gym => gym.id === this.selectedGymId)?.category;
+    return isSalonCategory(category)
+      ? 'nav.clients'
+      : 'nav.members';
   }
 
   onLanguageChange(language: string): void {
@@ -184,6 +197,10 @@ export class AppComponent implements OnInit, OnDestroy {
   isAdmin(): boolean {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
     return role.includes('ADMIN') || role.includes('SUPER');
+  }
+
+  isBillingManager(): boolean {
+    return (this.authService.getCurrentUser()?.role ?? '').toUpperCase() === 'GESTORE';
   }
 
   canManageUsers(): boolean {

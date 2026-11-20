@@ -96,6 +96,9 @@
         <ion-input [label]="'adminUsers.email' | translate" labelPlacement="stacked" [(ngModel)]="formData.email" type="email" placeholder="email@example.com"></ion-input>
       </ion-item>
       <ion-item>
+        <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" [(ngModel)]="formData.tax_code" maxlength="16" style="text-transform: uppercase"></ion-input>
+      </ion-item>
+      <ion-item>
         <ion-input [label]="'adminUsers.username' | translate" labelPlacement="stacked" [(ngModel)]="formData.username" placeholder="username"></ion-input>
       </ion-item>
       <ion-item>

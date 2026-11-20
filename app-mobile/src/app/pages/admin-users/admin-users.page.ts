@@ -6,17 +6,7 @@ import { AuthService } from '../../services/auth.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
-
-export interface AppUser {
-  id: number;
-  name?: string | null;
-  email?: string | null;
-  username: string;
-  role: string;
-  gym_id: number | null;
-  created_at: string;
-  is_billing_owner: boolean;
-}
+import { AppUser } from '../../models/business.model';
 
 @Component({
   selector: 'app-admin-users',
@@ -74,11 +64,12 @@ export class AdminUsersPage implements OnInit, OnDestroy {
     this.formData = {
       name: u.name ?? '',
       email: u.email ?? '',
+      tax_code: u.tax_code ?? '',
       username: u.username,
       password: '',
       role: u.role,
       gym_id: u.gym_id,
-      is_billing_owner: u.is_billing_owner,
+      is_billing_owner: Number(u.is_billing_owner) === 1,
     };
     if (!this.isAdminUser) {
       this.formData.gym_id = this.authService.getSelectedGymId();
@@ -220,6 +211,7 @@ export class AdminUsersPage implements OnInit, OnDestroy {
     return {
       name: '',
       email: '',
+      tax_code: '',
       username: '',
       password: '',
       role: 'OPERATORE',

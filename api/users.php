@@ -45,12 +45,23 @@ function users_table_has_column(PDO $pdo, string $column): bool {
     }
 }
 
+function sync_billing_owner_profile(PDO $pdo, int $userId, int $gymId): void {
+    $stmt = $pdo->prepare(
+        "UPDATE gyms g JOIN users u ON u.id=g.billing_owner_user_id AND u.gym_id=g.id
+         SET g.settings=JSON_SET(COALESCE(g.settings, '{}'),
+             '$.manager_name', u.name, '$.manager_email', u.email,
+             '$.manager_username', u.username, '$.manager_cf', COALESCE(u.tax_code, ''))
+         WHERE g.id=? AND u.id=?"
+    );
+    $stmt->execute([$gymId, $userId]);
+}
+
 if ($method === 'GET') {
     $selectName = users_table_has_column($pdo, 'name') ? 'u.name' : 'NULL AS name';
     $selectEmail = users_table_has_column($pdo, 'email') ? 'u.email' : 'NULL AS email';
     if ($isAdmin) {
         $stmt = $pdo->query(
-            "SELECT u.id, {$selectName}, {$selectEmail}, u.username, u.role, u.gym_id, u.created_at,
+            "SELECT u.id, {$selectName}, {$selectEmail}, u.username, u.role, u.gym_id, u.tax_code, u.created_at,
                     (g.billing_owner_user_id = u.id) AS is_billing_owner
              FROM users u LEFT JOIN gyms g ON g.id = u.gym_id ORDER BY u.username"
         );
@@ -59,7 +70,7 @@ if ($method === 'GET') {
             http_response_code(403); echo json_encode(['success' => false, 'message' => 'Gym context missing']); exit;
         }
         $stmt = $pdo->prepare(
-            "SELECT u.id, {$selectName}, {$selectEmail}, u.username, u.role, u.gym_id, u.created_at,
+            "SELECT u.id, {$selectName}, {$selectEmail}, u.username, u.role, u.gym_id, u.tax_code, u.created_at,
                     (g.billing_owner_user_id = u.id) AS is_billing_owner
              FROM users u LEFT JOIN gyms g ON g.id = u.gym_id
              WHERE u.gym_id = ? ORDER BY u.username"
@@ -76,6 +87,7 @@ if ($method === 'POST') {
     $email = trim($d['email'] ?? '');
     $username = trim($d['username'] ?? '');
     $password = $d['password'] ?? '';
+    $taxCode = strtoupper(trim($d['tax_code'] ?? ''));
     $userRole = strtoupper(trim($d['role'] ?? 'OPERATORE'));
     $gymId    = !empty($d['gym_id']) ? (int)$d['gym_id'] : null;
 
@@ -83,6 +95,9 @@ if ($method === 'POST') {
 
     if (!$username || !$password) {
         http_response_code(400); echo json_encode(['success' => false, 'message' => 'Username e password obbligatori']); exit;
+    }
+    if ($taxCode !== '' && !preg_match('/^[A-Z0-9]{16}$/', $taxCode)) {
+        http_response_code(400); echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']); exit;
     }
     if (!$isAdmin) {
         if (!$sessionGymId) {
@@ -121,12 +136,13 @@ if ($method === 'POST') {
     $pdo->beginTransaction();
     try {
         $hash = password_hash($password, PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, role, gym_id) VALUES (?,?,?,?,?,?)");
-        $stmt->execute([$name !== '' ? $name : null, $email !== '' ? $email : null, $username, $hash, $userRole, $gymId]);
+        $stmt = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, role, gym_id, tax_code) VALUES (?,?,?,?,?,?,?)");
+        $stmt->execute([$name !== '' ? $name : null, $email !== '' ? $email : null, $username, $hash, $userRole, $gymId, $taxCode !== '' ? $taxCode : null]);
         $id = (int)$pdo->lastInsertId();
         if ($isBillingOwner) {
             $owner = $pdo->prepare('UPDATE gyms SET billing_owner_user_id = ? WHERE id = ?');
             $owner->execute([$id, $gymId]);
+            sync_billing_owner_profile($pdo, $id, $gymId);
         }
         $pdo->commit();
         echo json_encode(['success' => true, 'id' => $id]);
@@ -147,6 +163,10 @@ if ($method === 'PUT') {
     $userRole = strtoupper(trim($d['role'] ?? 'OPERATORE'));
     $gymId    = !empty($d['gym_id']) ? (int)$d['gym_id'] : null;
     $password = $d['password'] ?? '';
+    $taxCode = array_key_exists('tax_code', $d) ? strtoupper(trim($d['tax_code'] ?? '')) : null;
+    if ($taxCode !== null && $taxCode !== '' && !preg_match('/^[A-Z0-9]{16}$/', $taxCode)) {
+        http_response_code(400); echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']); exit;
+    }
     $isBillingOwner = filter_var($d['is_billing_owner'] ?? false, FILTER_VALIDATE_BOOLEAN);
 
     $existing = load_user_scope($pdo, $id);
@@ -223,6 +243,10 @@ if ($method === 'PUT') {
             $stmt = $pdo->prepare("UPDATE users SET name=?, email=?, username=?, role=?, gym_id=? WHERE id=?");
             $stmt->execute([$name !== '' ? $name : null, $email !== '' ? $email : null, $username, $userRole, $gymId, $id]);
         }
+        if ($taxCode !== null) {
+            $stmt = $pdo->prepare('UPDATE users SET tax_code=? WHERE id=?');
+            $stmt->execute([$taxCode !== '' ? $taxCode : null, $id]);
+        }
         if ($isBillingOwner) {
             $owner = $pdo->prepare('UPDATE gyms SET billing_owner_user_id = ? WHERE id = ?');
             $owner->execute([$id, $gymId]);
@@ -231,6 +255,9 @@ if ($method === 'PUT') {
                 'UPDATE gyms SET billing_owner_user_id = NULL WHERE id = ? AND billing_owner_user_id = ?'
             );
             $clearOwner->execute([(int)$existing['gym_id'], $id]);
+        }
+        if ($gymId) {
+            sync_billing_owner_profile($pdo, $id, $gymId);
         }
         $pdo->commit();
     } catch (Throwable $e) {

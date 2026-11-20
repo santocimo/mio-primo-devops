@@ -37,12 +37,18 @@
         </div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input [attr.aria-label]="'register.city' | translate" formControlName="gym_city" [placeholder]="'register.optionalCity' | translate" type="text"></ion-input>
+          <ion-input [attr.aria-label]="'register.city' | translate" formControlName="gym_city" [placeholder]="'register.city' | translate" type="text"></ion-input>
         </ion-item>
+        <div class="error-msg" *ngIf="step1Form.get('gym_city')?.invalid && step1Form.get('gym_city')?.touched">
+          {{ 'register.enterCity' | translate }}
+        </div>
 
         <ion-item lines="none" class="input-item">
-          <ion-input [attr.aria-label]="'register.phone' | translate" formControlName="gym_phone" [placeholder]="'register.optionalPhone' | translate" type="tel"></ion-input>
+          <ion-input [attr.aria-label]="'register.phone' | translate" formControlName="gym_phone" [placeholder]="'register.phone' | translate" type="tel"></ion-input>
         </ion-item>
+        <div class="error-msg" *ngIf="step1Form.get('gym_phone')?.invalid && step1Form.get('gym_phone')?.touched">
+          {{ 'register.enterPhone' | translate }}
+        </div>
 
         <p class="field-label">{{ 'register.activityType' | translate }}</p>
         <div class="category-grid">
@@ -111,6 +117,7 @@
         <ion-item lines="none" class="input-item">
           <ion-input [attr.aria-label]="'register.confirmPassword' | translate" formControlName="password2" [placeholder]="'register.confirmPassword' | translate" type="password"></ion-input>
         </ion-item>
+        <div class="error-msg" *ngIf="step2Form.get('password2')?.hasError('required') && step2Form.get('password2')?.touched">{{ 'register.confirmPasswordRequired' | translate }}</div>
         <div class="error-msg" *ngIf="step2Form.errors?.['passwordMismatch'] && step2Form.get('password2')?.touched">{{ 'register.passwordMismatch' | translate }}</div>
 
         <ion-button expand="block" class="btn-main" (click)="onRegister()">

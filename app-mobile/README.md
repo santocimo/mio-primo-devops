@@ -119,6 +119,10 @@ Il referente della palestra acquista un piano mensile o annuale con rinnovo auto
 
 Il referente può avere un account separato con ruolo "Referente fatturazione", oppure essere un operatore. Dalla gestione utenti si può creare il referente o trasferire l'incarico a un account della stessa palestra; la registrazione assegna inizialmente il ruolo al primo operatore.
 
+La scheda attività mostra il referente di fatturazione effettivo e gli operatori della sede. Solo il referente o un amministratore può modificare i dati del referente dalla scheda; gli altri operatori possono modificare i dati dell'attività senza cambiare i propri dati personali o quelli del referente.
+
+In registrazione tutti i campi mostrati sono obbligatori, inclusi città, telefono e codice fiscale; il nome dell'attività personalizzata è richiesto solo scegliendo "Altro". Il codice fiscale è associato all'account, mostrato nella scheda attività e modificabile nella gestione utenti. Su un database esistente senza `users.tax_code`, prima di aggiornare l'applicazione applicare la migrazione `012_add_user_tax_code.sql`; i nuovi database includono già la colonna.
+
 L'app usa checkout web ospitato. Gli acquisti nativi StoreKit e Google Play Billing non sono integrati: verificare le regole applicabili alla distribuzione B2B e completare la soluzione di pagamento richiesta prima dell'invio agli store.
 
 ## API Integration

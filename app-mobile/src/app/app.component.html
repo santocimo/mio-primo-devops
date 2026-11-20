@@ -34,7 +34,9 @@
               <div class="menu-avatar">{{ (state.user?.name || 'U').slice(0, 1) }}</div>
               <div>
                 <p class="menu-user-name">{{ state.user?.name || 'Utente' }}</p>
-                <div class="menu-user-role">{{ isAdmin() ? ('menu.adminRole' | translate) : ('menu.operatorRole' | translate) }}</div>
+                <div class="menu-user-role">
+                  {{ isAdmin() ? ('menu.adminRole' | translate) : (isBillingManager() ? ('menu.billingManagerRole' | translate) : ('menu.operatorRole' | translate)) }}
+                </div>
               </div>
             </div>
 
@@ -78,7 +80,7 @@
 
             <ion-item button (click)="navigateTo('/contacts')" class="menu-nav-item">
               <ion-icon name="people-outline" slot="start"></ion-icon>
-              <ion-label>{{ 'nav.members' | translate }}</ion-label>
+              <ion-label>{{ contactsNavLabelKey | translate }}</ion-label>
             </ion-item>
 
             <ion-item button *ngIf="canManageUsers()" (click)="navigateTo('/appointments')" class="menu-nav-item">

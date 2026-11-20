@@ -3,7 +3,7 @@
     <ion-buttons slot="start">
       <ion-menu-button></ion-menu-button>
     </ion-buttons>
-    <ion-title>{{ 'contacts.title' | translate }}</ion-title>
+    <ion-title>{{ contactLabel('title') | translate }}</ion-title>
     <ion-buttons slot="end">
       <ion-button *ngIf="isAdminUser" (click)="exportCsv()" [disabled]="exporting">
         <ion-icon slot="icon-only" name="download-outline"></ion-icon>
@@ -27,10 +27,10 @@
     <section class="page-hero contacts-hero" *ngIf="isAdminUser">
       <div class="hero-kicker">
         <ion-icon name="people-outline"></ion-icon>
-        <span>{{ (isAdminUser ? 'contacts.adminKicker' : 'contacts.operatorKicker') | translate }}</span>
+        <span>{{ contactLabel(isAdminUser ? 'adminKicker' : 'operatorKicker') | translate }}</span>
       </div>
-      <h1 class="hero-title">{{ (isAdminUser ? 'contacts.adminHeading' : 'contacts.operatorHeading') | translate }}</h1>
-      <p class="hero-subtitle">{{ (isAdminUser ? 'contacts.adminDescription' : 'contacts.operatorDescription') | translate }}</p>
+      <h1 class="hero-title">{{ contactLabel(isAdminUser ? 'adminHeading' : 'operatorHeading') | translate }}</h1>
+      <p class="hero-subtitle">{{ contactLabel(isAdminUser ? 'adminDescription' : 'operatorDescription') | translate }}</p>
       <div class="hero-meta-row">
         <div class="hero-chip" *ngIf="selectedGymName">
           <ion-icon name="location-outline"></ion-icon>
@@ -62,7 +62,7 @@
   <div class="table-wrap" *ngIf="!loading">
     <div *ngIf="contacts.length === 0" class="no-data ion-text-center ion-padding">
       <ion-icon name="people-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
-      <p>{{ 'contacts.notFound' | translate }}</p>
+      <p>{{ contactLabel('notFound') | translate }}</p>
     </div>
 
     <table *ngIf="contacts.length > 0" class="contacts-table">
@@ -113,7 +113,7 @@
 <div class="modal-sheet" *ngIf="showModal">
   <ion-header>
     <ion-toolbar color="primary">
-      <ion-title>{{ (editingContact ? 'contacts.edit' : 'contacts.add') | translate }}</ion-title>
+      <ion-title>{{ contactLabel(editingContact ? 'edit' : 'add') | translate }}</ion-title>
       <ion-buttons slot="end">
         <ion-button (click)="closeModal()">{{ 'contacts.close' | translate }}</ion-button>
       </ion-buttons>

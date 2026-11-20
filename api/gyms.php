@@ -106,7 +106,7 @@ if ($method === 'PUT') {
     $category = trim($d['category'] ?? 'gym');
 
     if ($isAdmin) {
-        $existingStmt = $pdo->prepare("SELECT slug, settings FROM gyms WHERE id=? LIMIT 1");
+        $existingStmt = $pdo->prepare("SELECT slug, settings, billing_owner_user_id FROM gyms WHERE id=? LIMIT 1");
         $existingStmt->execute([$id]);
         $existingGym = $existingStmt->fetch(PDO::FETCH_ASSOC);
         if (!$existingGym) {
@@ -129,8 +129,9 @@ if ($method === 'PUT') {
         $settings = json_decode((string)($existingGym['settings'] ?: '{}'), true);
         if (!is_array($settings)) $settings = [];
 
-        $profileSubmitted = array_key_exists('manager_name', $d) || array_key_exists('manager_email', $d);
+        $profileSubmitted = array_key_exists('address', $d) || array_key_exists('manager_name', $d) || array_key_exists('manager_email', $d);
         if ($profileSubmitted) {
+            $managerSubmitted = array_key_exists('manager_name', $d) || array_key_exists('manager_email', $d);
             $managerName = trim($d['manager_name'] ?? '');
             $managerEmail = trim($d['manager_email'] ?? '');
             $managerCf = strtoupper(trim($d['manager_cf'] ?? ''));
@@ -139,12 +140,12 @@ if ($method === 'PUT') {
             $phone = trim($d['phone'] ?? '');
             $activityName = trim($d['activity_name'] ?? '');
 
-            if ($managerName === '' || strlen($managerName) > 160 || !filter_var($managerEmail, FILTER_VALIDATE_EMAIL)) {
+            if ($managerSubmitted && ($managerName === '' || strlen($managerName) > 160 || !filter_var($managerEmail, FILTER_VALIDATE_EMAIL))) {
                 http_response_code(400);
                 echo json_encode(['success'=>false,'message'=>'Nome ed email del gestore non validi']);
                 exit;
             }
-            if ($managerCf !== '' && !preg_match('/^[A-Z0-9]{16}$/', $managerCf)) {
+            if ($managerSubmitted && $managerCf !== '' && !preg_match('/^[A-Z0-9]{16}$/', $managerCf)) {
                 http_response_code(400);
                 echo json_encode(['success'=>false,'message'=>'Codice fiscale non valido']);
                 exit;
@@ -160,14 +161,40 @@ if ($method === 'PUT') {
                 'city' => $city,
                 'phone' => $phone,
                 'activity_name' => $activityName,
-                'manager_name' => $managerName,
-                'manager_email' => $managerEmail,
-                'manager_cf' => $managerCf,
             ]);
+            if ($managerSubmitted) {
+                $ownerId = (int)($existingGym['billing_owner_user_id'] ?? 0);
+                $ownerStmt = $pdo->prepare('SELECT username FROM users WHERE id=? AND gym_id=?');
+                $ownerStmt->execute([$ownerId, $id]);
+                $ownerUsername = $ownerStmt->fetchColumn();
+                if (!$ownerUsername) {
+                    http_response_code(409);
+                    echo json_encode(['success'=>false,'message'=>'Referente di fatturazione non assegnato']);
+                    exit;
+                }
+                $settings = array_merge($settings, [
+                    'manager_name' => $managerName,
+                    'manager_email' => $managerEmail,
+                    'manager_username' => $ownerUsername,
+                ]);
+                if (array_key_exists('manager_cf', $d)) {
+                    $settings['manager_cf'] = $managerCf;
+                }
+            }
         }
 
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare("UPDATE gyms SET name=?,slug=?,category=?,settings=? WHERE id=?");
         $stmt->execute([$name,$slug,$category,json_encode($settings, JSON_UNESCAPED_UNICODE),$id]);
+        if (!empty($managerSubmitted)) {
+            $stmt = $pdo->prepare("UPDATE users SET name=?,email=? WHERE id=? AND gym_id=?");
+            $stmt->execute([$managerName, $managerEmail, $ownerId, $id]);
+            if (array_key_exists('manager_cf', $d)) {
+                $stmt = $pdo->prepare("UPDATE users SET tax_code=? WHERE id=? AND gym_id=?");
+                $stmt->execute([$managerCf !== '' ? $managerCf : null, $ownerId, $id]);
+            }
+        }
+        $pdo->commit();
         echo json_encode(['success'=>true]);
         exit;
     }
@@ -181,6 +208,15 @@ if ($method === 'PUT') {
     $phone = trim($d['phone'] ?? '');
     $activityName = trim($d['activity_name'] ?? '');
     $userId = (int)($_SESSION['user_id'] ?? 0);
+    $ownerQuery = $pdo->prepare('SELECT billing_owner_user_id FROM gyms WHERE id=? LIMIT 1');
+    $ownerQuery->execute([$id]);
+    $canEditManager = $userId > 0 && (int)$ownerQuery->fetchColumn() === $userId;
+    $managerSubmitted = array_key_exists('manager_name', $d) || array_key_exists('manager_email', $d) || array_key_exists('manager_cf', $d);
+    if (!$canEditManager && $managerSubmitted) {
+        http_response_code(403);
+        echo json_encode(['success'=>false,'message'=>'Solo il referente può modificare i propri dati']);
+        exit;
+    }
     $currentUserEmail = '';
     if ($userId > 0) {
         $userEmailQuery = $pdo->prepare("SELECT email FROM users WHERE id=? AND gym_id=? LIMIT 1");
@@ -195,12 +231,12 @@ if ($method === 'PUT') {
         echo json_encode(['success'=>false,'message'=>'Nome attività o categoria non validi']);
         exit;
     }
-    if ($managerName === '' || strlen($managerName) > 160 || !$emailValid) {
+    if ($managerSubmitted && ($managerName === '' || strlen($managerName) > 160 || !$emailValid)) {
         http_response_code(400);
         echo json_encode(['success'=>false,'message'=>'Nome ed email del gestore sono obbligatori e devono essere validi']);
         exit;
     }
-    if ($managerCf !== '' && !preg_match('/^[A-Z0-9]{16}$/', $managerCf)) {
+    if ($managerSubmitted && $managerCf !== '' && !preg_match('/^[A-Z0-9]{16}$/', $managerCf)) {
         http_response_code(400);
         echo json_encode(['success'=>false,'message'=>'Codice fiscale non valido']);
         exit;
@@ -220,18 +256,28 @@ if ($method === 'PUT') {
         'city' => $city,
         'phone' => $phone,
         'activity_name' => $activityName,
-        'manager_name' => $managerName,
-        'manager_email' => $managerEmail,
-        'manager_username' => $_SESSION['username'] ?? ($settings['manager_username'] ?? ''),
-        'manager_cf' => $managerCf,
     ]);
+    if ($managerSubmitted) {
+        $settings = array_merge($settings, [
+            'manager_name' => $managerName,
+            'manager_email' => $managerEmail,
+            'manager_username' => $_SESSION['username'] ?? ($settings['manager_username'] ?? ''),
+        ]);
+        if (array_key_exists('manager_cf', $d)) {
+            $settings['manager_cf'] = $managerCf;
+        }
+    }
 
     $pdo->beginTransaction();
     $stmt = $pdo->prepare("UPDATE gyms SET name=?,category=?,settings=? WHERE id=?");
     $stmt->execute([$name,$category,json_encode($settings, JSON_UNESCAPED_UNICODE),$id]);
-    if ($userId > 0) {
+    if ($managerSubmitted) {
         $stmt = $pdo->prepare("UPDATE users SET name=?,email=? WHERE id=? AND gym_id=?");
         $stmt->execute([$managerName,$managerEmail,$userId,$id]);
+        if (array_key_exists('manager_cf', $d)) {
+            $stmt = $pdo->prepare("UPDATE users SET tax_code=? WHERE id=? AND gym_id=?");
+            $stmt->execute([$managerCf !== '' ? $managerCf : null, $userId, $id]);
+        }
     }
     $pdo->commit();
     echo json_encode(['success'=>true]);

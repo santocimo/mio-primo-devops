@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '@env';
 import { AuthService } from './auth.service';
-import { Appointment, Service, Gym, Contact, ContactStats } from '../models/business.model';
+import { Appointment, Service, Gym, Contact, ContactStats, AppUser } from '../models/business.model';
 
 @Injectable({
   providedIn: 'root',
@@ -170,8 +170,8 @@ export class ApiService {
 
   // ── Users (Admin only) ──────────────────────────────────────────────────
 
-  getUsers(): Observable<any[]> {
-    return this.http.get<any[]>(`${environment.apiUrl}/api/users`, { headers: this.getHeaders() });
+  getUsers(): Observable<AppUser[]> {
+    return this.http.get<AppUser[]>(`${environment.apiUrl}/api/users`, { headers: this.getHeaders() });
   }
 
   createUser(data: any): Observable<any> {

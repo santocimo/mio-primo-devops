@@ -1,28 +1,32 @@
-# Session Handoff
+# Session handoff
 
-Last update: 2026-11-19
+Aggiornato il 2026-11-20. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md`.
 
-## Branch
-`work/clean-app-2026-10-04`
+## Repository e servizi
 
-## Completed today
-- Admin post-login landing is the profile; operator landing remains the contacts list.
-- Fixed the admin gym selector: no “All activities” choice, valid gym selection retained (first gym selected if needed), and contacts/appointments stay scoped to the selected gym.
-- Admin contact creation now sends the selected `gym_id`; the API rejects a missing/invalid gym instead of silently assigning gym 1.
-- Appointment listing and booking use the selected gym. Fixed the untranslated individual-appointment category label.
-- Kept gym managers separate from the admin identity; registration sends first and last names separately to prevent duplicate surnames.
-- Updated local development data after DB backups; no tax codes were fabricated. Backups are outside the repository in `~/backups-db`.
-- Production Angular build, PHP lint, PHPUnit (17 tests / 44 assertions), Problems and `git diff --check` passed. Frontend responds on port 4200. Authenticated admin/operator smoke tests remain to be done.
+- Repo `/home/santo/progetti/mio-primo-devops`, branch `work/clean-app-2026-10-04`; non fare push senza richiesta esplicita.
+- Frontend Angular su `127.0.0.1:4200`, backend Docker `santo-web-automatico-1` su 8083, MariaDB `santo-database-santo-1` con database `mio_database`.
+- Il container web non monta i sorgenti: le modifiche PHP sono state copiate nel container attivo e vanno incorporate con un rebuild Compose prima della sua ricreazione.
+- Credenziali di test e annotazioni sui CF fittizi sono nel file protetto `/home/santo/CREDENZIALI_DEV.txt`, esterno a Git. Non inserire dati sensibili o segreti negli handoff.
+- Prima di cambiare DB o schema creare un backup; quelli esistenti sono in `~/backups-db`.
 
-## Commit
-Code and resume notes were committed locally on this branch. No push was requested or performed.
+## Cambiamenti e stato locale
 
-## Next steps
-1. Check `git status` and confirm the latest commit.
-2. Verify admin login/profile, the single-gym selector, and contact/appointment filtering; verify operator access remains limited to its gym.
-3. Resume deferred business decisions (final prices and PayPal sandbox) only after user approval. Do not enable live payments or change production credentials without approval.
+- Account non admin nominativi con password temporanee semplici per test; admin invariato. Credenziali ordinate per attività nel file protetto.
+- CuraPeople: Elena Viola referente fatturazione e Fabrizio Orilio operatore; abbonamento annuale Stripe di test attivo alla verifica fino al 20 novembre 2027. Lion: Sonia Sonetta e Davide Moretti operatori, Laura Greco referente. Pilates Me è uno studio.
+- Scheda attività: referente reale e operatori con CF individuali. I non referenti possono aggiornare la sede ma non i dati del referente. La gestione utenti mantiene sincronizzato il profilo legacy del referente.
+- Aggiunta `users.tax_code`: migrazione `012_add_user_tax_code.sql` già applicata localmente; su database esistenti applicarla prima dell'aggiornamento se la colonna manca. Lo schema iniziale dei nuovi database include la colonna. Il backfill associa il vecchio CF soltanto all'account indicato da `manager_username` nella stessa attività.
+- I CF segnaposto `TEST` sono dati di prova non validi per fatturazione reale e vanno sostituiti con dati verificati. Non attribuire il CF storico al referente attuale senza verifica.
+- Registrazione: città, telefono e CF richiesti insieme agli altri campi; per Altro è richiesto anche il nome attività personalizzato. Dicitura Clienti per centri estetici e Iscritti per palestre, aggiornata al cambio sede.
+- In precedenza: selettore admin con una sola attività, filtri contatti/appuntamenti per sede, creazione contatti admin vincolata alla sede e correzione di nome/cognome in registrazione.
 
-## Quick restart checklist
-1. `cd /home/santo/progetti/mio-primo-devops`
-2. Check containers/API on port 8083; start the Angular app on port 4200 if it is not running.
-3. `cd app-mobile && npm run build`
+## Verifiche
+
+- Review della diff, build Angular, lint PHP, PHPUnit 17 test / 44 assertion, 7 test Playwright mirati e `git diff --check` riusciti.
+- Verificato lo schema iniziale utenti con una tabella temporanea. Playwright ha usato Node 22; Node globale 18 non è sufficiente.
+- Test mirati senza creare nuove sessioni di checkout Stripe. Pagamento annuale di test e visibilità dei due account CuraPeople verificati in precedenza; non equivale a una verifica completa dei pagamenti in produzione.
+- Per riprendere: controllare `git status`, ultimo commit e disponibilità dei servizi; proseguire con i test richiesti dall'utente.
+
+## Da decidere prima della produzione
+
+Prezzi e PayPal sandbox; HTTPS pubblico e nuovi segreti/password; sostituzione dei dati fittizi; revisione legale; firma e pubblicazione Android/iOS e policy store; test automatici rinnovo/cancellazione webhook Stripe. Non attivare pagamenti live senza approvazione.

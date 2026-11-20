@@ -33,6 +33,18 @@ export interface ContactStats {
   women: number;
 }
 
+export interface AppUser {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+  username: string;
+  role: string;
+  gym_id: number | null;
+  tax_code?: string | null;
+  created_at: string;
+  is_billing_owner: boolean | number;
+}
+
 export interface Service {
   id: number;
   name: string;
@@ -67,4 +79,9 @@ export interface Gym {
   category: 'gym' | 'salon' | 'studio' | 'other';
   created_at: string;
   updated_at: string;
+}
+
+export function isSalonCategory(category: string | null | undefined): boolean {
+  const normalized = category?.toLowerCase();
+  return normalized === 'salon' || normalized === 'centro estetico';
 }

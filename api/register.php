@@ -40,7 +40,7 @@ $password     = $data['password']          ?? '';
 $manager_name = trim($name . ' ' . $surname);
 
 // Validazioni
-if (!$gym_name || !$gym_category || !$gym_address || !$name || !$surname || !$email || !$username || !$password) {
+if (!$gym_name || !$gym_category || !$gym_address || $gym_city === '' || $gym_phone === '' || $codice_fiscale === '' || !$name || !$surname || !$email || !$username || !$password) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Tutti i campi sono obbligatori']);
     exit;
@@ -64,7 +64,13 @@ if (!in_array($gym_category, $allowed_categories, true)) {
     exit;
 }
 
-if ($codice_fiscale !== '' && !preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
+if (mb_strlen($gym_city) > 120 || mb_strlen($gym_phone) > 30) {
+    http_response_code(400);
+    echo json_encode(['success' => false, 'message' => 'Città o telefono non validi']);
+    exit;
+}
+
+if (!preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
     exit;
@@ -142,8 +148,8 @@ try {
 
     // 3. Inserisce l'utente operatore
     $password_hash = password_hash($password, PASSWORD_DEFAULT);
-    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, ?, ?, NOW(), 'trial')");
-    $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id]);
+    $ins_user = $pdo->prepare("INSERT INTO users (name, email, username, password_hash, `role`, gym_id, tax_code, trial_start_date, subscription_status) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), 'trial')");
+    $ins_user->execute([$manager_name, $email, $username, $password_hash, 'operatore', $gym_id, $codice_fiscale]);
     $user_id = (int)$pdo->lastInsertId();
     $setBillingOwner = $pdo->prepare('UPDATE gyms SET billing_owner_user_id = ? WHERE id = ?');
     $setBillingOwner->execute([$user_id, $gym_id]);

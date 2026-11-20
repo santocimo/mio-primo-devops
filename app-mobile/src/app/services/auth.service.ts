@@ -15,6 +15,7 @@ export class AuthService {
   });
 
   private selectedGymId$ = new BehaviorSubject<number | null>(null);
+  private selectedGymCategory$ = new BehaviorSubject<string | null>(null);
 
   constructor(private http: HttpClient) {
     this.loadStoredAuth();
@@ -175,6 +176,7 @@ export class AuthService {
       subscriptionStatus: SubscriptionStatus.NONE,
     });
     this.selectedGymId$.next(null);
+    this.selectedGymCategory$.next(null);
     localStorage.removeItem('authState');
     localStorage.removeItem('token');
   }
@@ -288,7 +290,18 @@ export class AuthService {
     return this.selectedGymId$.asObservable();
   }
 
+  getSelectedGymCategoryStream(): Observable<string | null> {
+    return this.selectedGymCategory$.asObservable();
+  }
+
+  setSelectedGymCategory(category: string | null): void {
+    this.selectedGymCategory$.next(category);
+  }
+
   setSelectedGymId(gymId: number | null): void {
+    if (gymId !== this.selectedGymId$.getValue()) {
+      this.selectedGymCategory$.next(null);
+    }
     this.selectedGymId$.next(gymId);
     const state = { ...this.authState$.getValue(), selectedGymId: gymId };
     this.authState$.next(state);

@@ -47,15 +47,15 @@ export class RegisterPage {
       gym_name:     ['', [Validators.required, Validators.minLength(2), Validators.maxLength(150)]],
       gym_category: ['', Validators.required],
       gym_address:  ['', [Validators.required, Validators.minLength(5), Validators.maxLength(200)]],
-      gym_city:     ['', [Validators.maxLength(120)]],
-      gym_phone:    ['', [Validators.maxLength(30)]],
+      gym_city:     ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(120)]],
+      gym_phone:    ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(30)]],
       activity_name:[''],
     });
 
     this.step2Form = this.fb.group({
       name:          ['', [Validators.required, Validators.minLength(2)]],
       surname:       ['', [Validators.required, Validators.minLength(2)]],
-      codice_fiscale:['', [Validators.pattern(/^[A-Za-z0-9]{16}$/)]],
+      codice_fiscale:['', [Validators.required, Validators.pattern(/^[A-Za-z0-9]{16}$/)]],
       email:         ['', [Validators.required, Validators.email]],
       username:      ['', [Validators.required, Validators.minLength(3), Validators.pattern(/^[A-Za-z0-9._-]{3,50}$/)]],
       password:      ['', [Validators.required, Validators.minLength(8)]],

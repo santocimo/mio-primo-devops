@@ -5,7 +5,7 @@ import { FormControl } from '@angular/forms';
 import { takeUntil, debounceTime, distinctUntilChanged, finalize } from 'rxjs/operators';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
-import { Contact } from '../../models/business.model';
+import { Contact, isSalonCategory } from '../../models/business.model';
 import { LanguageService } from '../../i18n/language.service';
 
 @Component({
@@ -32,6 +32,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   selectedGymId: number | null = null;
   selectedGymName = '';
   isAdminUser = false;
+  isSalon = false;
 
   private destroy$ = new Subject<void>();
   private readonly CF_MONTHS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
@@ -48,6 +49,9 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     this.selectedGymId = this.authService.getSelectedGymId();
     this.selectedGymName = this.authService.getSelectedGymName();
     this.isAdminUser = this.isAdmin();
+    this.authService.getSelectedGymCategoryStream()
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(category => { this.isSalon = isSalonCategory(category); });
 
     // Reagisce al cambio sede anche se la pagina è già aperta
     this.authService.getSelectedGymIdStream()
@@ -92,13 +96,13 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
       .pipe(takeUntil(this.destroy$), finalize(() => { this.loading = false; this.cdr.detectChanges(); }))
       .subscribe({
         next: c => { this.contacts = c; this.cdr.detectChanges(); },
-        error: () => { this.contacts = []; this.presentToast(this.language.instant('contacts.errorLoad'), 'danger'); },
+        error: () => { this.contacts = []; this.presentToast(this.language.instant(this.contactLabel('errorLoad')), 'danger'); },
       });
   }
 
   openAdd(): void {
     if (this.isAdminUser && this.selectedGymId == null) {
-      void this.presentToast(this.language.instant('contacts.selectActivityFirst'), 'warning');
+      void this.presentToast(this.language.instant(this.contactLabel('selectActivityFirst')), 'warning');
       return;
     }
     this.editingContact = null;
@@ -133,7 +137,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   save(): void {
     if (!this.formData.nome || !this.formData.cognome) return;
     if (!this.editingContact && this.isAdminUser && this.selectedGymId == null) {
-      void this.presentToast(this.language.instant('contacts.selectActivityFirst'), 'warning');
+      void this.presentToast(this.language.instant(this.contactLabel('selectActivityFirst')), 'warning');
       return;
     }
     const data = {
@@ -147,7 +151,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           next: () => {
             this.closeModal();
             this.loadContacts(this.searchCtrl.value ?? '');
-            this.presentToast(this.language.instant('contacts.updated'), 'success');
+            this.presentToast(this.language.instant(this.contactLabel('updated')), 'success');
           },
           error: () => { this.presentToast(this.language.instant('contacts.errorUpdate'), 'danger'); },
         });
@@ -160,7 +164,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
           next: () => {
             this.closeModal();
             this.loadContacts(this.searchCtrl.value ?? '');
-            this.presentToast(this.language.instant('contacts.created'), 'success');
+            this.presentToast(this.language.instant(this.contactLabel('created')), 'success');
           },
           error: () => { this.presentToast(this.language.instant('contacts.errorSave'), 'danger'); },
         });
@@ -169,7 +173,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   async confirmDelete(c: Contact): Promise<void> {
     const alert = await this.alertController.create({
-      header: this.language.instant('contacts.deleteTitle'),
+      header: this.language.instant(this.contactLabel('deleteTitle')),
       message: `${c.nome} ${c.cognome}`,
       buttons: [
         { text: this.language.instant('common.cancel'), role: 'cancel' },
@@ -180,7 +184,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
             this.apiService.deleteContact(c.id).pipe(takeUntil(this.destroy$)).subscribe({
               next: () => {
                 this.loadContacts(this.searchCtrl.value ?? '');
-                this.presentToast(this.language.instant('contacts.deleted'), 'success');
+                this.presentToast(this.language.instant(this.contactLabel('deleted')), 'success');
               },
               error: () => { this.presentToast(this.language.instant('contacts.errorDelete'), 'danger'); },
             });
@@ -230,6 +234,10 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   isAdmin(): boolean {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
     return role.includes('ADMIN') || role.includes('SUPER');
+  }
+
+  contactLabel(key: string): string {
+    return `contacts.${key}${this.isSalon ? 'Client' : ''}`;
   }
 
   currentUser() {

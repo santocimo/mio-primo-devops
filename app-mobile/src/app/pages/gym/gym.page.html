@@ -62,7 +62,7 @@
           </div>
           <div class="gym-profile-item">
             <span class="profile-label">{{ 'gym.taxCode' | translate }}</span>
-            <strong>{{ gym.manager_cf || '—' }}</strong>
+            <strong>{{ managerTaxCode() || '—' }}</strong>
           </div>
           <div class="gym-profile-item">
             <span class="profile-label">{{ 'gym.address' | translate }}</span>
@@ -85,9 +85,9 @@
             <ion-select-option *ngFor="let category of categories" [value]="category.value">{{ category.label | translate }}</ion-select-option>
           </ion-select>
           <ion-input [label]="'gym.activityName' | translate" labelPlacement="stacked" maxlength="150" [(ngModel)]="formData.activity_name"></ion-input>
-          <ion-input [label]="'gym.managerName' | translate" labelPlacement="stacked" maxlength="160" [(ngModel)]="formData.manager_name"></ion-input>
-          <ion-input [label]="'gym.managerEmail' | translate" labelPlacement="stacked" type="email" maxlength="255" [(ngModel)]="formData.manager_email"></ion-input>
-          <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" maxlength="24" [(ngModel)]="formData.manager_cf"></ion-input>
+          <ion-input [label]="'gym.managerName' | translate" labelPlacement="stacked" maxlength="160" [(ngModel)]="formData.manager_name" [readonly]="!canEditManager()"></ion-input>
+          <ion-input [label]="'gym.managerEmail' | translate" labelPlacement="stacked" type="email" maxlength="255" [(ngModel)]="formData.manager_email" [readonly]="!canEditManager()"></ion-input>
+          <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" maxlength="24" [(ngModel)]="formData.manager_cf" [readonly]="!canEditManager()"></ion-input>
           <ion-input [label]="'gym.address' | translate" labelPlacement="stacked" maxlength="200" [(ngModel)]="formData.address"></ion-input>
           <ion-input [label]="'gym.city' | translate" labelPlacement="stacked" maxlength="120" [(ngModel)]="formData.city"></ion-input>
           <ion-input [label]="'gym.phone' | translate" labelPlacement="stacked" type="tel" maxlength="30" [(ngModel)]="formData.phone"></ion-input>
@@ -98,6 +98,7 @@
         </div>
 
         <p class="gym-validation-note" *ngIf="editing && validationMessage()">{{ validationMessage() | translate }}</p>
+        <p class="section-note" *ngIf="editing && !canEditManager()">{{ 'gym.managerReadonly' | translate }}</p>
 
         <div class="gym-edit-actions" *ngIf="editing">
           <ion-button fill="clear" color="medium" (click)="cancelEdit()" [disabled]="saving">{{ 'gym.cancel' | translate }}</ion-button>
@@ -105,6 +106,21 @@
             <ion-icon slot="start" name="save-outline"></ion-icon>
             {{ (saving ? 'gym.saving' : 'gym.save') | translate }}
           </ion-button>
+        </div>
+      </section>
+
+      <section class="section-card gym-profile-card" *ngIf="!editing">
+        <h2 class="section-title">{{ 'gym.operators' | translate }}</h2>
+        <p class="section-note" *ngIf="usersLoadError" role="alert">{{ 'gym.usersLoadError' | translate }}</p>
+        <p class="section-note" *ngIf="!usersLoadError && operators.length === 0">{{ 'gym.noOperators' | translate }}</p>
+        <div class="gym-profile-grid" *ngIf="operators.length > 0">
+          <div class="gym-profile-item" *ngFor="let operator of operators">
+            <span class="profile-label">{{ 'gym.operator' | translate }}</span>
+            <strong>{{ operator.name || operator.username }}</strong>
+            <span>{{ operator.username }}</span>
+            <small>{{ operator.email || '—' }}</small>
+            <small>{{ 'gym.taxCode' | translate }}: {{ operator.tax_code || '—' }}</small>
+          </div>
         </div>
       </section>
     </ng-container>
@@ -116,7 +132,7 @@
         <ion-skeleton-text animated style="width: 100%; height: 180px; margin-top: 20px;"></ion-skeleton-text>
       </section>
       <section class="section-card gym-status-card" *ngIf="!loading">
-        <p>{{ 'gym.noActivity' | translate }}</p>
+        <p>{{ (usersLoadError ? 'gym.loadError' : 'gym.noActivity') | translate }}</p>
       </section>
     </ng-template>
   </div>
