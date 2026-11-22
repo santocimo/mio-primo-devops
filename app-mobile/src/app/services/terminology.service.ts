@@ -87,19 +87,47 @@ export class TerminologyService {
   }
 
   /**
-   * Get translation key for a category
-   * Used to select the correct i18n key
+   * Get translation key for a category and action
+   * Used to select the correct i18n key with suffix
+   * Examples: contacts.title, contacts.titleClient, contacts.titlePatient, contacts.titleContact
+   *           nav.members, nav.clients, nav.patients, nav.contacts
    */
-  getTranslationKey(category: string): string {
-    const keyMap: { [key: string]: string } = {
-      'gym': 'member',
-      'studio': 'member',
-      'salon': 'client',
-      'medical': 'patient',
-      'other': 'contact'
-    };
+  getTranslationKey(category: string | null | undefined, prefix: string = 'contacts', action: string = ''): string {
+    const normalizedCategory = (category || '').toLowerCase();
+    const suffix = this.getSuffix(normalizedCategory);
+    
+    if (prefix === 'nav') {
+      // For nav, we use plurals: nav.members, nav.clients, nav.patients, nav.contacts
+      const navMap: { [key: string]: string } = {
+        'gym': 'nav.members',
+        'studio': 'nav.members',
+        'salon': 'nav.clients',
+        'medical': 'nav.patients',
+        'other': 'nav.contacts'
+      };
+      return navMap[normalizedCategory] || navMap['other'];
+    }
+    
+    // For contacts prefix, append action and suffix
+    return action ? `${prefix}.${action}${suffix}` : `${prefix}${suffix}`;
+  }
 
-    return keyMap[category] || 'contact';
+  /**
+   * Get the suffix for translation keys based on category
+   * '' for members (default), 'Client', 'Patient', 'Contact'
+   */
+  private getSuffix(normalizedCategory: string): string {
+    if (normalizedCategory === 'salon') {
+      return 'Client';
+    }
+    if (normalizedCategory === 'medical') {
+      return 'Patient';
+    }
+    if (normalizedCategory === 'other' || !normalizedCategory) {
+      return 'Contact';
+    }
+    // gym, studio - no suffix (default members)
+    return '';
   }
 
   /**

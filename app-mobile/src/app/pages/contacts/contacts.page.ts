@@ -7,6 +7,7 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Contact, isSalonCategory } from '../../models/business.model';
 import { LanguageService } from '../../i18n/language.service';
+import { TerminologyService } from '../../services/terminology.service';
 
 @Component({
   selector: 'app-contacts',
@@ -31,8 +32,8 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   selectedGymId: number | null = null;
   selectedGymName = '';
+  selectedGymCategory: string | null = null;
   isAdminUser = false;
-  isSalon = false;
 
   private destroy$ = new Subject<void>();
   private readonly CF_MONTHS = ['A', 'B', 'C', 'D', 'E', 'H', 'L', 'M', 'P', 'R', 'S', 'T'];
@@ -42,7 +43,8 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     private alertController: AlertController,
     private toastController: ToastController,
     public language: LanguageService,
-    private cdr: ChangeDetectorRef
+    private cdr: ChangeDetectorRef,
+    private terminologyService: TerminologyService
   ) {}
 
   ngOnInit(): void {
@@ -51,7 +53,10 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
     this.isAdminUser = this.isAdmin();
     this.authService.getSelectedGymCategoryStream()
       .pipe(takeUntil(this.destroy$))
-      .subscribe(category => { this.isSalon = isSalonCategory(category); });
+      .subscribe(category => { 
+        this.selectedGymCategory = category;
+        this.cdr.detectChanges();
+      });
 
     // Reagisce al cambio sede anche se la pagina è già aperta
     this.authService.getSelectedGymIdStream()
@@ -237,7 +242,7 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   }
 
   contactLabel(key: string): string {
-    return `contacts.${key}${this.isSalon ? 'Client' : ''}`;
+    return this.terminologyService.getTranslationKey(this.selectedGymCategory, 'contacts', key);
   }
 
   currentUser() {

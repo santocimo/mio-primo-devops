@@ -11,6 +11,7 @@ import { distinctUntilChanged, map } from 'rxjs/operators';
 import { AuthState } from './models/auth.model';
 import { Gym, isSalonCategory } from './models/business.model';
 import { AppLanguage, LanguageService } from './i18n/language.service';
+import { TerminologyService } from './services/terminology.service';
 
 @Component({
   selector: 'app-root',
@@ -39,7 +40,8 @@ export class AppComponent implements OnInit, OnDestroy {
     private menuCtrl: MenuController,
     private navCtrl: NavController,
     private zone: NgZone,
-    public router: Router
+    public router: Router,
+    private terminologyService: TerminologyService
   ) {}
 
   ngOnInit(): void {
@@ -175,9 +177,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get contactsNavLabelKey(): string {
     const category = this.gyms.find(gym => gym.id === this.selectedGymId)?.category;
-    return isSalonCategory(category)
-      ? 'nav.clients'
-      : 'nav.members';
+    return this.terminologyService.getTranslationKey(category, 'nav');
   }
 
   onLanguageChange(language: string): void {
