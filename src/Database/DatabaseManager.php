@@ -123,11 +123,12 @@ class DatabaseManager {
             )"
         );
 
-        $this->pdo->exec(
-            "INSERT INTO gyms (name, slug, category)
-             SELECT 'Default Gym', 'default', 'gym'
-             WHERE NOT EXISTS (SELECT 1 FROM gyms WHERE slug = 'default')"
-        );
+        // No longer auto-create Default Gym - all gyms must be created explicitly
+        // $this->pdo->exec(
+        //     "INSERT INTO gyms (name, slug, category)
+        //      SELECT 'Default Gym', 'default', 'gym'
+        //      WHERE NOT EXISTS (SELECT 1 FROM gyms WHERE slug = 'default')"
+        // );
     }
 
     private function ensureGymSubscriptionsSchema() {
