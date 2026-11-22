@@ -52,7 +52,7 @@ if (!validate_gym_name($gym_name)) {
     exit;
 }
 
-$allowed_categories = ['gym', 'salon', 'studio', 'other'];
+$allowed_categories = ['gym', 'salon', 'studio', 'medical', 'other'];
 if ($gym_category === 'other' && $activity_name === '') {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Se scegli Altro devi indicare la tua attivita']);

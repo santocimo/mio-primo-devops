@@ -15,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 require_once __DIR__ . '/../inc/security.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/auth/verify_token.php';
+require_once __DIR__ . '/../src/Service/TerminologyService.php';
+
+use App\Service\TerminologyService;
 
 // Accetta sia sessione PHP (web) che Bearer token (app mobile)
 if (!verify_bearer_token()) {
@@ -30,7 +33,7 @@ $role = strtoupper($_SESSION['user_role'] ?? '');
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
 
 if ($method === 'GET') {
-    $allowedCategories = ['gym', 'salon', 'studio', 'other'];
+    $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
     $configuredCategory = trim((string)getAppSetting($pdo, 'default_business_type', 'gym'));
     if (!in_array($configuredCategory, $allowedCategories, true)) {
         $configuredCategory = 'gym';
@@ -61,7 +64,16 @@ if ($method === 'GET') {
         $stmt->execute([$configuredCategory]);
     }
 
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC) ?: []);
+    $gyms = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+    
+    // Enrich each gym with terminology based on its category
+    foreach ($gyms as &$gym) {
+        $gym['contact_label'] = TerminologyService::getContactLabel($gym['category']);
+        $gym['contact_label_key'] = TerminologyService::getContactLabelKey($gym['category']);
+        $gym['is_member_category'] = TerminologyService::isMemberCategory($gym['category']);
+    }
+
+    echo json_encode($gyms);
     exit;
 }
 
@@ -115,7 +127,7 @@ if ($method === 'PUT') {
             exit;
         }
 
-        $allowedCategories = ['gym', 'salon', 'studio', 'other'];
+        $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
         if ($name === '' || strlen($name) > 150 || !in_array($category, $allowedCategories, true)) {
             http_response_code(400);
             echo json_encode(['success'=>false,'message'=>'Nome attività o categoria non validi']);
@@ -199,7 +211,7 @@ if ($method === 'PUT') {
         exit;
     }
 
-    $allowedCategories = ['gym', 'salon', 'studio', 'other'];
+    $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
     $managerName = trim($d['manager_name'] ?? '');
     $managerEmail = trim($d['manager_email'] ?? '');
     $managerCf = strtoupper(trim($d['manager_cf'] ?? ''));
