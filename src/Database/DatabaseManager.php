@@ -206,13 +206,17 @@ class DatabaseManager {
               username VARCHAR(50) NOT NULL UNIQUE,
               password_hash VARCHAR(255) NOT NULL,
               role VARCHAR(50) NOT NULL DEFAULT 'ADMIN',
-              gym_id INT NOT NULL DEFAULT 1,
+              gym_id INT NULL DEFAULT 1,
               tax_code VARCHAR(16) DEFAULT NULL,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )"
         );
 
         $userColumns = $this->pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN);
+        $gymIdColumn = $this->pdo->query("SHOW COLUMNS FROM users LIKE 'gym_id'")->fetch(PDO::FETCH_ASSOC);
+        if ($gymIdColumn && $gymIdColumn['Null'] === 'NO') {
+            $this->pdo->exec('ALTER TABLE users MODIFY gym_id INT NULL DEFAULT 1');
+        }
         if (!in_array('name', $userColumns, true)) {
             $this->pdo->exec("ALTER TABLE users ADD COLUMN name VARCHAR(150) NOT NULL DEFAULT ''");
         }
@@ -259,7 +263,7 @@ class DatabaseManager {
                     'admin',
                     $adminPasswordHash,
                     'ADMIN',
-                    1,
+                    null,
                 ]);
             }
         } else {

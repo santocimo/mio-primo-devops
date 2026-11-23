@@ -77,10 +77,8 @@ if ($method === 'GET') {
     exit;
 }
 
-// Operators may update only their own gym profile.
-$operatorGymId = (int)($_SESSION['gym_id'] ?? 0);
-$isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false || $role === 'GESTORE';
-$canUpdateOwnGym = $method === 'PUT' && $isOperator && $operatorGymId > 0;
+$userGymId = (int)($_SESSION['gym_id'] ?? 0);
+$canUpdateOwnGym = $method === 'PUT' && $role === 'GESTORE' && $userGymId > 0;
 if ($method !== 'GET' && !$isAdmin && !$canUpdateOwnGym) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); exit; }
 
 if ($method === 'POST') {
@@ -107,7 +105,7 @@ if ($method === 'PUT') {
     $id = (int)end($parts);
     if (!$id) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'ID mancante']); exit; }
 
-    if (!$isAdmin && $id !== $operatorGymId) {
+    if (!$isAdmin && $id !== $userGymId) {
         http_response_code(403);
         echo json_encode(['success'=>false,'message'=>'Puoi modificare solo la tua sede']);
         exit;

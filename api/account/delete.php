@@ -82,7 +82,8 @@ try {
             );
         }
         $otherUsers = $pdo->prepare(
-            'SELECT id FROM users WHERE gym_id = ? AND id <> ? LIMIT 1 FOR UPDATE'
+            "SELECT id FROM users WHERE gym_id = ? AND id <> ?
+             AND UPPER(role) NOT LIKE '%ADMIN%' AND UPPER(role) NOT LIKE '%SUPER%' LIMIT 1 FOR UPDATE"
         );
         $otherUsers->execute([$gymId, $userId]);
         if ($otherUsers->fetchColumn()) {
@@ -94,8 +95,9 @@ try {
         }
 
         $preservePayments = $pdo->prepare(
-            'UPDATE subscription_payments SET user_id = NULL, gym_id = NULL
-             WHERE user_id IN (SELECT id FROM users WHERE gym_id = ?)'
+            "UPDATE subscription_payments SET user_id = NULL, gym_id = NULL
+             WHERE user_id IN (SELECT id FROM users WHERE gym_id = ?
+               AND UPPER(role) NOT LIKE '%ADMIN%' AND UPPER(role) NOT LIKE '%SUPER%')"
         );
         $preservePayments->execute([$gymId]);
         $preserveGymPayments = $pdo->prepare(
@@ -105,6 +107,12 @@ try {
 
         $deleteContacts = $pdo->prepare('DELETE FROM visitatori WHERE gym_id = ?');
         $deleteContacts->execute([$gymId]);
+
+        $detachAdmins = $pdo->prepare(
+            "UPDATE users SET gym_id = NULL WHERE gym_id = ?
+             AND (UPPER(role) LIKE '%ADMIN%' OR UPPER(role) LIKE '%SUPER%')"
+        );
+        $detachAdmins->execute([$gymId]);
 
         $deleteUsers = $pdo->prepare('DELETE FROM users WHERE gym_id = ?');
         $deleteUsers->execute([$gymId]);

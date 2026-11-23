@@ -13,7 +13,7 @@ async function login(page: Page): Promise<void> {
   await page.locator('ion-input').nth(1).click();
   await page.keyboard.type(ADMIN_PASSWORD!);
   await page.locator('ion-button[type="submit"]').click();
-  await page.waitForURL(/\/(contacts|paywall)/, { timeout: 15000 });
+  await page.waitForURL(/\/profile$/, { timeout: 15000 });
 }
 
 test('login con credenziali errate resta nella pagina di accesso', async ({ page }) => {
@@ -75,13 +75,7 @@ test('scheda attività distingue referente e operatori', async ({ page }) => {
     }));
     localStorage.setItem('businessregistry-language', 'it');
   });
-  let updatePayload: Record<string, unknown> | undefined;
   await page.route('**/api/gyms**', async route => {
-    if (route.request().method() === 'PUT') {
-      updatePayload = route.request().postDataJSON();
-      await route.fulfill({ json: { success: true } });
-      return;
-    }
     await route.fulfill({ json: [{
       id: 16, name: 'CuraPeople', category: 'salon', manager_username: 'fabrizio.orilio',
       manager_name: 'Fabrizio Orilio', manager_email: 'fabrizio@example.test',
@@ -104,14 +98,40 @@ test('scheda attività distingue referente e operatori', async ({ page }) => {
   await expect(operators.getByText('Fabrizio Orilio')).toBeVisible();
   await expect(operators.getByText('TEST000000000010', { exact: false })).toBeVisible();
   await expect(operators.getByText('Altro Operatore')).toHaveCount(0);
-  await page.getByLabel('Modifica scheda attività').click();
-  await expect(page.locator('ion-input').filter({ hasText: 'Nome e cognome gestore' }).locator('input')).toHaveAttribute('readonly', '');
-  await page.getByRole('button', { name: 'Salva modifiche' }).click();
-  await expect.poll(() => updatePayload).toBeDefined();
-  expect(updatePayload).not.toHaveProperty('manager_name');
-  expect(updatePayload).not.toHaveProperty('manager_email');
-  expect(updatePayload).not.toHaveProperty('manager_cf');
+  await expect(page.getByLabel('Modifica scheda attività')).toHaveCount(0);
 });
+
+for (const scenario of [
+  { role: 'operatore', owner: true, allowed: false },
+  { role: 'gestore', owner: false, allowed: true },
+  { role: 'super', owner: false, allowed: true },
+]) {
+  test(`modifica scheda attività: ${scenario.role}, referente ${scenario.owner}`, async ({ page }) => {
+    await page.addInitScript(({ role }) => {
+      localStorage.setItem('authState', JSON.stringify({
+        isLoggedIn: true, subscriptionStatus: 'active', token: 'test-token', selectedGymId: 16,
+        user: { id: 10, name: 'Test', role, gym_id: 16 },
+      }));
+      localStorage.setItem('businessregistry-language', 'it');
+    }, scenario);
+    await page.route('**/api/gyms**', route => route.fulfill({ json: [
+      { id: 16, name: 'Studio Test', category: 'studio' },
+    ] }));
+    await page.route('**/api/users**', route => route.fulfill({ json: [
+      { id: scenario.owner ? 10 : 25, name: 'Referente Test', username: 'referente', email: 'owner@example.test', role: 'GESTORE', gym_id: 16, is_billing_owner: 1 },
+    ] }));
+    await page.goto(`${BASE}/gym`);
+    await expect(page.getByRole('heading', { name: 'Studio Test' })).toBeVisible();
+    const edit = page.getByLabel('Modifica scheda attività');
+    if (scenario.allowed) {
+      await expect(edit).toBeVisible();
+      await edit.click();
+      await expect(page.locator('.gym-edit-grid')).toBeVisible();
+    } else {
+      await expect(edit).toHaveCount(0);
+    }
+  });
+}
 
 test('scheda attività segnala errori di caricamento utenti senza nascondere la sede', async ({ page }) => {
   await page.addInitScript(() => {
@@ -203,12 +223,11 @@ test.describe('Sessione amministratore', () => {
     await login(page);
   });
 
-  test('accesso valido apre iscritti o paywall', async ({ page }) => {
-    await expect(page).toHaveURL(/\/(contacts|paywall)/);
+  test('accesso valido apre il profilo', async ({ page }) => {
+    await expect(page).toHaveURL(/\/profile$/);
   });
 
   test('naviga tra le sezioni principali dal menu', async ({ page }) => {
-    test.skip(page.url().includes('/paywall'), 'Admin account is unexpectedly paywalled');
     const sections = [
       { label: 'Appuntamenti', path: '/appointments' },
       { label: 'Servizi', path: '/services' },
@@ -216,7 +235,7 @@ test.describe('Sessione amministratore', () => {
     ];
 
     for (const section of sections) {
-      await page.locator('ion-menu-button').first().click();
+      await page.locator('ion-menu-button:visible').last().click();
       const item = page.locator('.menu-nav-item').filter({ hasText: section.label }).first();
       await expect(item).toBeVisible();
       await item.click();

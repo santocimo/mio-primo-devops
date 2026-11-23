@@ -18,6 +18,7 @@ export class GymPage implements OnInit, OnDestroy {
   editing = false;
   saving = false;
   isAdminUser = false;
+  canEditActivity = false;
   users: AppUser[] = [];
   usersLoadError = false;
   formData = this.emptyForm();
@@ -39,6 +40,7 @@ export class GymPage implements OnInit, OnDestroy {
   ngOnInit(): void {
     const role = (this.auth.getCurrentUser()?.role ?? '').toUpperCase();
     this.isAdminUser = role.includes('ADMIN') || role.includes('SUPER');
+    this.canEditActivity = this.isAdminUser || role === 'GESTORE';
     this.auth.getSelectedGymIdStream()
       .pipe(takeUntil(this.destroy$))
       .subscribe(gymId => {
@@ -86,7 +88,7 @@ export class GymPage implements OnInit, OnDestroy {
   }
 
   startEdit(): void {
-    if (!this.gym) return;
+    if (!this.gym || !this.canEditActivity) return;
     this.formData = {
       name: this.gym.name,
       category: this.gym.category,
@@ -127,7 +129,7 @@ export class GymPage implements OnInit, OnDestroy {
   }
 
   save(): void {
-    if (!this.gym || !this.canSave() || this.saving) return;
+    if (!this.gym || !this.canEditActivity || !this.canSave() || this.saving) return;
     this.saving = true;
     const update = {
       ...this.formData,
