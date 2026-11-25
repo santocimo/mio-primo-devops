@@ -1,6 +1,24 @@
 # Session handoff
 
-Aggiornato il 2026-11-23. Per la ripresa operativa vedere `RIPRENDI_QUI.md` e `DEPLOY_CHECKLIST.md`.
+Aggiornato il 2026-11-25. Le note qui sotto sono lo stato più recente e prevalgono sulle note storiche successive. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md` e `DEPLOY_CHECKLIST.md`.
+
+## Routine
+
+Aggiornare sempre questo handoff al termine del lavoro con attività completate, verifiche, stato di commit/deploy e prossimo passo. Non inserire segreti o dati personali.
+
+## Ultimo checkpoint
+
+- Commit `be733e5` (`Implement timezone-aware appointments and access tests`) è stato pushato su `origin/work/clean-app-2026-10-04` su richiesta dell'utente; il worktree era pulito dopo il push.
+- I quattro appuntamenti legacy senza fuso sono stati convertiti in `Europe/Rome` dopo l'autorizzazione dell'utente. Non restano righe con `scheduled_timezone IS NULL`; il record legacy verificato appare alle 10:00 ora italiana e alle 10:00 ora di inserimento. Backup pre-migrazione: `/home/santo/backups-db/mio_database_pre_legacy_timezone_20261125_105231.sql`.
+- Gli admin vedono ora italiana e fuso d'inserimento nelle pagine appuntamenti; operatori/gestori vedono il proprio orario locale. Il registro accessi admin mostra solo l'ora italiana.
+- La revisione e i test di autorizzazione hanno aggiunto test HTTP su MariaDB usa-e-getta per admin/SUPER, gestore referente, operatori italiani e legacy, isolamento fra due attività, endpoint admin-only e abbonamenti scaduti. Corretti due casi: il ruolo `OPERATOR` legacy era respinto da `/api/users`; aggiornamenti/cancellazioni di contatti fuori attività restituivano successo pur non modificando righe.
+- L'utente ha scelto di mantenere visibili agli operatori della stessa attività i dati dello staff già mostrati dalla scheda (inclusi email e codici fiscali).
+- Verifica completa: 34 test / 126 asserzioni; PHP lint e `git diff --check` superati. Test eseguiti su un container MariaDB usa-e-getta poi rimosso; database attivo non toccato.
+- Attenzione deploy: le correzioni RBAC in `be733e5` non sono state ancora distribuite. Il precedente deploy backend timezone/audit era stato eseguito separatamente. Non ricreare né riavviare il database o il volume `santo_db_data`.
+
+## Prossimo passo
+
+Se richiesto dall'utente, aggiornare solo il container web al commit corrente, mantenendo invariati il container DB e il volume `santo_db_data`; poi fare smoke test con account admin, referente e operatore su attività distinte. Non eseguire il deploy senza richiesta esplicita.
 
 ## Repository e servizi
 
@@ -25,10 +43,11 @@ Aggiornato il 2026-11-23. Per la ripresa operativa vedere `RIPRENDI_QUI.md` e `D
 
 ## Verifiche
 
-- Build Angular, lint PHP, PHPUnit 17 test / 44 assertion, 23 test Playwright Chromium e `git diff --check` riusciti. Test di scrittura e migrazione eseguiti su DB isolato; le risorse temporanee sono state rimosse.
+- Ultimo risultato: PHPUnit 34 test / 126 asserzioni, PHP lint sui file modificati e `git diff --check` riusciti. La build Angular di produzione e i test precedenti riportati nei checkpoint restano validi per le modifiche frontend di allora.
+- I test HTTP RBAC usano `RBAC_TEST_DB_*` e richiedono `RBAC_TEST_DB_CONFIRM=YES`; la CI usa il servizio MariaDB `test_db`. Non puntare mai queste variabili al database reale.
 - Verificato lo schema iniziale utenti con una tabella temporanea. Playwright ha usato Node 22; Node globale 18 non è sufficiente.
 - Test mirati senza creare nuove sessioni di checkout Stripe. Un pagamento annuale di test era stato verificato in precedenza; non equivale a una verifica completa dei pagamenti in produzione.
-- Per riprendere: controllare `git status`, ultimo commit e disponibilità dei servizi; proseguire con i test richiesti dall'utente.
+- Per riprendere: controllare `git status`, commit corrente e disponibilità dei servizi; ricordare che gli ultimi fix RBAC non sono ancora in produzione.
 
 ## Da decidere prima della produzione
 
