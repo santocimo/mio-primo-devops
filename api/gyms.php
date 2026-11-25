@@ -31,6 +31,7 @@ $pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 $role = strtoupper($_SESSION['user_role'] ?? '');
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
+App\Audit\AdminAuditLogger::recordApiRequest($pdo, 'gyms', $isAdmin);
 
 if ($method === 'GET') {
     $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];

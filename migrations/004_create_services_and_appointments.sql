@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS appointments (
   customer_name VARCHAR(150) NOT NULL,
   customer_email VARCHAR(150) DEFAULT NULL,
   scheduled_at DATETIME NOT NULL,
+  scheduled_timezone VARCHAR(64) DEFAULT NULL,
   status VARCHAR(30) NOT NULL DEFAULT 'pending',
   notes TEXT DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

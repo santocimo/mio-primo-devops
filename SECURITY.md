@@ -62,13 +62,27 @@ server {
 ```
 
 ### 7. Access Control
-
 The application uses role-based access control:
 - **ADMIN**: Full system access
-- **MANAGER**: Manage own location
-- **OPERATOR**: View and update appointments/services
+- **GESTORE**: Manage own location and billing contact
+- **OPERATORE**: View and update data for own location
 
 Always verify user roles before performing sensitive operations.
+
+Administrator requests to account, activity, customer, appointment, service, and
+settings endpoints are recorded in `admin_audit_log`. The log stores the
+administrator ID and role, action, resource ID, activity ID, response status,
+and timestamps; it does not store request bodies, customer fields, IP addresses,
+or before/after values. `DatabaseManager` creates the table on startup, and
+`migrations/013_create_admin_audit_log.sql` provides the equivalent schema for
+manual upgrades. Back up the database before deploying this schema change.
+Audit records older than 90 days are removed by
+`scripts/cleanup_admin_audit_log.php`; schedule it to run daily. For Docker
+Compose deployments, a host cron entry can run
+`docker compose exec -T web-automatico php /var/www/html/scripts/cleanup_admin_audit_log.php`
+from the project directory. This is a technical default, not a legal retention
+assessment. Database backups have a separate retention period and must be
+managed independently.
 
 ### 8. Regular Updates
 

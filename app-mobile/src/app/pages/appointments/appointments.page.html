@@ -48,7 +48,27 @@
             <div class="entity-tags">
               <span class="pill-badge">{{ appointment.service_name || ('appointments.service' | translate) }}</span>
               <span class="pill-badge" *ngIf="appointment.service_provider_name">{{ appointment.service_provider_name }} · {{ (appointment.service_provider_type === 'external' ? 'appointments.external' : 'appointments.internal') | translate }}</span>
-              <span class="pill-badge">{{ appointment.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}</span>
+              <span class="pill-badge" *ngIf="!isAdmin">
+                {{ appointment.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}
+              </span>
+              <ng-container *ngIf="isAdmin">
+                <ng-container *ngIf="appointment.scheduled_timezone; else unknownAppointmentTime">
+                  <span class="pill-badge">
+                    {{ 'appointments.italyTime' | translate }}:
+                    {{ formatAppointmentTime(appointment.scheduled_at, 'Europe/Rome') }}
+                  </span>
+                  <span class="pill-badge">
+                    {{ 'appointments.sourceLocalTime' | translate }}:
+                    {{ formatAppointmentTime(appointment.scheduled_at, appointment.scheduled_timezone) }}
+                  </span>
+                  <small>{{ appointment.scheduled_timezone }}</small>
+                </ng-container>
+                <ng-template #unknownAppointmentTime>
+                  <span class="pill-badge">
+                    {{ 'appointments.legacyTimeUnknown' | translate }}: {{ appointment.scheduled_at }}
+                  </span>
+                </ng-template>
+              </ng-container>
               <span class="pill-badge" *ngIf="appointment.gym_name">{{ appointment.gym_name }}</span>
             </div>
             <div class="entity-subline">

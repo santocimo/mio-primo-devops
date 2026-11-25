@@ -23,6 +23,12 @@ A professional, secure business management system for gyms, salons, studios, and
 - **Code Quality**: PHPStan, PHP CodeSniffer
 - **Web Server**: Nginx
 
+## Running tests
+
+Run the PHP test suite with `composer test`. API authorization integration tests run only when
+`RBAC_TEST_DB_CONFIRM=YES` and `RBAC_TEST_DB_*` point to a disposable database whose name contains
+`test`; they create and remove uniquely named fixture records. Never point these settings at a live database.
+
 ## Quick Start
 
 ### Using Docker (Recommended)

@@ -56,7 +56,11 @@ $appointments = $pdo->query("SELECT a.*, s.name AS service_name, g.name AS gym_n
           <td><?php echo htmlspecialchars($a['gym_name'], ENT_QUOTES); ?></td>
           <td><?php echo htmlspecialchars($a['customer_name'], ENT_QUOTES); ?></td>
           <td><?php echo htmlspecialchars($a['customer_email'], ENT_QUOTES); ?></td>
-          <td><?php echo htmlspecialchars($a['scheduled_at'], ENT_QUOTES); ?></td>
+          <td
+            class="scheduled-at"
+            data-scheduled-at="<?php echo htmlspecialchars($a['scheduled_at'], ENT_QUOTES); ?>"
+            data-scheduled-timezone="<?php echo htmlspecialchars($a['scheduled_timezone'] ?? '', ENT_QUOTES); ?>"
+          ><?php echo htmlspecialchars($a['scheduled_at'], ENT_QUOTES); ?></td>
           <td><?php echo htmlspecialchars(ucfirst($a['status']), ENT_QUOTES); ?></td>
           <td>
             <button class="btn btn-sm btn-outline-primary btn-edit">Edit</button>
@@ -79,6 +83,8 @@ $appointments = $pdo->query("SELECT a.*, s.name AS service_name, g.name AS gym_n
         <form id="appointmentForm">
           <input type="hidden" name="id" id="appointment_id">
           <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
+          <input type="hidden" name="scheduled_at_utc" id="appointment_scheduled_at_utc">
+          <input type="hidden" name="scheduled_timezone" id="appointment_scheduled_timezone">
           <div class="row gy-3">
             <div class="col-md-6">
               <label class="form-label">Service</label>
@@ -131,6 +137,52 @@ $(function(){
     const modalEl = document.getElementById('appointmentModal');
     const bsModal = new bootstrap.Modal(modalEl);
 
+    function localDateTimeToUtc(value) {
+        const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+        if (!match) throw new Error('Invalid local date and time');
+        const [, yearText, monthText, dayText, hourText, minuteText] = match;
+        const year = Number(yearText);
+        const month = Number(monthText);
+        const day = Number(dayText);
+        const hour = Number(hourText);
+        const minute = Number(minuteText);
+        const localDate = new Date(year, month - 1, day, hour, minute);
+        if (
+            localDate.getFullYear() !== year ||
+            localDate.getMonth() !== month - 1 ||
+            localDate.getDate() !== day ||
+            localDate.getHours() !== hour ||
+            localDate.getMinutes() !== minute
+        ) {
+            throw new Error('The selected local time does not exist');
+        }
+        return localDate.toISOString();
+    }
+
+    function localDateTimeInput(value, timezone) {
+        if (!timezone) return value.replace(' ', 'T').substring(0, 16);
+        const instant = new Date(`${value.replace(' ', 'T')}Z`);
+        const pad = part => String(part).padStart(2, '0');
+        return `${instant.getFullYear()}-${pad(instant.getMonth() + 1)}-${pad(instant.getDate())}T${pad(instant.getHours())}:${pad(instant.getMinutes())}`;
+    }
+
+    $('.scheduled-at').each(function() {
+        const cell = $(this);
+        const timezone = cell.attr('data-scheduled-timezone');
+        const stored = cell.attr('data-scheduled-at');
+        if (!timezone) {
+            cell.text(`Timezone unknown: ${stored}`);
+            return;
+        }
+        const instant = new Date(`${stored.replace(' ', 'T')}Z`);
+        const format = timeZone => new Intl.DateTimeFormat(undefined, {
+            timeZone,
+            dateStyle: 'short',
+            timeStyle: 'short'
+        }).format(instant);
+        cell.text(`Italy: ${format('Europe/Rome')} · Local (${timezone}): ${format(timezone)}`);
+    });
+
     $('#btnNew').on('click', function(){
         $('#appointment_id').val('');
         $('#appointment_service').val($('#appointment_service option:first').val());
@@ -138,6 +190,8 @@ $(function(){
         $('#appointment_customer_name').val('');
         $('#appointment_customer_email').val('');
         $('#appointment_scheduled_at').val('');
+        $('#appointment_scheduled_at_utc').val('');
+        $('#appointment_scheduled_timezone').val('');
         $('#appointment_notes').val('');
         bsModal.show();
     });
@@ -149,13 +203,26 @@ $(function(){
       $('#appointment_service').val(tr.data('service-id'));
       $('#appointment_customer_name').val(tr.children().eq(2).text().trim());
       $('#appointment_customer_email').val(tr.children().eq(3).text().trim());
-      $('#appointment_scheduled_at').val(tr.children().eq(4).text().trim().replace(' ', 'T'));
+      const scheduledCell = tr.children().eq(4);
+      $('#appointment_scheduled_at').val(localDateTimeInput(
+        scheduledCell.attr('data-scheduled-at'),
+        scheduledCell.attr('data-scheduled-timezone')
+      ));
       $('#appointment_status').val(tr.data('status') || tr.children().eq(5).text().trim().toLowerCase());
       $('#appointment_notes').val('');
       bsModal.show();
     });
 
     $('#saveAppointment').on('click', function(){
+        try {
+            $('#appointment_scheduled_at_utc').val(localDateTimeToUtc($('#appointment_scheduled_at').val()));
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            if (!timezone) throw new Error('The device timezone is unavailable');
+            $('#appointment_scheduled_timezone').val(timezone);
+        } catch (error) {
+            alert('The selected date/time is invalid for this device timezone.');
+            return;
+        }
         const data = $('#appointmentForm').serialize();
         $.post('save_appointment.php', data, function(resp){
             if (resp && resp.ok) location.reload(); else alert(resp.error || 'Error');

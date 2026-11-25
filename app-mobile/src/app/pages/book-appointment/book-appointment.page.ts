@@ -7,6 +7,7 @@ import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
 import { Appointment, Contact, Service } from '../../models/business.model';
 import { LanguageService } from '../../i18n/language.service';
+import { apiDateTimeToLocalInput, getDeviceTimeZone, localDateTimeToUtcIso } from '../../utils/local-time';
 
 @Component({
   selector: 'app-book-appointment',
@@ -95,11 +96,21 @@ export class BookAppointmentPage implements OnInit, OnDestroy {
   book(): void {
     if (!this.canBook()) return;
     this.saving = true;
-    const scheduledAt = `${this.date} ${this.time.length === 5 ? `${this.time}:00` : this.time}`;
+    let scheduledAt: string;
+    let scheduledTimezone: string;
+    try {
+      scheduledAt = localDateTimeToUtcIso(`${this.date}T${this.time}`);
+      scheduledTimezone = getDeviceTimeZone();
+    } catch {
+      this.saving = false;
+      void this.presentToast(this.language.instant('booking.invalidLocalTime'), 'danger');
+      return;
+    }
     const data = {
       contact_id: this.selectedContactId!,
       service_id: this.selectedServiceId!,
       scheduled_at: scheduledAt,
+      scheduled_timezone: scheduledTimezone,
       notes: this.notes.trim(),
       status: this.status,
     };
@@ -131,8 +142,9 @@ export class BookAppointmentPage implements OnInit, OnDestroy {
         }
         this.selectedContactId = appointment.contact_id ?? null;
         this.selectedServiceId = appointment.service_id;
-        this.date = appointment.scheduled_at.slice(0, 10);
-        this.time = appointment.scheduled_at.slice(11, 16);
+        const localDateTime = apiDateTimeToLocalInput(appointment.scheduled_at);
+        this.date = localDateTime.slice(0, 10);
+        this.time = localDateTime.slice(11, 16);
         this.notes = appointment.notes ?? '';
         this.status = appointment.status;
       },

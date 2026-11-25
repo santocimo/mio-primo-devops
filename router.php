@@ -17,6 +17,7 @@ $routes = [
     'contacts' => 'api/contacts.php',
     'users' => 'api/users.php',
     'settings' => 'api/settings.php',
+    'admin/audit' => 'api/admin/audit.php',
 ];
 
 foreach ($routes as $route => $file) {

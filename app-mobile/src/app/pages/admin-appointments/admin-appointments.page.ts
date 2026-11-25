@@ -7,6 +7,12 @@ import { Contact } from '../../models/business.model';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
+import {
+  apiDateTimeToLocalInput,
+  formatDateTimeInTimeZone,
+  getDeviceTimeZone,
+  localDateTimeToUtcIso,
+} from '../../utils/local-time';
 
 export interface AppointmentItem {
   id: number;
@@ -15,6 +21,7 @@ export interface AppointmentItem {
   customer_name: string;
   customer_email: string;
   scheduled_at: string;
+  scheduled_timezone?: string | null;
   status: string;
   notes: string;
   service_name: string;
@@ -126,9 +133,20 @@ export class AdminAppointmentsPage implements OnInit, OnDestroy {
       return;
     }
 
+    let scheduledAt: string;
+    let scheduledTimezone: string;
+    try {
+      scheduledAt = localDateTimeToUtcIso(this.formData.scheduled_at);
+      scheduledTimezone = getDeviceTimeZone();
+    } catch {
+      await this.presentToast(this.language.instant('booking.invalidLocalTime'), 'danger');
+      return;
+    }
+
     const payload = {
       ...this.formData,
-      scheduled_at: this.toApiDateTime(this.formData.scheduled_at),
+      scheduled_at: scheduledAt,
+      scheduled_timezone: scheduledTimezone,
     };
 
     const call = this.editingApt
@@ -174,20 +192,11 @@ export class AdminAppointmentsPage implements OnInit, OnDestroy {
   }
 
   private toFormDateTime(value: string): string {
-    if (!value) return '';
-    const v = value.trim();
-    if (v.includes('T')) return v.substring(0, 16);
-    if (v.includes(' ')) return v.replace(' ', 'T').substring(0, 16);
-    return v.substring(0, 16);
+    return value ? apiDateTimeToLocalInput(value) : '';
   }
 
-  private toApiDateTime(value: string): string {
-    if (!value) return '';
-    const v = value.trim();
-    if (v.includes('T')) {
-      return `${v.replace('T', ' ')}:00`;
-    }
-    return v;
+  formatTimeInZone(value: string, timeZone: string): string {
+    return formatDateTimeInTimeZone(value, timeZone, this.language.currentLanguage);
   }
 
   private async presentToast(message: string, color: 'success' | 'warning' | 'danger'): Promise<void> {

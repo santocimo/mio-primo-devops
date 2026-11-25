@@ -21,25 +21,37 @@
     <section class="section-card">
       <div class="section-title-row">
         <div>
-          <h2 class="section-title">{{ 'adminSettings.configuration' | translate }}</h2>
-          <p class="section-note">{{ 'adminSettings.hint' | translate }}</p>
+          <h2 class="section-title">{{ 'adminSettings.auditTitle' | translate }}</h2>
+          <p class="section-note">{{ 'adminSettings.auditDescription' | translate }}</p>
         </div>
-      </div>
-
-      <ion-item>
-        <ion-select [label]="'adminSettings.defaultType' | translate" labelPlacement="stacked" [(ngModel)]="businessType" interface="popover">
-          <ion-select-option *ngFor="let bt of businessTypes" [value]="bt.value">{{ bt.label | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <div class="ion-padding-top">
-        <ion-button expand="block" (click)="save()" [disabled]="saving">
-          <ion-spinner *ngIf="saving" slot="start" name="crescent"></ion-spinner>
-          {{ (saving ? 'adminSettings.saving' : 'adminSettings.save') | translate }}
+        <ion-button fill="clear" (click)="loadAuditLog()" [disabled]="auditLoading" [attr.aria-label]="'adminSettings.auditRefresh' | translate">
+          <ion-icon slot="icon-only" name="refresh-outline"></ion-icon>
         </ion-button>
       </div>
 
-      <p class="modal-foot-note">{{ 'adminSettings.hint' | translate }}</p>
+      <ion-spinner *ngIf="auditLoading" name="crescent"></ion-spinner>
+      <p *ngIf="auditLoadError" role="alert">{{ 'adminSettings.auditLoadError' | translate }}</p>
+      <p *ngIf="!auditLoading && !auditLoadError && auditEntries.length === 0">{{ 'adminSettings.auditEmpty' | translate }}</p>
+
+      <ion-list *ngIf="!auditLoading && !auditLoadError && auditEntries.length > 0">
+        <ion-item *ngFor="let entry of auditEntries">
+          <ion-label class="ion-text-wrap">
+            <h2>
+              {{ entry.actor_username || ('adminSettings.auditAdmin' | translate:{id: entry.actor_user_id}) }}
+              · {{ auditActionLabel(entry.action) | translate }}
+              · {{ auditResourceLabel(entry.resource_type) | translate }}
+            </h2>
+            <p>
+              {{ 'adminSettings.italyTime' | translate }}: {{ formatAuditTime(entry.created_at) }}
+              <span *ngIf="entry.resource_id"> · #{{ entry.resource_id }}</span>
+              <span *ngIf="entry.gym_id"> · {{ 'adminSettings.auditActivity' | translate }} #{{ entry.gym_id }}</span>
+            </p>
+          </ion-label>
+          <ion-badge slot="end" [color]="entry.response_status && entry.response_status < 400 ? 'success' : 'medium'">
+            {{ entry.response_status ?? '—' }}
+          </ion-badge>
+        </ion-item>
+      </ion-list>
     </section>
   </div>
 </ion-content>

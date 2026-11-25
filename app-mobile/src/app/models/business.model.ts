@@ -6,6 +6,7 @@ export interface Appointment {
   customer_name: string;
   customer_email?: string | null;
   scheduled_at: string;
+  scheduled_timezone?: string | null;
   status: 'pending' | 'confirmed' | 'scheduled' | 'completed' | 'cancelled';
   notes?: string;
   service_name?: string;
@@ -43,6 +44,20 @@ export interface AppUser {
   tax_code?: string | null;
   created_at: string;
   is_billing_owner: boolean | number;
+}
+
+export interface AdminAuditEntry {
+  id: number;
+  actor_user_id: number;
+  actor_username: string | null;
+  actor_role: string;
+  action: 'read' | 'export' | 'create' | 'update' | 'delete' | 'other';
+  resource_type: string;
+  resource_id: number | null;
+  gym_id: number | null;
+  response_status: number | null;
+  created_at: string;
+  completed_at: string | null;
 }
 
 export interface Service {

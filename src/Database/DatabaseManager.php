@@ -62,6 +62,7 @@ class DatabaseManager {
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 PDO::ATTR_EMULATE_PREPARES => false,
             ]);
+            $this->pdo->exec("SET time_zone = '+00:00'");
 
             // Initialize schema
             $this->initializeSchema();
@@ -84,6 +85,7 @@ class DatabaseManager {
             $this->ensureAppointmentSchema();
             $this->ensureSettingsSchema();
             $this->ensureSubscriptionPaymentsSchema();
+            $this->ensureAdminAuditSchema();
         } catch (Exception $e) {
             $logger = Logger::getInstance();
             $logger->warning('Schema initialization warning', ['error' => $e->getMessage()]);
@@ -311,6 +313,7 @@ class DatabaseManager {
               customer_name VARCHAR(150) NOT NULL,
               customer_email VARCHAR(150) DEFAULT NULL,
               scheduled_at DATETIME NOT NULL,
+              scheduled_timezone VARCHAR(64) DEFAULT NULL,
               status VARCHAR(30) NOT NULL DEFAULT 'pending',
               notes TEXT DEFAULT NULL,
               created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -322,6 +325,9 @@ class DatabaseManager {
         $columns = $this->pdo->query("SHOW COLUMNS FROM appointments")->fetchAll(PDO::FETCH_COLUMN);
         if (!in_array('contact_id', $columns, true)) {
             $this->pdo->exec("ALTER TABLE appointments ADD COLUMN contact_id INT DEFAULT NULL, ADD INDEX idx_appointments_contact_id (contact_id)");
+        }
+        if (!in_array('scheduled_timezone', $columns, true)) {
+            $this->pdo->exec("ALTER TABLE appointments ADD COLUMN scheduled_timezone VARCHAR(64) DEFAULT NULL AFTER scheduled_at");
         }
     }
 
@@ -371,5 +377,26 @@ class DatabaseManager {
                  SET p.gym_id = u.gym_id WHERE p.gym_id IS NULL'
             );
         }
+    }
+
+    private function ensureAdminAuditSchema() {
+        $this->pdo->exec(
+            "CREATE TABLE IF NOT EXISTS admin_audit_log (
+              id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+              actor_user_id INT NOT NULL,
+              actor_role VARCHAR(32) NOT NULL,
+              action VARCHAR(16) NOT NULL,
+              resource_type VARCHAR(32) NOT NULL,
+              resource_id BIGINT UNSIGNED NULL,
+              gym_id INT UNSIGNED NULL,
+              response_status SMALLINT UNSIGNED NULL,
+              created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              completed_at DATETIME NULL,
+              INDEX idx_admin_audit_created (created_at, id),
+              INDEX idx_admin_audit_actor (actor_user_id, created_at),
+              INDEX idx_admin_audit_resource (resource_type, resource_id, created_at),
+              INDEX idx_admin_audit_gym (gym_id, created_at)
+            ) ENGINE=InnoDB CHARSET=utf8mb4"
+        );
     }
 }

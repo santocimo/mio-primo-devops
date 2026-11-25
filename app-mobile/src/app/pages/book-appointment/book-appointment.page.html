@@ -64,6 +64,7 @@
         <ion-input [label]="'booking.date' | translate" labelPlacement="stacked" type="date" [min]="editingAppointmentId ? undefined : minDate" [(ngModel)]="date"></ion-input>
         <ion-input [label]="'booking.time' | translate" labelPlacement="stacked" type="time" [(ngModel)]="time"></ion-input>
       </div>
+      <p class="section-note">{{ 'booking.localTimeHint' | translate }}</p>
 
       <ion-select *ngIf="editingAppointmentId" [label]="'booking.status' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="status">
         <ion-select-option value="pending">{{ 'booking.pending' | translate }}</ion-select-option>

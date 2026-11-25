@@ -16,13 +16,14 @@ if (!verify_bearer_token()) {
 }
 require_active_api_subscription();
 
+$pdo = getPDO();
+
 // Admin only
 $role = strtoupper($_SESSION['user_role'] ?? '');
 if (strpos($role, 'ADMIN') === false && strpos($role, 'SUPER') === false) {
     http_response_code(403); echo json_encode(['error' => 'Forbidden']); exit;
 }
-
-$pdo = getPDO();
+App\Audit\AdminAuditLogger::recordApiRequest($pdo, 'settings', true);
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     $val = getAppSetting($pdo, 'default_business_type', 'gym');

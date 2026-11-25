@@ -6,6 +6,7 @@ import { Appointment } from '../../models/business.model';
 import { LanguageService } from '../../i18n/language.service';
 import { Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
+import { formatDateTimeInTimeZone } from '../../utils/local-time';
 
 @Component({
   selector: 'app-appointments',
@@ -15,6 +16,7 @@ import { takeUntil } from 'rxjs/operators';
 export class AppointmentsPage implements OnInit, OnDestroy, ViewWillEnter {
   appointments: Appointment[] = [];
   loading = true;
+  isAdmin = false;
   private destroy$ = new Subject<void>();
   private lastSelectedGymId: number | null = null;
 
@@ -29,8 +31,8 @@ export class AppointmentsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   ngOnInit(): void {
     const role = (this.authService.getCurrentUser()?.role ?? '').toUpperCase();
-    const isAdmin = role.includes('ADMIN') || role.includes('SUPER');
-    if (!isAdmin) return;
+    this.isAdmin = role.includes('ADMIN') || role.includes('SUPER');
+    if (!this.isAdmin) return;
 
     this.lastSelectedGymId = this.authService.getSelectedGymId();
     this.authService.getSelectedGymIdStream()
@@ -117,6 +119,10 @@ export class AppointmentsPage implements OnInit, OnDestroy, ViewWillEnter {
     if (status === 'cancelled') return 'medium';
     if (status === 'completed') return 'primary';
     return 'warning';
+  }
+
+  formatAppointmentTime(value: string, timeZone: string): string {
+    return formatDateTimeInTimeZone(value, timeZone, this.language.currentLanguage);
   }
 
   private async presentToast(message: string, color: 'success' | 'danger'): Promise<void> {

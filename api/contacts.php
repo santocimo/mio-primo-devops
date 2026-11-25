@@ -51,6 +51,12 @@ if ($use_gym && $isAdmin) {
 } else {
     $gym_id = null;
 }
+App\Audit\AdminAuditLogger::recordApiRequest(
+    $pdo,
+    'contacts',
+    $isAdmin,
+    $gym_id !== null ? (int)$gym_id : null
+);
 
 function cf_is_valid(string $cf): bool {
     $cf = strtoupper(trim($cf));
@@ -262,6 +268,19 @@ if ($method === 'PUT') {
     }
 
     if ($use_gym && $gym_id !== null) {
+        $existing = $pdo->prepare('SELECT id FROM visitatori WHERE id=? AND gym_id=? LIMIT 1');
+        $existing->execute([$id, $gym_id]);
+    } else {
+        $existing = $pdo->prepare('SELECT id FROM visitatori WHERE id=? LIMIT 1');
+        $existing->execute([$id]);
+    }
+    if (!$existing->fetchColumn()) {
+        http_response_code(404);
+        echo json_encode(['success'=>false,'message'=>'Contatto non trovato']);
+        exit;
+    }
+
+    if ($use_gym && $gym_id !== null) {
         $stmt = $pdo->prepare("UPDATE visitatori SET nome=?,cognome=?,codice_fiscale=?,data_nascita=?,luogo_nascita=?,indirizzo=?,recapito=?,sesso=? WHERE id=? AND gym_id=?");
         $stmt->execute([$nome,$cognome,$cf,$nascita,$luogo,$indirizzo,$recapito,$sesso,$id,$gym_id]);
     } else {
@@ -284,6 +303,11 @@ if ($method === 'DELETE') {
     } else {
         $stmt = $pdo->prepare("DELETE FROM visitatori WHERE id=?");
         $stmt->execute([$id]);
+    }
+    if ($stmt->rowCount() !== 1) {
+        http_response_code(404);
+        echo json_encode(['success'=>false,'message'=>'Contatto non trovato']);
+        exit;
     }
     echo json_encode(['success' => true]);
     exit;

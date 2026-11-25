@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '@env';
 import { AuthService } from './auth.service';
-import { Appointment, Service, Gym, Contact, ContactStats, AppUser } from '../models/business.model';
+import { Appointment, Service, Gym, Contact, ContactStats, AppUser, AdminAuditEntry } from '../models/business.model';
 
 @Injectable({
   providedIn: 'root',
@@ -70,6 +70,7 @@ export class ApiService {
     contact_id: number;
     service_id: number;
     scheduled_at: string;
+    scheduled_timezone: string;
     notes?: string;
   }): Observable<{ success: boolean; id?: number; appointment_id?: number; message?: string }> {
     return this.http.post<{ success: boolean; id?: number; appointment_id?: number; message?: string }>(
@@ -241,20 +242,13 @@ export class ApiService {
     return this.http.delete<any>(`${environment.apiUrl}/api/appointments/${id}`, { headers: this.getHeaders() });
   }
 
-  // ── App Settings ────────────────────────────────────────────────────────
+  // ── Admin audit ─────────────────────────────────────────────────────────
 
-  getSettings(): Observable<any> {
-    return this.http.get<any>(`${environment.apiUrl}/api/settings`, { headers: this.getHeaders() })
-      .pipe(
-        catchError(() => this.http.get<any>(`${environment.apiUrl}/api/settings.php`, { headers: this.getHeaders() }))
-      );
-  }
-
-  saveSettings(data: any): Observable<any> {
-    return this.http.post<any>(`${environment.apiUrl}/api/settings`, data, { headers: this.getHeaders() })
-      .pipe(
-        catchError(() => this.http.post<any>(`${environment.apiUrl}/api/settings.php`, data, { headers: this.getHeaders() }))
-      );
+  getAdminAuditLogs(limit: number = 100): Observable<AdminAuditEntry[]> {
+    return this.http.get<AdminAuditEntry[]>(
+      `${environment.apiUrl}/api/admin/audit?limit=${limit}`,
+      { headers: this.getHeaders() }
+    );
   }
 
 }

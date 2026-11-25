@@ -48,7 +48,22 @@
           <div class="entity-tags">
             <span class="pill-badge">{{ a.service_name }}</span>
             <span class="pill-badge">{{ a.gym_name }}</span>
-            <span class="pill-badge">{{ a.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}</span>
+            <ng-container *ngIf="a.scheduled_timezone; else legacyTime">
+              <span class="pill-badge">
+                {{ 'adminAppointments.italyTime' | translate }}:
+                {{ formatTimeInZone(a.scheduled_at, 'Europe/Rome') }}
+              </span>
+              <span class="pill-badge">
+                {{ 'adminAppointments.sourceLocalTime' | translate }}:
+                {{ formatTimeInZone(a.scheduled_at, a.scheduled_timezone) }}
+              </span>
+              <small>{{ a.scheduled_timezone }}</small>
+            </ng-container>
+            <ng-template #legacyTime>
+              <span class="pill-badge">
+                {{ 'adminAppointments.legacyTimeUnknown' | translate }}: {{ a.scheduled_at }}
+              </span>
+            </ng-template>
           </div>
           <div class="entity-subline">
             <ion-badge [color]="statusColor(a.status)">{{ ('status.' + a.status) | translate }}</ion-badge>
@@ -108,6 +123,7 @@
           [(ngModel)]="formData.scheduled_at">
         </ion-input>
       </ion-item>
+      <ion-note class="ion-padding-start" color="medium">{{ 'booking.localTimeHint' | translate }}</ion-note>
       <ion-item>
         <ion-select [label]="'adminAppointments.status' | translate" labelPlacement="stacked" [(ngModel)]="formData.status" interface="popover">
           <ion-select-option *ngFor="let st of statuses" [value]="st">{{ ('status.' + st) | translate }}</ion-select-option>

@@ -17,13 +17,15 @@ if (!verify_bearer_token()) {
 require_active_api_subscription();
 
 $role = strtoupper($_SESSION['user_role'] ?? '');
+$pdo = getPDO();
 if (strpos($role, 'ADMIN') === false && strpos($role, 'SUPER') === false
-    && strpos($role, 'OPERATORE') === false && $role !== 'GESTORE') {
+    && strpos($role, 'OPERATORE') === false && $role !== 'OPERATOR' && $role !== 'GESTORE') {
     http_response_code(403); echo json_encode(['success' => false, 'message' => 'Forbidden']); exit;
 }
 
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
 $sessionGymId = isset($_SESSION['gym_id']) ? (int)$_SESSION['gym_id'] : null;
+App\Audit\AdminAuditLogger::recordApiRequest($pdo, 'users', $isAdmin, $sessionGymId);
 
 function load_user_scope(PDO $pdo, int $id): ?array {
     $stmt = $pdo->prepare('SELECT id, role, gym_id FROM users WHERE id = ?');
@@ -32,7 +34,6 @@ function load_user_scope(PDO $pdo, int $id): ?array {
     return $row ?: null;
 }
 
-$pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 
 if (in_array($method, ['POST', 'PUT', 'DELETE'], true) && !$isAdmin

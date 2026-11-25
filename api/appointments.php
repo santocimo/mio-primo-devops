@@ -30,6 +30,12 @@ $role = strtoupper($_SESSION['user_role'] ?? '');
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
 $isOperator = strpos($role, 'OPERATORE') !== false || strpos($role, 'OPERATOR') !== false || $role === 'GESTORE';
 $user_id = (int)($_SESSION['user_id'] ?? 0);
+App\Audit\AdminAuditLogger::recordApiRequest(
+    $pdo,
+    'appointments',
+    $isAdmin,
+    isset($_GET['gym_id']) && (int)$_GET['gym_id'] > 0 ? (int)$_GET['gym_id'] : null
+);
 
 $appointmentsHasGymId = false;
 $appointmentsHasContactId = false;
@@ -50,6 +56,7 @@ try {
 $aptGymExpr = $appointmentsHasGymId ? 'a.gym_id' : 's.gym_id';
 
 function formatApt($a) {
+    $scheduledTimezone = $a['scheduled_timezone'] ?? null;
     return [
         'id'                   => (int)$a['id'],
         'service_id'           => (int)($a['service_id'] ?? 0),
@@ -57,7 +64,11 @@ function formatApt($a) {
         'gym_id'               => (int)($a['gym_id'] ?? $a['service_gym_id'] ?? 0),
         'customer_name'        => $a['customer_name'] ?? '',
         'customer_email'       => $a['customer_email'] ?? '',
-        'scheduled_at'         => $a['scheduled_at'] ?? '',
+        'scheduled_at'         => App\Appointment\AppointmentTime::toApiValue(
+            $a['scheduled_at'] ?? '',
+            $scheduledTimezone
+        ),
+        'scheduled_timezone'   => $scheduledTimezone,
         'status'               => $a['status'] ?? 'pending',
         'notes'                => $a['notes'] ?? '',
         'service_name'         => $a['service_name'] ?? '',
@@ -121,22 +132,37 @@ if ($method === 'POST') {
     }
 
     $d = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($d)) {
+        http_response_code(400); echo json_encode(['success'=>false,'message'=>'Richiesta non valida']); exit;
+    }
     $service_id     = (int)($d['service_id'] ?? 0);
     $contact_id     = (int)($d['contact_id'] ?? 0);
     $customer_name  = trim($d['customer_name'] ?? '');
     $customer_email = trim($d['customer_email'] ?? '');
-    $scheduled_at   = trim($d['scheduled_at'] ?? '');
+    $scheduled_at = $d['scheduled_at'] ?? null;
+    $scheduled_timezone = $d['scheduled_timezone'] ?? null;
     $status         = $isAdmin ? trim($d['status'] ?? 'pending') : 'pending';
     $notes          = trim($d['notes'] ?? '');
     if (!in_array($status, ['pending', 'confirmed', 'scheduled', 'completed', 'cancelled'], true)) {
         http_response_code(400); echo json_encode(['success'=>false,'message'=>'Stato appuntamento non valido']); exit;
     }
-    $scheduled_at = str_replace('T', ' ', $scheduled_at);
-    if (strlen($scheduled_at) === 16) $scheduled_at .= ':00';
-
-    if (!$service_id || !$scheduled_at || !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $scheduled_at)) {
+    if (
+        !$service_id
+        || !is_string($scheduled_at)
+        || trim($scheduled_at) === ''
+        || ($scheduled_timezone !== null && !is_string($scheduled_timezone))
+    ) {
         http_response_code(400); echo json_encode(['success'=>false,'message'=>'Servizio e data/ora validi sono obbligatori']); exit;
     }
+    $scheduled_at = trim($scheduled_at);
+    $scheduled_timezone = $scheduled_timezone !== null ? trim($scheduled_timezone) : null;
+    try {
+        $normalizedSchedule = App\Appointment\AppointmentTime::normalizeInput($scheduled_at, $scheduled_timezone);
+    } catch (InvalidArgumentException $exception) {
+        http_response_code(400); echo json_encode(['success'=>false,'message'=>'Data, ora o fuso orario non validi']); exit;
+    }
+    $scheduled_at = $normalizedSchedule['scheduled_at'];
+    $scheduled_timezone = $normalizedSchedule['scheduled_timezone'];
 
     $pdo->beginTransaction();
     $serviceStmt = $pdo->prepare("SELECT id, gym_id, capacity FROM services WHERE id=? FOR UPDATE");
@@ -185,17 +211,17 @@ if ($method === 'POST') {
     }
 
     if ($appointmentsHasContactId && $appointmentsHasGymId) {
-        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,gym_id,contact_id,customer_name,customer_email,scheduled_at,status,notes) VALUES (?,?,?,?,?,?,?,?)");
-        $stmt->execute([$service_id,$gym_id,$contact_id > 0 ? $contact_id : null,$customer_name,$customer_email,$scheduled_at,$status,$notes]);
+        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,gym_id,contact_id,customer_name,customer_email,scheduled_at,scheduled_timezone,status,notes) VALUES (?,?,?,?,?,?,?,?,?)");
+        $stmt->execute([$service_id,$gym_id,$contact_id > 0 ? $contact_id : null,$customer_name,$customer_email,$scheduled_at,$scheduled_timezone,$status,$notes]);
     } elseif ($appointmentsHasContactId) {
-        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,contact_id,customer_name,customer_email,scheduled_at,status,notes) VALUES (?,?,?,?,?,?,?)");
-        $stmt->execute([$service_id,$contact_id > 0 ? $contact_id : null,$customer_name,$customer_email,$scheduled_at,$status,$notes]);
+        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,contact_id,customer_name,customer_email,scheduled_at,scheduled_timezone,status,notes) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt->execute([$service_id,$contact_id > 0 ? $contact_id : null,$customer_name,$customer_email,$scheduled_at,$scheduled_timezone,$status,$notes]);
     } elseif ($appointmentsHasGymId) {
-        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,gym_id,customer_name,customer_email,scheduled_at,status,notes) VALUES (?,?,?,?,?,?,?)");
-        $stmt->execute([$service_id,$gym_id,$customer_name,$customer_email,$scheduled_at,$status,$notes]);
+        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,gym_id,customer_name,customer_email,scheduled_at,scheduled_timezone,status,notes) VALUES (?,?,?,?,?,?,?,?)");
+        $stmt->execute([$service_id,$gym_id,$customer_name,$customer_email,$scheduled_at,$scheduled_timezone,$status,$notes]);
     } else {
-        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,customer_name,customer_email,scheduled_at,status,notes) VALUES (?,?,?,?,?,?)");
-        $stmt->execute([$service_id,$customer_name,$customer_email,$scheduled_at,$status,$notes]);
+        $stmt = $pdo->prepare("INSERT INTO appointments (service_id,customer_name,customer_email,scheduled_at,scheduled_timezone,status,notes) VALUES (?,?,?,?,?,?,?)");
+        $stmt->execute([$service_id,$customer_name,$customer_email,$scheduled_at,$scheduled_timezone,$status,$notes]);
     }
     $appointmentId = (int)$pdo->lastInsertId();
     $pdo->commit();
@@ -208,6 +234,10 @@ if ($method === 'PUT') {
     $id = (int)end($parts);
     if (!$id) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'ID mancante']); exit; }
     $d = json_decode(file_get_contents('php://input'), true);
+    if (!is_array($d)) {
+        $pdo->rollBack();
+        http_response_code(400); echo json_encode(['success'=>false,'message'=>'Richiesta non valida']); exit;
+    }
     if (!$isAdmin && !$isOperator) { http_response_code(403); echo json_encode(['success'=>false,'message'=>'Forbidden']); exit; }
 
     $pdo->beginTransaction();
@@ -230,8 +260,32 @@ if ($method === 'PUT') {
     $contact_id = array_key_exists('contact_id', $d) ? (int)$d['contact_id'] : (int)($existing['contact_id'] ?? 0);
     $customer_name = trim($d['customer_name'] ?? $existing['customer_name'] ?? '');
     $customer_email = trim($d['customer_email'] ?? $existing['customer_email'] ?? '');
-    $scheduled_at = str_replace('T', ' ', trim($d['scheduled_at'] ?? $existing['scheduled_at'] ?? ''));
-    if (strlen($scheduled_at) === 16) $scheduled_at .= ':00';
+    $scheduled_at = $existing['scheduled_at'];
+    $scheduled_timezone = $existing['scheduled_timezone'] ?? null;
+    if (array_key_exists('scheduled_at', $d)) {
+        if (
+            !is_string($d['scheduled_at'])
+            || trim($d['scheduled_at']) === ''
+            || (isset($d['scheduled_timezone']) && !is_string($d['scheduled_timezone']))
+        ) {
+            $pdo->rollBack();
+            http_response_code(400); echo json_encode(['success'=>false,'message'=>'Data, ora o fuso orario non validi']); exit;
+        }
+        try {
+            $normalizedSchedule = App\Appointment\AppointmentTime::normalizeInput(
+                trim($d['scheduled_at']),
+                isset($d['scheduled_timezone']) ? trim($d['scheduled_timezone']) : null
+            );
+        } catch (InvalidArgumentException $exception) {
+            $pdo->rollBack();
+            http_response_code(400); echo json_encode(['success'=>false,'message'=>'Data, ora o fuso orario non validi']); exit;
+        }
+        $scheduled_at = $normalizedSchedule['scheduled_at'];
+        $scheduled_timezone = $normalizedSchedule['scheduled_timezone'];
+    } elseif (array_key_exists('scheduled_timezone', $d)) {
+        $pdo->rollBack();
+        http_response_code(400); echo json_encode(['success'=>false,'message'=>'Data, ora o fuso orario non validi']); exit;
+    }
     $status = trim($d['status'] ?? $existing['status'] ?? 'pending');
     $notes = trim($d['notes'] ?? $existing['notes'] ?? '');
 
@@ -239,7 +293,7 @@ if ($method === 'PUT') {
         $pdo->rollBack();
         http_response_code(400); echo json_encode(['success'=>false,'message'=>'Stato appuntamento non valido']); exit;
     }
-    if (!$service_id || !$scheduled_at || !preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $scheduled_at)) {
+    if (!$service_id || !$scheduled_at) {
         $pdo->rollBack();
         http_response_code(400); echo json_encode(['success'=>false,'message'=>'Servizio e data/ora validi sono obbligatori']); exit;
     }
@@ -290,17 +344,17 @@ if ($method === 'PUT') {
     }
 
     if ($appointmentsHasContactId && $appointmentsHasGymId) {
-        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,gym_id=?,contact_id=?,customer_name=?,customer_email=?,scheduled_at=?,status=?,notes=? WHERE id=?");
-        $stmt->execute([$service_id, (int)$service['gym_id'], $contact_id > 0 ? $contact_id : null, $customer_name, $customer_email, $scheduled_at, $status, $notes, $id]);
+        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,gym_id=?,contact_id=?,customer_name=?,customer_email=?,scheduled_at=?,scheduled_timezone=?,status=?,notes=? WHERE id=?");
+        $stmt->execute([$service_id, (int)$service['gym_id'], $contact_id > 0 ? $contact_id : null, $customer_name, $customer_email, $scheduled_at, $scheduled_timezone, $status, $notes, $id]);
     } elseif ($appointmentsHasContactId) {
-        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,contact_id=?,customer_name=?,customer_email=?,scheduled_at=?,status=?,notes=? WHERE id=?");
-        $stmt->execute([$service_id, $contact_id > 0 ? $contact_id : null, $customer_name, $customer_email, $scheduled_at, $status, $notes, $id]);
+        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,contact_id=?,customer_name=?,customer_email=?,scheduled_at=?,scheduled_timezone=?,status=?,notes=? WHERE id=?");
+        $stmt->execute([$service_id, $contact_id > 0 ? $contact_id : null, $customer_name, $customer_email, $scheduled_at, $scheduled_timezone, $status, $notes, $id]);
     } elseif ($appointmentsHasGymId) {
-        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,gym_id=?,customer_name=?,customer_email=?,scheduled_at=?,status=?,notes=? WHERE id=?");
-        $stmt->execute([$service_id, (int)$service['gym_id'], $customer_name, $customer_email, $scheduled_at, $status, $notes, $id]);
+        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,gym_id=?,customer_name=?,customer_email=?,scheduled_at=?,scheduled_timezone=?,status=?,notes=? WHERE id=?");
+        $stmt->execute([$service_id, (int)$service['gym_id'], $customer_name, $customer_email, $scheduled_at, $scheduled_timezone, $status, $notes, $id]);
     } else {
-        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,customer_name=?,customer_email=?,scheduled_at=?,status=?,notes=? WHERE id=?");
-        $stmt->execute([$service_id, $customer_name, $customer_email, $scheduled_at, $status, $notes, $id]);
+        $stmt = $pdo->prepare("UPDATE appointments SET service_id=?,customer_name=?,customer_email=?,scheduled_at=?,scheduled_timezone=?,status=?,notes=? WHERE id=?");
+        $stmt->execute([$service_id, $customer_name, $customer_email, $scheduled_at, $scheduled_timezone, $status, $notes, $id]);
     }
     $pdo->commit();
     echo json_encode(['success'=>true]);

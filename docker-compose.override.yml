@@ -1,0 +1,4 @@
+volumes:
+  db_data:
+    external: true
+    name: santo_db_data

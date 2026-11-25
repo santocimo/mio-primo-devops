@@ -34,4 +34,7 @@
 
     # Settings
     RewriteRule ^settings$             settings.php [QSA,L]
+
+    # Admin audit log
+    RewriteRule ^admin/audit$          admin/audit.php [QSA,L]
 </IfModule>

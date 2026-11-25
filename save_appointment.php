@@ -11,7 +11,9 @@ try {
     $service_id = !empty($_POST['service_id']) ? (int)$_POST['service_id'] : null;
     $customer_name = trim($_POST['customer_name'] ?? '');
     $customer_email = trim($_POST['customer_email'] ?? '');
-    $scheduled_at = trim($_POST['scheduled_at'] ?? '');
+    $scheduled_at = is_string($_POST['scheduled_at'] ?? null) ? trim($_POST['scheduled_at']) : '';
+    $scheduled_at_utc = is_string($_POST['scheduled_at_utc'] ?? null) ? trim($_POST['scheduled_at_utc']) : '';
+    $scheduled_timezone = is_string($_POST['scheduled_timezone'] ?? null) ? trim($_POST['scheduled_timezone']) : '';
     $status = trim($_POST['status'] ?? 'pending');
     $notes = trim($_POST['notes'] ?? '');
 
@@ -19,24 +21,28 @@ try {
     if (!validate_status($status)) { echo json_encode(['ok'=>false,'error'=>'invalid_status']); exit; }
     if ($customer_email !== '' && !filter_var($customer_email, FILTER_VALIDATE_EMAIL)) { echo json_encode(['ok'=>false,'error'=>'invalid_email']); exit; }
 
-    $scheduled = DateTime::createFromFormat('Y-m-d\TH:i', $scheduled_at);
-    if (!$scheduled) {
-        $scheduled = DateTime::createFromFormat('Y-m-d H:i:s', $scheduled_at);
+    try {
+        $normalizedSchedule = $scheduled_at_utc !== '' && $scheduled_timezone !== ''
+            ? App\Appointment\AppointmentTime::normalizeInput($scheduled_at_utc, $scheduled_timezone)
+            : App\Appointment\AppointmentTime::normalizeInput($scheduled_at, null);
+    } catch (InvalidArgumentException $exception) {
+        echo json_encode(['ok' => false, 'error' => 'invalid_datetime']);
+        exit;
     }
-    if (!$scheduled) { echo json_encode(['ok'=>false,'error'=>'invalid_datetime']); exit; }
-    $scheduledValue = $scheduled->format('Y-m-d H:i:s');
+    $scheduledValue = $normalizedSchedule['scheduled_at'];
+    $scheduled_timezone = $normalizedSchedule['scheduled_timezone'];
 
     $stmt = $pdo->prepare('SELECT id FROM services WHERE id = ? LIMIT 1');
     $stmt->execute([$service_id]);
     if (!$stmt->fetch()) { echo json_encode(['ok'=>false,'error'=>'invalid_service']); exit; }
 
     if ($id) {
-        $u = $pdo->prepare('UPDATE appointments SET service_id = ?, customer_name = ?, customer_email = ?, scheduled_at = ?, status = ?, notes = ? WHERE id = ?');
-        $u->execute([$service_id, $customer_name, $customer_email ?: null, $scheduledValue, $status, $notes ?: null, $id]);
+        $u = $pdo->prepare('UPDATE appointments SET service_id = ?, customer_name = ?, customer_email = ?, scheduled_at = ?, scheduled_timezone = ?, status = ?, notes = ? WHERE id = ?');
+        $u->execute([$service_id, $customer_name, $customer_email ?: null, $scheduledValue, $scheduled_timezone, $status, $notes ?: null, $id]);
         echo json_encode(['ok'=>true,'id'=>$id]);
     } else {
-        $i = $pdo->prepare('INSERT INTO appointments (service_id, customer_name, customer_email, scheduled_at, status, notes) VALUES (?,?,?,?,?,?)');
-        $i->execute([$service_id, $customer_name, $customer_email ?: null, $scheduledValue, $status, $notes ?: null]);
+        $i = $pdo->prepare('INSERT INTO appointments (service_id, customer_name, customer_email, scheduled_at, scheduled_timezone, status, notes) VALUES (?,?,?,?,?,?,?)');
+        $i->execute([$service_id, $customer_name, $customer_email ?: null, $scheduledValue, $scheduled_timezone, $status, $notes ?: null]);
         echo json_encode(['ok'=>true,'id'=>$pdo->lastInsertId()]);
     }
 } catch (Exception $e) {

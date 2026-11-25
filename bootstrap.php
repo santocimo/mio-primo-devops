@@ -74,3 +74,5 @@ set_exception_handler(function($exception) {
         echo '<pre>' . $exception . '</pre>';
     }
 });
+
+App\Audit\AdminAuditLogger::recordLegacyRequest();
