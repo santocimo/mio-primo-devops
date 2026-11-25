@@ -15,6 +15,15 @@ try {
     if (!validate_gym_name($name)) { echo json_encode(['ok'=>false,'error'=>'invalid_name']); exit; }
     if (!validate_slug($slug)) { echo json_encode(['ok'=>false,'error'=>'invalid_slug']); exit; }
     if (!validate_gym_category($category)) { echo json_encode(['ok'=>false,'error'=>'invalid_category']); exit; }
+    if ($category === 'medical') {
+        if (!$id) { echo json_encode(['ok'=>false,'error'=>'invalid_category']); exit; }
+        $existingCategory = $pdo->prepare('SELECT category FROM gyms WHERE id = ? LIMIT 1');
+        $existingCategory->execute([$id]);
+        if ($existingCategory->fetchColumn() !== 'medical') {
+            echo json_encode(['ok'=>false,'error'=>'invalid_category']);
+            exit;
+        }
+    }
     // ensure slug unique
     if ($id) {
         $stmt = $pdo->prepare('SELECT id FROM gyms WHERE slug = ? AND id != ? LIMIT 1');

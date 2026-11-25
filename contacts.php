@@ -97,19 +97,19 @@ $contacts = $contacts->fetchAll();
                             <tr data-id="<?php echo (int)$contact['id']; ?>"
                                 data-nome="<?php echo htmlspecialchars($contact['nome'], ENT_QUOTES); ?>"
                                 data-cognome="<?php echo htmlspecialchars($contact['cognome'], ENT_QUOTES); ?>"
-                                data-cf="<?php echo htmlspecialchars($contact['codice_fiscale'], ENT_QUOTES); ?>"
-                                data-data="<?php echo htmlspecialchars($contact['data_nascita'], ENT_QUOTES); ?>"
-                                data-luogo="<?php echo htmlspecialchars($contact['luogo_nascita'], ENT_QUOTES); ?>"
-                                data-indirizzo="<?php echo htmlspecialchars($contact['indirizzo'], ENT_QUOTES); ?>"
-                                data-recapito="<?php echo htmlspecialchars($contact['recapito'], ENT_QUOTES); ?>"
-                                data-sesso="<?php echo htmlspecialchars($contact['sesso'], ENT_QUOTES); ?>">
+                                data-cf="<?php echo htmlspecialchars((string)($contact['codice_fiscale'] ?? ''), ENT_QUOTES); ?>"
+                                data-data="<?php echo htmlspecialchars((string)($contact['data_nascita'] ?? ''), ENT_QUOTES); ?>"
+                                data-luogo="<?php echo htmlspecialchars((string)($contact['luogo_nascita'] ?? ''), ENT_QUOTES); ?>"
+                                data-indirizzo="<?php echo htmlspecialchars((string)($contact['indirizzo'] ?? ''), ENT_QUOTES); ?>"
+                                data-recapito="<?php echo htmlspecialchars((string)($contact['recapito'] ?? ''), ENT_QUOTES); ?>"
+                                data-sesso="<?php echo htmlspecialchars((string)($contact['sesso'] ?? ''), ENT_QUOTES); ?>">
                                 <td><?php echo htmlspecialchars($contact['nome'] . ' ' . $contact['cognome'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['codice_fiscale'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['data_nascita'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['luogo_nascita'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['indirizzo'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['recapito'], ENT_QUOTES); ?></td>
-                                <td><?php echo htmlspecialchars($contact['sesso'], ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['codice_fiscale'] ?? ''), ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['data_nascita'] ?? ''), ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['luogo_nascita'] ?? ''), ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['indirizzo'] ?? ''), ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['recapito'] ?? ''), ENT_QUOTES); ?></td>
+                                <td><?php echo htmlspecialchars((string)($contact['sesso'] ?? ''), ENT_QUOTES); ?></td>
                                 <td class="text-end">
                                     <button class="btn btn-sm btn-outline-primary btn-edit">Edit</button>
                                     <button class="btn btn-sm btn-outline-danger btn-delete">Delete</button>
@@ -137,6 +137,7 @@ $contacts = $contacts->fetchAll();
                 <form id="contactForm">
                     <input type="hidden" name="id" id="contact_id">
                     <input type="hidden" name="csrf" value="<?php echo htmlspecialchars($_SESSION['csrf_token'], ENT_QUOTES); ?>">
+                    <p class="text-muted">Only first and last name are required. Add tax code and birth details only when needed.</p>
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">First name</label>
@@ -147,31 +148,31 @@ $contacts = $contacts->fetchAll();
                             <input type="text" class="form-control" name="cognome" id="contact_cognome" required>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Codice Fiscale</label>
-                            <input type="text" class="form-control" name="codice_fiscale" id="contact_cf" required>
+                            <label class="form-label">Codice Fiscale (optional)</label>
+                            <input type="text" class="form-control" name="codice_fiscale" id="contact_cf">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Birth date</label>
-                            <input type="date" class="form-control" name="data_nascita" id="contact_data" required>
+                            <label class="form-label">Birth date (optional)</label>
+                            <input type="date" class="form-control" name="data_nascita" id="contact_data">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Birth city</label>
-                            <input type="text" class="form-control" name="luogo_nascita" id="contact_luogo" autocomplete="off" required>
+                            <label class="form-label">Birth city (optional)</label>
+                            <input type="text" class="form-control" name="luogo_nascita" id="contact_luogo" autocomplete="off">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Address</label>
-                            <input type="text" class="form-control" name="indirizzo" id="contact_indirizzo" required>
+                            <label class="form-label">Address (optional)</label>
+                            <input type="text" class="form-control" name="indirizzo" id="contact_indirizzo">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Phone</label>
                             <input type="text" class="form-control" name="recapito" id="contact_recapito">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Gender</label>
-                            <select class="form-select" name="sesso" id="contact_sesso" required>
+                            <label class="form-label">Gender (optional)</label>
+                            <select class="form-select" name="sesso" id="contact_sesso">
+                                <option value="">Not specified</option>
                                 <option value="M">M</option>
                                 <option value="F">F</option>
-                                <option value="O">O</option>
                             </select>
                         </div>
                     </div>

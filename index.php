@@ -21,6 +21,7 @@ $supervisore = "CIMÒ";
 $versione_software = "V3.5.6 Search-Fixed";
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/inc/labels.php';
+require_once __DIR__ . '/inc/validation.php';
 
 try {
     $pdo = getPDO();
@@ -68,6 +69,10 @@ try {
     function forzaMaiuscolo($str) { return mb_convert_case($str, MB_CASE_UPPER, "UTF-8"); }
     
     if (isset($_GET['export_excel']) && $ruolo_reale == 'ADMIN') {
+        if ($use_gym && $current_gym_id === null) {
+            http_response_code(400);
+            exit('Selezionare un’attività prima di esportare i contatti');
+        }
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=registro_'.date('d-m-Y').'.csv');
         $out = fopen('php://output', 'w');
@@ -92,7 +97,33 @@ try {
     }
 
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['nuovo_cf'])) {
-        $baseParams = [':n' => forzaMaiuscolo($_POST['nuovo_nome']), ':c' => forzaMaiuscolo($_POST['nuovo_cognome']), ':cf' => strtoupper($_POST['nuovo_cf']), ':d' => $_POST['data_nascita_db'], ':l' => forzaMaiuscolo($_POST['luogo_nascita']), ':i' => forzaMaiuscolo($_POST['indirizzo']), ':r' => $_POST['recapito'], ':s' => $_POST['sesso']];
+        $nome = trim($_POST['nuovo_nome'] ?? '');
+        $cognome = trim($_POST['nuovo_cognome'] ?? '');
+        $codiceFiscale = strtoupper(trim($_POST['nuovo_cf'] ?? ''));
+        $dataNascita = trim($_POST['data_nascita_db'] ?? '');
+        $luogoNascita = trim($_POST['luogo_nascita'] ?? '');
+        $indirizzo = trim($_POST['indirizzo'] ?? '');
+        $recapito = trim($_POST['recapito'] ?? '');
+        $sesso = strtoupper(trim($_POST['sesso'] ?? ''));
+
+        if ($nome === '' || $cognome === ''
+            || ($codiceFiscale !== '' && !validate_tax_code($codiceFiscale))
+            || ($dataNascita !== '' && !validate_birth_date($dataNascita))
+            || ($sesso !== '' && !in_array($sesso, ['M', 'F'], true))) {
+            http_response_code(400);
+            exit('Dati contatto non validi');
+        }
+
+        $baseParams = [
+            ':n' => forzaMaiuscolo($nome),
+            ':c' => forzaMaiuscolo($cognome),
+            ':cf' => $codiceFiscale !== '' ? $codiceFiscale : null,
+            ':d' => $dataNascita !== '' ? $dataNascita : null,
+            ':l' => $luogoNascita !== '' ? forzaMaiuscolo($luogoNascita) : null,
+            ':i' => $indirizzo !== '' ? forzaMaiuscolo($indirizzo) : null,
+            ':r' => $recapito !== '' ? $recapito : null,
+            ':s' => $sesso !== '' ? $sesso : null,
+        ];
         if (!empty($_POST['id_record'])) {
             $baseParams[':id'] = $_POST['id_record'];
             if ($use_gym) {
@@ -150,10 +181,10 @@ try {
         while ($v = $rs->fetch()) {
             $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
             $name = htmlspecialchars($v['nome'] . ' ' . $v['cognome'], ENT_QUOTES);
-            $cf = htmlspecialchars($v['codice_fiscale'], ENT_QUOTES);
-            $luogo = htmlspecialchars($v['luogo_nascita'], ENT_QUOTES);
-            $indirizzo = htmlspecialchars($v['indirizzo'], ENT_QUOTES);
-            $recap = htmlspecialchars($v['recapito'], ENT_QUOTES);
+            $cf = htmlspecialchars((string)($v['codice_fiscale'] ?? ''), ENT_QUOTES);
+            $luogo = htmlspecialchars((string)($v['luogo_nascita'] ?? ''), ENT_QUOTES);
+            $indirizzo = htmlspecialchars((string)($v['indirizzo'] ?? ''), ENT_QUOTES);
+            $recap = htmlspecialchars((string)($v['recapito'] ?? ''), ENT_QUOTES);
             $id = (int)$v['id'];
             $out .= "<div class='grid-row justify-content-between align-items-center'>";
             $out .= "<div style='flex:1'>";
@@ -307,14 +338,15 @@ try {
                             <input type="text" name="nuovo_cognome" id="cognome" class="form-control input-custom" placeholder="Cognome" required data-i18n-placeholder="ph.surname">
                         </div>
                         <div class="row g-2 mb-3">
-                            <div class="col-7"><input type="text" id="datepicker" class="form-control input-custom" placeholder="Data Nascita" readonly required data-i18n-placeholder="ph.dob"><input type="hidden" name="data_nascita_db" id="data_db"></div>
-                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="M" data-i18n="sex.male">Maschio</option><option value="F" data-i18n="sex.female">Femmina</option></select></div>
+                            <div class="col-7"><input type="text" id="datepicker" class="form-control input-custom" placeholder="Data Nascita" readonly data-i18n-placeholder="ph.dob"><input type="hidden" name="data_nascita_db" id="data_db"></div>
+                            <div class="col-5"><select name="sesso" id="sesso" class="form-select input-custom"><option value="" selected data-i18n="sex.optional">Non specificato</option><option value="M" data-i18n="sex.male">Maschio</option><option value="F" data-i18n="sex.female">Femmina</option></select></div>
                         </div>
                         <div class="mb-3">
                             <input type="text" name="luogo_nascita" id="comune_input" class="form-control input-custom mb-2" placeholder="Comune di nascita" data-i18n-placeholder="ph.birthplace">
                             <input type="text" name="indirizzo" id="indirizzo" class="form-control input-custom mb-2" placeholder="Indirizzo" data-i18n-placeholder="ph.address">
                             <input type="text" name="recapito" id="recapito" class="form-control input-custom" placeholder="Telefono" data-i18n-placeholder="ph.phone">
                         </div>
+                        <small class="d-block text-muted mb-3" data-i18n="contact.optional">Solo nome e cognome sono obbligatori; gli altri dati sono facoltativi.</small>
                         <div class="cf-display-box" id="cf_box_ui">
                             <small class="d-block opacity-50 mb-1 fw-bold" id="cf_label" data-i18n="cf.label">CODICE FISCALE</small>
                             <input type="text" name="nuovo_cf" id="cf_output" class="w-100 border-0 bg-transparent text-center fw-bold" readonly style="color: inherit; font-size: 1.2rem; letter-spacing: 2px;">
@@ -336,10 +368,10 @@ try {
                     while($v = $st->fetch()) {
                         $v_json = json_encode($v, JSON_HEX_APOS | JSON_HEX_QUOT);
                         $name = htmlspecialchars($v['nome'] . ' ' . $v['cognome'], ENT_QUOTES);
-                        $cf = htmlspecialchars($v['codice_fiscale'], ENT_QUOTES);
-                        $luogo = htmlspecialchars($v['luogo_nascita'], ENT_QUOTES);
-                        $indirizzo = htmlspecialchars($v['indirizzo'], ENT_QUOTES);
-                        $recap = htmlspecialchars($v['recapito'], ENT_QUOTES);
+                        $cf = htmlspecialchars((string)($v['codice_fiscale'] ?? ''), ENT_QUOTES);
+                        $luogo = htmlspecialchars((string)($v['luogo_nascita'] ?? ''), ENT_QUOTES);
+                        $indirizzo = htmlspecialchars((string)($v['indirizzo'] ?? ''), ENT_QUOTES);
+                        $recap = htmlspecialchars((string)($v['recapito'] ?? ''), ENT_QUOTES);
                         $id = (int)$v['id'];
                         echo "<div class='grid-row justify-content-between align-items-center'>";
                         echo "<div style='flex:1'>";
@@ -374,9 +406,10 @@ $(function() {
             'stat.total':'TOTALE', 'stat.male':'UOMINI', 'stat.female':'DONNE',
             'form.title':'Anagrafica', 'form.edit':'Modifica',
             'ph.name':'Nome', 'ph.surname':'Cognome', 'ph.dob':'Data Nascita', 'ph.birthplace':'Comune di nascita', 'ph.address':'Indirizzo', 'ph.phone':'Telefono', 'ph.search':'🔍 Cerca...',
+            'contact.optional':'Solo nome e cognome sono obbligatori; gli altri dati sono facoltativi.',
             'cf.label':'CODICE FISCALE', 'cf.exists':'GIÀ IN ARCHIVIO',
             'btn.save':'SALVA', 'heading.registered':'ISCRITTI',
-            'sex.male':'Maschio', 'sex.female':'Femmina',
+            'sex.optional':'Non specificato', 'sex.male':'Maschio', 'sex.female':'Femmina',
             'confirm.delete.title':'Elimina?', 'confirm.delete.confirm':'Elimina', 'confirm.cancel':'Annulla', 'nav.exit':'Esci'
         },
         en: {
@@ -385,9 +418,10 @@ $(function() {
             'stat.total':'TOTAL', 'stat.male':'MALE', 'stat.female':'FEMALE',
             'form.title':'Record', 'form.edit':'Edit',
             'ph.name':'First name', 'ph.surname':'Last name', 'ph.dob':'Date of birth', 'ph.birthplace':'Place of birth', 'ph.address':'Address', 'ph.phone':'Phone', 'ph.search':'🔍 Search...',
+            'contact.optional':'Only first and last name are required; all other details are optional.',
             'cf.label':'TAX CODE', 'cf.exists':'ALREADY IN ARCHIVE',
             'btn.save':'SAVE', 'heading.registered':'REGISTERED',
-            'sex.male':'Male', 'sex.female':'Female',
+            'sex.optional':'Not specified', 'sex.male':'Male', 'sex.female':'Female',
             'confirm.delete.title':'Delete?', 'confirm.delete.confirm':'Delete', 'confirm.cancel':'Cancel', 'nav.exit':'Exit'
         }
     };
@@ -460,8 +494,13 @@ $(function() {
 
     function generaCF() {
         const n=$("#nome").val(), c=$("#cognome").val(), dIn=$("#datepicker").val(), s=$("#sesso").val();
-        if (n && c && dIn.length === 10 && belfiore) {
-            let p = dIn.split('/'); $("#data_db").val(p[2] + "-" + p[1] + "-" + p[0]);
+        const p = dIn ? dIn.split('/') : [];
+        if (p.length === 3 && dIn.length === 10) {
+            $("#data_db").val(p[2] + "-" + p[1] + "-" + p[0]);
+        } else {
+            $("#data_db").val('');
+        }
+        if (n && c && p.length === 3 && dIn.length === 10 && belfiore && (s === 'M' || s === 'F')) {
             let cf = getLetters(c, false) + getLetters(n, true) + p[2].slice(-2) + ['A','B','C','D','E','H','L','M','P','R','S','T'][parseInt(p[1])-1];
             let gg = parseInt(p[0]); if (s==='F') gg += 40;
             cf += gg.toString().padStart(2, '0') + belfiore;
@@ -489,8 +528,14 @@ $(function() {
         $("#formTitle").text(t('form.edit')); $("#id_record").val(d.id);
         $("#nome").val(d.nome); $("#cognome").val(d.cognome); $("#sesso").val(d.sesso);
         $("#comune_input").val(d.luogo_nascita); $("#indirizzo").val(d.indirizzo); $("#recapito").val(d.recapito);
-        let dt = d.data_nascita.split('-'); $("#datepicker").val(dt[2]+'/'+dt[1]+'/'+dt[0]);
-        $("#cf_output").val(d.codice_fiscale); $("#data_db").val(d.data_nascita);
+        const birthDate = d.data_nascita || '';
+        if (birthDate) {
+            let dt = birthDate.split('-');
+            $("#datepicker").val(dt[2]+'/'+dt[1]+'/'+dt[0]);
+        } else {
+            $("#datepicker").val('');
+        }
+        $("#cf_output").val(d.codice_fiscale || ''); $("#data_db").val(birthDate);
         $("#cf_box_ui").removeClass("cf-error-state"); $("#submitBtn").prop("disabled", false);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }

@@ -31,17 +31,18 @@ $pdo = getPDO();
 $method = $_SERVER['REQUEST_METHOD'];
 $role = strtoupper($_SESSION['user_role'] ?? '');
 $isAdmin = strpos($role, 'ADMIN') !== false || strpos($role, 'SUPER') !== false;
+$allowedCategories = ['gym', 'salon', 'studio', 'other'];
+$categoriesWithLegacy = array_merge($allowedCategories, ['medical']);
 App\Audit\AdminAuditLogger::recordApiRequest($pdo, 'gyms', $isAdmin);
 
 if ($method === 'GET') {
-    $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
     $configuredCategory = trim((string)getAppSetting($pdo, 'default_business_type', 'gym'));
-    if (!in_array($configuredCategory, $allowedCategories, true)) {
+    if (!in_array($configuredCategory, $categoriesWithLegacy, true)) {
         $configuredCategory = 'gym';
     }
 
     $requestedCategory = trim((string)($_GET['category'] ?? ''));
-    if ($requestedCategory !== '' && in_array($requestedCategory, $allowedCategories, true)) {
+    if ($requestedCategory !== '' && in_array($requestedCategory, $categoriesWithLegacy, true)) {
         $configuredCategory = $requestedCategory;
     }
 
@@ -88,6 +89,11 @@ if ($method === 'POST') {
     $slug     = trim($d['slug'] ?? strtolower(preg_replace('/[^a-z0-9]+/','-',$name)));
     $category = trim($d['category'] ?? 'gym');
     if (!$name) { http_response_code(400); echo json_encode(['success'=>false,'message'=>'Name obbligatorio']); exit; }
+    if (!in_array($category, $allowedCategories, true)) {
+        http_response_code(400);
+        echo json_encode(['success'=>false,'message'=>'Categoria attività non valida']);
+        exit;
+    }
 
     if ($isAdmin) {
         $stmt = $pdo->prepare("INSERT INTO gyms (name,slug,category) VALUES (?,?,?)");
@@ -117,7 +123,7 @@ if ($method === 'PUT') {
     $category = trim($d['category'] ?? 'gym');
 
     if ($isAdmin) {
-        $existingStmt = $pdo->prepare("SELECT slug, settings, billing_owner_user_id FROM gyms WHERE id=? LIMIT 1");
+        $existingStmt = $pdo->prepare("SELECT slug, category, settings, billing_owner_user_id FROM gyms WHERE id=? LIMIT 1");
         $existingStmt->execute([$id]);
         $existingGym = $existingStmt->fetch(PDO::FETCH_ASSOC);
         if (!$existingGym) {
@@ -126,8 +132,9 @@ if ($method === 'PUT') {
             exit;
         }
 
-        $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
-        if ($name === '' || strlen($name) > 150 || !in_array($category, $allowedCategories, true)) {
+        $categoryAllowed = in_array($category, $allowedCategories, true)
+            || ($category === 'medical' && $category === (string)$existingGym['category']);
+        if ($name === '' || strlen($name) > 150 || !$categoryAllowed) {
             http_response_code(400);
             echo json_encode(['success'=>false,'message'=>'Nome attività o categoria non validi']);
             exit;
@@ -210,7 +217,6 @@ if ($method === 'PUT') {
         exit;
     }
 
-    $allowedCategories = ['gym', 'salon', 'studio', 'medical', 'other'];
     $managerName = trim($d['manager_name'] ?? '');
     $managerEmail = trim($d['manager_email'] ?? '');
     $managerCf = strtoupper(trim($d['manager_cf'] ?? ''));
@@ -219,9 +225,11 @@ if ($method === 'PUT') {
     $phone = trim($d['phone'] ?? '');
     $activityName = trim($d['activity_name'] ?? '');
     $userId = (int)($_SESSION['user_id'] ?? 0);
-    $ownerQuery = $pdo->prepare('SELECT billing_owner_user_id FROM gyms WHERE id=? LIMIT 1');
+    $ownerQuery = $pdo->prepare('SELECT billing_owner_user_id, category FROM gyms WHERE id=? LIMIT 1');
     $ownerQuery->execute([$id]);
-    $canEditManager = $userId > 0 && (int)$ownerQuery->fetchColumn() === $userId;
+    $gymDetails = $ownerQuery->fetch(PDO::FETCH_ASSOC) ?: [];
+    $canEditManager = $userId > 0 && (int)($gymDetails['billing_owner_user_id'] ?? 0) === $userId;
+    $existingCategory = (string)($gymDetails['category'] ?? '');
     $managerSubmitted = array_key_exists('manager_name', $d) || array_key_exists('manager_email', $d) || array_key_exists('manager_cf', $d);
     if (!$canEditManager && $managerSubmitted) {
         http_response_code(403);
@@ -237,7 +245,9 @@ if ($method === 'PUT') {
     $emailValid = filter_var($managerEmail, FILTER_VALIDATE_EMAIL)
         || ($managerEmail !== '' && strcasecmp($managerEmail, $currentUserEmail) === 0);
 
-    if ($name === '' || strlen($name) > 150 || !in_array($category, $allowedCategories, true)) {
+    $categoryAllowed = in_array($category, $allowedCategories, true)
+        || ($category === 'medical' && $category === $existingCategory);
+    if ($name === '' || strlen($name) > 150 || !$categoryAllowed) {
         http_response_code(400);
         echo json_encode(['success'=>false,'message'=>'Nome attività o categoria non validi']);
         exit;

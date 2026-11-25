@@ -6,6 +6,7 @@ header('Access-Control-Allow-Headers: Content-Type, Authorization');
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 require_once __DIR__ . '/../inc/security.php';
+require_once __DIR__ . '/../inc/validation.php';
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/auth/verify_token.php';
 
@@ -58,36 +59,7 @@ App\Audit\AdminAuditLogger::recordApiRequest(
     $gym_id !== null ? (int)$gym_id : null
 );
 
-function cf_is_valid(string $cf): bool {
-    $cf = strtoupper(trim($cf));
-    if (!preg_match('/^[A-Z0-9]{16}$/', $cf)) {
-        return false;
-    }
-
-    $oddMap = [
-        '0' => 1, '1' => 0, '2' => 5, '3' => 7, '4' => 9, '5' => 13, '6' => 15, '7' => 17, '8' => 19, '9' => 21,
-        'A' => 1, 'B' => 0, 'C' => 5, 'D' => 7, 'E' => 9, 'F' => 13, 'G' => 15, 'H' => 17, 'I' => 19, 'J' => 21,
-        'K' => 2, 'L' => 4, 'M' => 18, 'N' => 20, 'O' => 11, 'P' => 3, 'Q' => 6, 'R' => 8, 'S' => 12, 'T' => 14,
-        'U' => 16, 'V' => 10, 'W' => 22, 'X' => 25, 'Y' => 24, 'Z' => 23,
-    ];
-    $evenMap = [
-        '0' => 0, '1' => 1, '2' => 2, '3' => 3, '4' => 4, '5' => 5, '6' => 6, '7' => 7, '8' => 8, '9' => 9,
-        'A' => 0, 'B' => 1, 'C' => 2, 'D' => 3, 'E' => 4, 'F' => 5, 'G' => 6, 'H' => 7, 'I' => 8, 'J' => 9,
-        'K' => 10, 'L' => 11, 'M' => 12, 'N' => 13, 'O' => 14, 'P' => 15, 'Q' => 16, 'R' => 17, 'S' => 18, 'T' => 19,
-        'U' => 20, 'V' => 21, 'W' => 22, 'X' => 23, 'Y' => 24, 'Z' => 25,
-    ];
-
-    $sum = 0;
-    for ($i = 0; $i < 15; $i++) {
-        $ch = $cf[$i];
-        $sum += (($i + 1) % 2 !== 0) ? ($oddMap[$ch] ?? -9999) : ($evenMap[$ch] ?? -9999);
-    }
-
-    $expectedControl = chr(65 + ($sum % 26));
-    return $cf[15] === $expectedControl;
-}
-
-function contact_required_fields_error(
+function contact_validation_error(
     string $nome,
     string $cognome,
     ?string $cf,
@@ -98,24 +70,14 @@ function contact_required_fields_error(
     if ($nome === '' || $cognome === '') {
         return 'Nome e cognome obbligatori';
     }
-    if ($cf === null) {
-        return 'Codice fiscale obbligatorio';
-    }
-    if (!cf_is_valid($cf)) {
+    if ($cf !== null && !validate_tax_code($cf)) {
         return 'Codice fiscale non valido';
     }
-    if ($nascita === null || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $nascita)) {
-        return 'Data di nascita obbligatoria e non valida';
+    if ($nascita !== null && !validate_birth_date($nascita)) {
+        return 'Data di nascita non valida';
     }
-    [$year, $month, $day] = array_map('intval', explode('-', $nascita));
-    if (!checkdate($month, $day, $year)) {
-        return 'Data di nascita obbligatoria e non valida';
-    }
-    if ($luogo === null) {
-        return 'Comune di nascita obbligatorio';
-    }
-    if ($sesso === null || !in_array($sesso, ['M', 'F'], true)) {
-        return 'Sesso obbligatorio e non valido';
+    if ($sesso !== null && !in_array($sesso, ['M', 'F'], true)) {
+        return 'Sesso non valido';
     }
     return null;
 }
@@ -123,6 +85,19 @@ function contact_required_fields_error(
 // ── GET ──────────────────────────────────────────────────────────────────────
 if ($method === 'GET') {
     if (isset($_GET['export']) && $_GET['export'] === 'csv') {
+        if (!$isAdmin) {
+            http_response_code(403);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Forbidden']);
+            exit;
+        }
+        if ($use_gym && $gym_id === null) {
+            http_response_code(400);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'message' => 'Select an activity before exporting contacts']);
+            exit;
+        }
+
         $filename = 'registro_' . date('d-m-Y') . '.csv';
         header('Content-Type: text/csv; charset=utf-8');
         header('Content-Disposition: attachment; filename=' . $filename);
@@ -202,7 +177,7 @@ if ($method === 'POST') {
     $sesso = strtoupper(trim($d['sesso'] ?? ''));
     $sesso = $sesso !== '' ? $sesso : null;
 
-    $validationError = contact_required_fields_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
+    $validationError = contact_validation_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
     if ($validationError !== null) {
         http_response_code(400);
         echo json_encode(['success' => false, 'message' => $validationError]);
@@ -260,7 +235,7 @@ if ($method === 'PUT') {
     $sesso = strtoupper(trim($d['sesso'] ?? ''));
     $sesso = $sesso !== '' ? $sesso : null;
 
-    $validationError = contact_required_fields_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
+    $validationError = contact_validation_error($nome, $cognome, $cf, $nascita, $luogo, $sesso);
     if ($validationError !== null) {
         http_response_code(400);
         echo json_encode(['success'=>false,'message'=>$validationError]);

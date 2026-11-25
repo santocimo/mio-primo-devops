@@ -130,10 +130,10 @@
         <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.lastName' | translate" required></ion-input>
       </ion-item>
       <ion-item>
-        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionChange)="onFormFieldChange()" required></ion-input>
+        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionChange)="onFormFieldChange()"></ion-input>
       </ion-item>
       <ion-item>
-        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover" required>
+        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover">
           <ion-select-option value="M">{{ 'contacts.male' | translate }}</ion-select-option>
           <ion-select-option value="F">{{ 'contacts.female' | translate }}</ion-select-option>
         </ion-select>
@@ -145,8 +145,7 @@
           labelPlacement="stacked"
           [value]="comuneSearch"
           (ionInput)="onComuneInput($event)"
-          [placeholder]="'contacts.searchCity' | translate"
-          required>
+          [placeholder]="'contacts.searchCity' | translate">
         </ion-input>
       </ion-item>
       <p class="city-search-hint">{{ 'contacts.citySearchHint' | translate }}</p>
@@ -177,8 +176,7 @@
           (ionInput)="formData.codice_fiscale = ($any($event.detail).value ?? '').toUpperCase()"
           [placeholder]="'contacts.manualTaxCode' | translate"
           style="text-transform:uppercase;"
-          maxlength="16"
-          required>
+          maxlength="16">
         </ion-input>
       </ion-item>
     </ion-list>

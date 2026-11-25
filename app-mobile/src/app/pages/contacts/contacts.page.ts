@@ -281,15 +281,17 @@ export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
 
   isFormValid(): boolean {
     const codiceFiscale = this.formData.codice_fiscale.trim().toUpperCase();
+    const hasCodiceFiscale = codiceFiscale !== '';
+    const codiceFiscaleValido = !hasCodiceFiscale || (
+      /^[A-Z0-9]{15}[A-Z]$/.test(codiceFiscale) &&
+      codiceFiscale[15] === this.calcolaControllo(codiceFiscale.substring(0, 15))
+    );
     return Boolean(
       this.formData.nome.trim() &&
       this.formData.cognome.trim() &&
-      this.isValidBirthDate(this.formData.data_nascita) &&
-      ['M', 'F'].includes(this.formData.sesso) &&
-      this.formData.luogo_nascita.trim() &&
-      this.belfiore &&
-      /^[A-Z0-9]{15}[A-Z]$/.test(codiceFiscale) &&
-      codiceFiscale[15] === this.calcolaControllo(codiceFiscale.substring(0, 15))
+      (!this.formData.data_nascita || this.isValidBirthDate(this.formData.data_nascita)) &&
+      (!this.formData.sesso || ['M', 'F'].includes(this.formData.sesso)) &&
+      codiceFiscaleValido
     );
   }
 

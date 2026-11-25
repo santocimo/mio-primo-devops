@@ -52,7 +52,7 @@ if (!validate_gym_name($gym_name)) {
     exit;
 }
 
-$allowed_categories = ['gym', 'salon', 'studio', 'medical', 'other'];
+$allowed_categories = ['gym', 'salon', 'studio', 'other'];
 if ($gym_category === 'other' && $activity_name === '') {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Se scegli Altro devi indicare la tua attivita']);
@@ -70,7 +70,7 @@ if (mb_strlen($gym_city) > 120 || mb_strlen($gym_phone) > 30) {
     exit;
 }
 
-if (!preg_match('/^[A-Z0-9]{16}$/i', $codice_fiscale)) {
+if (!validate_tax_code($codice_fiscale)) {
     http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Codice fiscale non valido']);
     exit;

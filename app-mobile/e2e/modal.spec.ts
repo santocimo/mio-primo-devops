@@ -93,18 +93,33 @@ test('modifica contatto mostra i dati facoltativi salvati', async ({ page, reque
   }
 });
 
-test('calcola e aggiorna il codice fiscale usando il comune selezionato', async ({ page, request }) => {
+test('accetta contatti minimali e calcola il codice fiscale usando il comune selezionato', async ({ page, request }) => {
   test.skip(!ADMIN_USERNAME || !ADMIN_PASSWORD, 'Set E2E_ADMIN_USERNAME and E2E_ADMIN_PASSWORD');
   const loginResponse = await request.post(`${API_BASE}/api/auth/login.php`, {
     data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
   });
   expect(loginResponse.ok()).toBeTruthy();
   const token = (await loginResponse.json()).token;
-  const incompleteContact = await request.post(`${API_BASE}/api/contacts.php`, {
+  const gymResponse = await request.get(`${API_BASE}/api/gyms?all_categories=1`, {
     headers: { Authorization: `Bearer ${token}` },
-    data: { nome: 'TEST', cognome: 'INCOMPLETO' },
   });
-  expect(incompleteContact.status()).toBe(400);
+  expect(gymResponse.ok()).toBeTruthy();
+  const gyms = await gymResponse.json();
+  const gymId = gyms[0]?.id;
+  expect(gymId).toBeTruthy();
+
+  const minimalContact = await request.post(`${API_BASE}/api/contacts.php`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { nome: 'TEST', cognome: `MINIMO${Date.now()}`, gym_id: gymId },
+  });
+  expect(minimalContact.ok()).toBeTruthy();
+  const minimalContactId = (await minimalContact.json()).id;
+
+  const invalidContact = await request.post(`${API_BASE}/api/contacts.php`, {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { nome: 'TEST', cognome: `INVALIDO${Date.now()}`, codice_fiscale: 'invalid', gym_id: gymId },
+  });
+  expect(invalidContact.status()).toBe(400);
 
   const uniqueSuffix = Date.now();
   const cognome = `ROSSI${uniqueSuffix}`;
@@ -119,12 +134,13 @@ test('calcola e aggiorna il codice fiscale usando il comune selezionato', async 
     await expect(modal).toBeVisible();
 
     const inputs = modal.locator('ion-input input');
-    await expect(modal.getByLabel('Codice fiscale *')).toBeVisible();
-    await expect(modal.getByLabel('Codice fiscale *')).toHaveCount(1);
-    await expect(modal.getByLabel('Comune di nascita *')).toBeVisible();
+    await expect(modal.getByLabel('Codice fiscale')).toBeVisible();
+    await expect(modal.getByLabel('Codice fiscale')).toHaveCount(1);
+    await expect(modal.getByLabel('Comune di nascita')).toBeVisible();
     await expect(modal.locator('ion-button').last()).toHaveAttribute('aria-disabled', 'true');
     await inputs.nth(0).fill('Mario');
     await inputs.nth(1).fill(cognome);
+    await expect(modal.locator('ion-button').last()).toHaveAttribute('aria-disabled', 'false');
     await inputs.nth(2).fill('1980-01-01');
 
     await modal.locator('ion-select').click();
@@ -148,6 +164,10 @@ test('calcola e aggiorna il codice fiscale usando il comune selezionato', async 
     await expect(inputs.last()).toHaveValue(/^RSSMRA80A41H501[A-Z]$/);
     await modal.locator('ion-button').last().click();
   } finally {
+    await request.delete(`${API_BASE}/api/contacts.php/${minimalContactId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => undefined);
+
     const response = await request.get(`${API_BASE}/api/contacts.php`, {
       headers: { Authorization: `Bearer ${token}` },
     });

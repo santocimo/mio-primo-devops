@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/inc/security.php';
 require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/inc/validation.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['admin_logged'])) {
@@ -33,15 +34,29 @@ $nome = trim($_POST['nome'] ?? '');
 $cognome = trim($_POST['cognome'] ?? '');
 $codice_fiscale = strtoupper(trim($_POST['codice_fiscale'] ?? ''));
 $data_nascita = trim($_POST['data_nascita'] ?? '');
-$luogo_nascita = trim($_POST['luogo_nascita'] ?? '');
-$indirizzo = trim($_POST['indirizzo'] ?? '');
+$luogo_nascita = strtoupper(trim($_POST['luogo_nascita'] ?? ''));
+$indirizzo = strtoupper(trim($_POST['indirizzo'] ?? ''));
 $recapito = trim($_POST['recapito'] ?? '');
-$sesso = trim($_POST['sesso'] ?? '');
+$sesso = strtoupper(trim($_POST['sesso'] ?? ''));
 
-if ($nome === '' || $cognome === '' || $codice_fiscale === '' || $data_nascita === '' || $luogo_nascita === '' || $indirizzo === '' || $sesso === '') {
-    echo json_encode(['ok' => false, 'error' => 'Compila tutti i campi obbligatori (incluso il codice fiscale)']);
+if ($nome === '' || $cognome === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Nome e cognome sono obbligatori']);
     exit;
 }
+if (($codice_fiscale !== '' && !validate_tax_code($codice_fiscale))
+    || ($data_nascita !== '' && !validate_birth_date($data_nascita))
+    || ($sesso !== '' && !in_array($sesso, ['M', 'F'], true))) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'I dati facoltativi inseriti non sono validi']);
+    exit;
+}
+$codice_fiscale = $codice_fiscale !== '' ? $codice_fiscale : null;
+$data_nascita = $data_nascita !== '' ? $data_nascita : null;
+$luogo_nascita = $luogo_nascita !== '' ? $luogo_nascita : null;
+$indirizzo = $indirizzo !== '' ? $indirizzo : null;
+$recapito = $recapito !== '' ? $recapito : null;
+$sesso = $sesso !== '' ? $sesso : null;
 
 try {
     if ($id) {

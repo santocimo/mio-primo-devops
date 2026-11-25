@@ -97,7 +97,7 @@ $gyms = $pdo->query("SELECT id,name,slug,category,created_at FROM gyms ORDER BY 
                 <option value="yoga">Yoga</option>
                 <option value="wellness">Wellness</option>
                 <option value="studio">Studio</option>
-                <option value="medical">Medical Office</option>
+                <option value="medical">Medical Office (legacy records only)</option>
                 <option value="real_estate">Real Estate Agency</option>
             </select>
             <div class="form-text">Choose the category of this location.</div>
@@ -121,14 +121,23 @@ $(function(){
     const modalEl = document.getElementById('gymModal');
     const bsModal = new bootstrap.Modal(modalEl);
 
-    $('#btnNew').on('click', function(){ $('#gym_id').val(''); $('#gym_name').val(''); $('#gym_slug').val(''); $('#gym_category').val('gym'); bsModal.show(); });
+    $('#btnNew').on('click', function(){
+      $('#gym_id').val('');
+      $('#gym_name').val('');
+      $('#gym_slug').val('');
+      $('#gym_category option[value="medical"]').prop('disabled', true);
+      $('#gym_category').val('gym');
+      bsModal.show();
+    });
 
     $(document).on('click', '.btn-edit', function(){
       const tr = $(this).closest('tr');
       const id = tr.data('id');
       $('#gym_id').val(id);
       $('#gym_name').val(tr.children().eq(0).text().trim());
-      $('#gym_category').val(tr.data('category') || 'gym');
+      const category = tr.data('category') || 'gym';
+      $('#gym_category option[value="medical"]').prop('disabled', category !== 'medical');
+      $('#gym_category').val(category);
       $('#gym_slug').val(tr.children().eq(2).text().trim());
       bsModal.show();
     });

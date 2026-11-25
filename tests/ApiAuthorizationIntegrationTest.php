@@ -97,6 +97,10 @@ class ApiAuthorizationIntegrationTest extends TestCase
             [$this->prefix . '-contact-a'],
             array_column($contacts['json'], 'nome')
         );
+        self::assertSame(
+            403,
+            $this->request('GET', '/api/contacts?export=csv', null, $operator)['status']
+        );
 
         $appointments = $this->request(
             'GET',
@@ -146,6 +150,19 @@ class ApiAuthorizationIntegrationTest extends TestCase
             $contactNames = array_column($contacts['json'], 'nome');
             self::assertContains($this->prefix . '-contact-a', $contactNames);
             self::assertContains($this->prefix . '-contact-b', $contactNames);
+            self::assertSame(
+                400,
+                $this->request('GET', '/api/contacts?export=csv', null, $administrator)['status']
+            );
+            $contactCsv = $this->request(
+                'GET',
+                '/api/contacts?export=csv&gym_id=' . $this->fixture['gyms']['a'],
+                null,
+                $administrator
+            );
+            self::assertSame(200, $contactCsv['status']);
+            self::assertStringContainsString($this->prefix . '-contact-a', $contactCsv['body']);
+            self::assertStringNotContainsString($this->prefix . '-contact-b', $contactCsv['body']);
 
             $appointments = $this->request('GET', '/api/appointments', null, $administrator);
             self::assertSame(200, $appointments['status']);
@@ -238,6 +255,95 @@ class ApiAuthorizationIntegrationTest extends TestCase
 
         self::assertSame(404, $this->request('DELETE', '/api/contacts/' . $contactB, null, $operator)['status']);
         self::assertSame(1, $this->contactCount($contactB));
+    }
+
+    public function testContactTaxCodeAndBirthDetailsAreOptionalButValidatedWhenProvided(): void
+    {
+        $operator = $this->fixture['users']['operator_a'];
+        $created = $this->request(
+            'POST',
+            '/api/contacts',
+            ['nome' => $this->prefix . '-minimal-contact', 'cognome' => 'TEST'],
+            $operator
+        );
+        self::assertSame(200, $created['status']);
+
+        $details = $this->pdo->prepare(
+            'SELECT codice_fiscale, data_nascita, luogo_nascita, sesso FROM visitatori WHERE id = ?'
+        );
+        $details->execute([(int)$created['json']['id']]);
+        self::assertSame([
+            'codice_fiscale' => null,
+            'data_nascita' => null,
+            'luogo_nascita' => null,
+            'sesso' => null,
+        ], $details->fetch(PDO::FETCH_ASSOC));
+
+        $updated = $this->request(
+            'PUT',
+            '/api/contacts/' . $this->fixture['contacts']['a'],
+            ['nome' => $this->prefix . '-updated-contact', 'cognome' => 'TEST'],
+            $operator
+        );
+        self::assertSame(200, $updated['status']);
+        $details->execute([$this->fixture['contacts']['a']]);
+        self::assertSame([
+            'codice_fiscale' => null,
+            'data_nascita' => null,
+            'luogo_nascita' => null,
+            'sesso' => null,
+        ], $details->fetch(PDO::FETCH_ASSOC));
+
+        foreach ([
+            ['codice_fiscale' => 'invalid'],
+            ['data_nascita' => '2000-02-31'],
+            ['sesso' => 'X'],
+        ] as $invalidField) {
+            $response = $this->request(
+                'POST',
+                '/api/contacts',
+                ['nome' => $this->prefix . '-invalid-contact', 'cognome' => 'TEST'] + $invalidField,
+                $operator
+            );
+            self::assertSame(400, $response['status']);
+        }
+    }
+
+    public function testMedicalCategoryCannotBeSelectedForNewOrExistingActivities(): void
+    {
+        $admin = $this->fixture['users']['admin'];
+        $created = $this->request(
+            'POST',
+            '/api/gyms',
+            ['name' => $this->prefix . '-medical-gym', 'category' => 'medical'],
+            $admin
+        );
+        self::assertSame(400, $created['status']);
+
+        $owner = $this->fixture['users']['owner_a'];
+        $changed = $this->request(
+            'PUT',
+            '/api/gyms/' . $this->fixture['gyms']['a'],
+            ['name' => $this->prefix . '-gym-a', 'category' => 'medical'],
+            $owner
+        );
+        self::assertSame(400, $changed['status']);
+
+        $registered = $this->request('POST', '/api/register.php', [
+            'gym_name' => $this->prefix . '-register-medical',
+            'gym_category' => 'medical',
+            'gym_address' => '1 Example Street',
+            'gym_city' => 'Example',
+            'gym_phone' => '1234567890',
+            'name' => 'Test',
+            'surname' => 'Owner',
+            'codice_fiscale' => 'AAAAAAAAAAAAAAAA',
+            'email' => $this->prefix . '-medical@example.invalid',
+            'username' => $this->prefix . '-medical',
+            'password' => 'integration-test-password',
+        ]);
+        self::assertSame(400, $registered['status']);
+        self::assertSame('Tipo struttura non valido', $registered['json']['message']);
     }
 
     public function testOnlyBillingOwnerCanManageUsersAndCannotCrossGymBoundary(): void
