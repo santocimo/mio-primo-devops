@@ -53,7 +53,9 @@
         color="danger"
         (click)="requestDeletion()"
         [disabled]="!canSubmit()">
-        <ion-spinner *ngIf="deleting" name="crescent" slot="start"></ion-spinner>
+        @if (deleting) {
+          <ion-spinner name="crescent" slot="start"></ion-spinner>
+        }
         {{ 'accountDeletion.deleteButton' | translate }}
       </ion-button>
     </section>

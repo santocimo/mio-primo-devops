@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef, ChangeDetectionStrategy } from '@angular/core';
 import { AlertController, ToastController, ViewWillEnter } from '@ionic/angular';
 import { Subject } from 'rxjs';
 import { FormControl } from '@angular/forms';
@@ -10,9 +10,11 @@ import { LanguageService } from '../../i18n/language.service';
 import { TerminologyService } from '../../services/terminology.service';
 
 @Component({
-  selector: 'app-contacts',
-  templateUrl: './contacts.page.html',
-  styleUrls: ['./contacts.page.scss'],
+    selector: 'app-contacts',
+    templateUrl: './contacts.page.html',
+    styleUrls: ['./contacts.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class ContactsPage implements OnInit, OnDestroy, ViewWillEnter {
   contacts: Contact[] = [];

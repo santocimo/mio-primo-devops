@@ -23,113 +23,138 @@
       <p class="hero-subtitle">{{ (isAdminUser ? 'adminUsers.heroDescription' : 'adminUsers.operatorHeroDescription') | translate }}</p>
     </section>
 
-  <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
+    <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
 
-  <div class="skeleton-stack" *ngIf="loading">
-    <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px" *ngFor="let i of [1,2,3]"></ion-skeleton-text>
-  </div>
-
-  <section class="section-card" *ngIf="!loading && users.length > 0">
-    <div class="section-title-row">
-      <div>
-        <h2 class="section-title">{{ (isAdminUser ? 'adminUsers.accounts' : 'adminUsers.operatorAccounts') | translate }}</h2>
-        <p class="section-note">{{ (isAdminUser ? 'adminUsers.accountHint' : 'adminUsers.operatorAccountHint') | translate }}</p>
+    @if (loading) {
+      <div class="skeleton-stack">
+        @for (i of [1,2,3]; track i) {
+          <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px"></ion-skeleton-text>
+        }
       </div>
-            <span class="pill-badge">{{ (isAdminUser ? 'adminUsers.count' : 'adminUsers.memberCount') | translate:{count: users.length} }}</span>
-    </div>
+    }
 
-    <div class="entity-list">
-      <article class="entity-row" *ngFor="let u of users">
-        <div class="entity-icon">
-          <ion-icon [name]="roleLabel(u.role) === 'adminUsers.admin' ? 'shield-checkmark-outline' : 'person-outline'"></ion-icon>
-        </div>
-        <div class="entity-body">
-          <h3 class="entity-title">{{ userTitle(u) }}</h3>
-          <div class="entity-subline">{{ userSubtitle(u) }}</div>
-          <div class="entity-tags">
-            <span class="pill-badge">{{ userBadgeLabel(u) | translate }}</span>
-            <span *ngIf="u.is_billing_owner" class="pill-badge">{{ 'adminUsers.billingOwner' | translate }}</span>
-            <span class="pill-badge">{{ u.gym_id ? gymName(u.gym_id) : ('menu.allActivities' | translate) }}</span>
+    @if (!loading && users.length > 0) {
+      <section class="section-card">
+        <div class="section-title-row">
+          <div>
+            <h2 class="section-title">{{ (isAdminUser ? 'adminUsers.accounts' : 'adminUsers.operatorAccounts') | translate }}</h2>
+            <p class="section-note">{{ (isAdminUser ? 'adminUsers.accountHint' : 'adminUsers.operatorAccountHint') | translate }}</p>
           </div>
-          <div class="entity-subline">{{ 'adminUsers.created' | translate:{date: (u.created_at | date:(language.currentLanguage === 'en' ? 'MMM d, y' : 'dd/MM/yyyy'))} }}</div>
+          <span class="pill-badge">{{ (isAdminUser ? 'adminUsers.count' : 'adminUsers.memberCount') | translate:{count: users.length} }}</span>
         </div>
-        <div class="entity-actions">
-          <ion-button fill="clear" (click)="resetPassword(u)">
-            <ion-icon slot="icon-only" name="key-outline"></ion-icon>
-          </ion-button>
-          <ion-button fill="clear" (click)="openEdit(u)">
-            <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
-          </ion-button>
-          <ion-button fill="clear" color="danger" (click)="del(u)">
-            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-          </ion-button>
+        <div class="entity-list">
+          @for (u of users; track u) {
+            <article class="entity-row">
+              <div class="entity-icon">
+                <ion-icon [name]="roleLabel(u.role) === 'adminUsers.admin' ? 'shield-checkmark-outline' : 'person-outline'"></ion-icon>
+              </div>
+              <div class="entity-body">
+                <h3 class="entity-title">{{ userTitle(u) }}</h3>
+                <div class="entity-subline">{{ userSubtitle(u) }}</div>
+                <div class="entity-tags">
+                  <span class="pill-badge">{{ userBadgeLabel(u) | translate }}</span>
+                  @if (u.is_billing_owner) {
+                    <span class="pill-badge">{{ 'adminUsers.billingOwner' | translate }}</span>
+                  }
+                  <span class="pill-badge">{{ u.gym_id ? gymName(u.gym_id) : ('menu.allActivities' | translate) }}</span>
+                </div>
+                <div class="entity-subline">{{ 'adminUsers.created' | translate:{date: (u.created_at | date:(language.currentLanguage === 'en' ? 'MMM d, y' : 'dd/MM/yyyy'))} }}</div>
+              </div>
+              <div class="entity-actions">
+                <ion-button fill="clear" (click)="resetPassword(u)">
+                  <ion-icon slot="icon-only" name="key-outline"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" (click)="openEdit(u)">
+                  <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" color="danger" (click)="del(u)">
+                  <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </article>
+          }
         </div>
-      </article>
-    </div>
-  </section>
+      </section>
+    }
 
-  <div class="empty-state" *ngIf="!loading && users.length === 0">
-    <ion-icon name="people-outline"></ion-icon>
-    <div class="empty-title">{{ 'adminUsers.empty' | translate }}</div>
-    <p class="empty-copy">{{ (isAdminUser ? 'adminUsers.emptyDescription' : 'adminUsers.operatorEmpty') | translate }}</p>
-  </div>
+    @if (!loading && users.length === 0) {
+      <div class="empty-state">
+        <ion-icon name="people-outline"></ion-icon>
+        <div class="empty-title">{{ 'adminUsers.empty' | translate }}</div>
+        <p class="empty-copy">{{ (isAdminUser ? 'adminUsers.emptyDescription' : 'adminUsers.operatorEmpty') | translate }}</p>
+      </div>
+    }
   </div>
 
-  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
-  <div class="modal-sheet" *ngIf="showForm">
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>{{ (editingUser ? (isAdminUser ? 'adminUsers.edit' : 'adminUsers.editMember') : (isAdminUser ? 'adminUsers.add' : 'adminUsers.addMember')) | translate }}</ion-title>
-        <ion-buttons slot="end">
-          <ion-button (click)="closeForm()">{{ 'adminUsers.close' | translate }}</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-    <div class="modal-body">
-      <div class="sheet-form">
-      <ion-item>
-        <ion-input [label]="'adminUsers.name' | translate" labelPlacement="stacked" [(ngModel)]="formData.name" [placeholder]="'adminUsers.realName' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'adminUsers.email' | translate" labelPlacement="stacked" [(ngModel)]="formData.email" type="email" placeholder="email@example.com"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" [(ngModel)]="formData.tax_code" maxlength="16" style="text-transform: uppercase"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'adminUsers.username' | translate" labelPlacement="stacked" [(ngModel)]="formData.username" placeholder="username"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="('adminUsers.password' | translate) + (editingUser ? ' ' + ('adminUsers.passwordHelp' | translate) : ' *')" labelPlacement="stacked" [attr.aria-label]="'adminUsers.password' | translate" type="password" [(ngModel)]="formData.password" [placeholder]="'adminUsers.passwordPlaceholder' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'adminUsers.role' | translate" labelPlacement="stacked" [(ngModel)]="formData.role" (ionChange)="onRoleChange()" interface="popover">
-          <ion-select-option value="OPERATORE">{{ (isAdminUser ? 'adminUsers.manager' : 'adminUsers.member') | translate }}</ion-select-option>
-          <ion-select-option value="GESTORE">{{ 'adminUsers.billingManager' | translate }}</ion-select-option>
-          <ion-select-option *ngIf="isAdminUser" value="ADMIN">{{ 'adminUsers.admin' | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item *ngIf="isAdminUser">
-        <ion-select [label]="'adminUsers.location' | translate" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover" [value]="formData.gym_id">
-          <ion-select-option [value]="null">{{ 'adminUsers.none' | translate }}</ion-select-option>
-          <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item *ngIf="!isAdminUser">
-        <ion-label class="ion-text-wrap">{{ 'adminUsers.assignedLocation' | translate }}</ion-label>
-        <ion-note slot="end">{{ gymName(formData.gym_id) }}</ion-note>
-      </ion-item>
-      <ion-item *ngIf="formData.gym_id">
-        <ion-checkbox slot="start" [(ngModel)]="formData.is_billing_owner"></ion-checkbox>
-        <ion-label class="ion-text-wrap">{{ 'adminUsers.billingOwner' | translate }}</ion-label>
-      </ion-item>
-      <div class="ion-padding-top">
-        <ion-button expand="block" (click)="save()">{{ 'adminUsers.save' | translate }}</ion-button>
-      </div>
-      <p class="modal-foot-note">{{ 'adminUsers.accountHint' | translate }}</p>
+  @if (showForm) {
+    <div class="modal-overlay" (click)="closeForm()"></div>
+  }
+  @if (showForm) {
+    <div class="modal-sheet">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ (editingUser ? (isAdminUser ? 'adminUsers.edit' : 'adminUsers.editMember') : (isAdminUser ? 'adminUsers.add' : 'adminUsers.addMember')) | translate }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeForm()">{{ 'adminUsers.close' | translate }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <div class="modal-body">
+        <div class="sheet-form">
+          <ion-item>
+            <ion-input [label]="'adminUsers.name' | translate" labelPlacement="stacked" [(ngModel)]="formData.name" [placeholder]="'adminUsers.realName' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'adminUsers.email' | translate" labelPlacement="stacked" [(ngModel)]="formData.email" type="email" placeholder="email@example.com"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" [(ngModel)]="formData.tax_code" maxlength="16" style="text-transform: uppercase"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'adminUsers.username' | translate" labelPlacement="stacked" [(ngModel)]="formData.username" placeholder="username"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="('adminUsers.password' | translate) + (editingUser ? ' ' + ('adminUsers.passwordHelp' | translate) : ' *')" labelPlacement="stacked" [attr.aria-label]="'adminUsers.password' | translate" type="password" [(ngModel)]="formData.password" [placeholder]="'adminUsers.passwordPlaceholder' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-select [label]="'adminUsers.role' | translate" labelPlacement="stacked" [(ngModel)]="formData.role" (ionChange)="onRoleChange()" interface="popover">
+              <ion-select-option value="OPERATORE">{{ (isAdminUser ? 'adminUsers.manager' : 'adminUsers.member') | translate }}</ion-select-option>
+              <ion-select-option value="GESTORE">{{ 'adminUsers.billingManager' | translate }}</ion-select-option>
+              @if (isAdminUser) {
+                <ion-select-option value="ADMIN">{{ 'adminUsers.admin' | translate }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          @if (isAdminUser) {
+            <ion-item>
+              <ion-select [label]="'adminUsers.location' | translate" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover" [value]="formData.gym_id">
+                <ion-select-option [value]="null">{{ 'adminUsers.none' | translate }}</ion-select-option>
+                @for (g of gyms; track g) {
+                  <ion-select-option [value]="g.id">{{ g.name }}</ion-select-option>
+                }
+              </ion-select>
+            </ion-item>
+          }
+          @if (!isAdminUser) {
+            <ion-item>
+              <ion-label class="ion-text-wrap">{{ 'adminUsers.assignedLocation' | translate }}</ion-label>
+              <ion-note slot="end">{{ gymName(formData.gym_id) }}</ion-note>
+            </ion-item>
+          }
+          @if (formData.gym_id) {
+            <ion-item>
+              <ion-checkbox slot="start" [(ngModel)]="formData.is_billing_owner"></ion-checkbox>
+              <ion-label class="ion-text-wrap">{{ 'adminUsers.billingOwner' | translate }}</ion-label>
+            </ion-item>
+          }
+          <div class="ion-padding-top">
+            <ion-button expand="block" (click)="save()">{{ 'adminUsers.save' | translate }}</ion-button>
+          </div>
+          <p class="modal-foot-note">{{ 'adminUsers.accountHint' | translate }}</p>
+        </div>
       </div>
     </div>
-  </div>
+  }
 </ion-content>

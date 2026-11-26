@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
@@ -9,9 +9,11 @@ import { LanguageService } from '../../i18n/language.service';
 import { AppUser } from '../../models/business.model';
 
 @Component({
-  selector: 'app-admin-users',
-  templateUrl: './admin-users.page.html',
-  styleUrls: ['./admin-users.page.scss'],
+    selector: 'app-admin-users',
+    templateUrl: './admin-users.page.html',
+    styleUrls: ['./admin-users.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AdminUsersPage implements OnInit, OnDestroy {
   users: AppUser[] = [];

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { CheckoutConfig, PaymentService } from '../../services/payment.service';
 import { ToastController, LoadingController } from '@ionic/angular';
@@ -7,9 +7,11 @@ import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
 
 @Component({
-  selector: 'app-subscribe',
-  templateUrl: './subscribe.page.html',
-  styleUrls: ['./subscribe.page.scss'],
+    selector: 'app-subscribe',
+    templateUrl: './subscribe.page.html',
+    styleUrls: ['./subscribe.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class SubscribePage implements OnInit, OnDestroy {
   planId: string = '';

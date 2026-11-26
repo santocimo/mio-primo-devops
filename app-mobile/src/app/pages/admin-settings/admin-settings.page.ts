@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { Subject } from 'rxjs';
@@ -8,9 +8,11 @@ import { AdminAuditEntry } from '../../models/business.model';
 import { formatDateTimeInTimeZone } from '../../utils/local-time';
 
 @Component({
-  selector: 'app-admin-settings',
-  templateUrl: './admin-settings.page.html',
-  styleUrls: ['./admin-settings.page.scss'],
+    selector: 'app-admin-settings',
+    templateUrl: './admin-settings.page.html',
+    styleUrls: ['./admin-settings.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AdminSettingsPage implements OnInit, OnDestroy {
   auditEntries: AdminAuditEntry[] = [];

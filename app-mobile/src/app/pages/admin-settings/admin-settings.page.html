@@ -29,29 +29,43 @@
         </ion-button>
       </div>
 
-      <ion-spinner *ngIf="auditLoading" name="crescent"></ion-spinner>
-      <p *ngIf="auditLoadError" role="alert">{{ 'adminSettings.auditLoadError' | translate }}</p>
-      <p *ngIf="!auditLoading && !auditLoadError && auditEntries.length === 0">{{ 'adminSettings.auditEmpty' | translate }}</p>
+      @if (auditLoading) {
+        <ion-spinner name="crescent"></ion-spinner>
+      }
+      @if (auditLoadError) {
+        <p role="alert">{{ 'adminSettings.auditLoadError' | translate }}</p>
+      }
+      @if (!auditLoading && !auditLoadError && auditEntries.length === 0) {
+        <p>{{ 'adminSettings.auditEmpty' | translate }}</p>
+      }
 
-      <ion-list *ngIf="!auditLoading && !auditLoadError && auditEntries.length > 0">
-        <ion-item *ngFor="let entry of auditEntries">
-          <ion-label class="ion-text-wrap">
-            <h2>
-              {{ entry.actor_username || ('adminSettings.auditAdmin' | translate:{id: entry.actor_user_id}) }}
-              · {{ auditActionLabel(entry.action) | translate }}
-              · {{ auditResourceLabel(entry.resource_type) | translate }}
-            </h2>
-            <p>
-              {{ 'adminSettings.italyTime' | translate }}: {{ formatAuditTime(entry.created_at) }}
-              <span *ngIf="entry.resource_id"> · #{{ entry.resource_id }}</span>
-              <span *ngIf="entry.gym_id"> · {{ 'adminSettings.auditActivity' | translate }} #{{ entry.gym_id }}</span>
-            </p>
-          </ion-label>
-          <ion-badge slot="end" [color]="entry.response_status && entry.response_status < 400 ? 'success' : 'medium'">
-            {{ entry.response_status ?? '—' }}
-          </ion-badge>
-        </ion-item>
-      </ion-list>
+      @if (!auditLoading && !auditLoadError && auditEntries.length > 0) {
+        <ion-list>
+          @for (entry of auditEntries; track entry) {
+            <ion-item>
+              <ion-label class="ion-text-wrap">
+                <h2>
+                  {{ entry.actor_username || ('adminSettings.auditAdmin' | translate:{id: entry.actor_user_id}) }}
+                  · {{ auditActionLabel(entry.action) | translate }}
+                  · {{ auditResourceLabel(entry.resource_type) | translate }}
+                </h2>
+                <p>
+                  {{ 'adminSettings.italyTime' | translate }}: {{ formatAuditTime(entry.created_at) }}
+                  @if (entry.resource_id) {
+                    <span> · #{{ entry.resource_id }}</span>
+                  }
+                  @if (entry.gym_id) {
+                    <span> · {{ 'adminSettings.auditActivity' | translate }} #{{ entry.gym_id }}</span>
+                  }
+                </p>
+              </ion-label>
+              <ion-badge slot="end" [color]="entry.response_status && entry.response_status < 400 ? 'success' : 'medium'">
+                {{ entry.response_status ?? '—' }}
+              </ion-badge>
+            </ion-item>
+          }
+        </ion-list>
+      }
     </section>
   </div>
 </ion-content>

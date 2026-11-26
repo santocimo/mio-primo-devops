@@ -1,12 +1,14 @@
-import { Component } from '@angular/core';
+import { Component, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { LanguageService } from '../../i18n/language.service';
 import { LEGAL_DOCUMENTS, LegalDocument } from './legal-content';
 
 @Component({
-  selector: 'app-legal',
-  templateUrl: './legal.page.html',
-  styleUrls: ['./legal.page.scss'],
+    selector: 'app-legal',
+    templateUrl: './legal.page.html',
+    styleUrls: ['./legal.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class LegalPage {
   private readonly key: string;

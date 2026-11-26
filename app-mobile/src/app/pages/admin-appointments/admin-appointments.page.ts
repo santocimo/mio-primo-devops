@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController, ToastController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
@@ -29,9 +29,11 @@ export interface AppointmentItem {
 }
 
 @Component({
-  selector: 'app-admin-appointments',
-  templateUrl: './admin-appointments.page.html',
-  styleUrls: ['./admin-appointments.page.scss'],
+    selector: 'app-admin-appointments',
+    templateUrl: './admin-appointments.page.html',
+    styleUrls: ['./admin-appointments.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AdminAppointmentsPage implements OnInit, OnDestroy {
   appointments: AppointmentItem[] = [];

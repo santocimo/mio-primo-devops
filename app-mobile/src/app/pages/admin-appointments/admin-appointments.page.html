@@ -23,119 +23,141 @@
       <p class="hero-subtitle">{{ 'adminAppointments.heroDescription' | translate }}</p>
     </section>
 
-  <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
+    <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
 
-  <div class="skeleton-stack" *ngIf="loading">
-    <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px" *ngFor="let i of [1,2,3]"></ion-skeleton-text>
+    @if (loading) {
+      <div class="skeleton-stack">
+        @for (i of [1,2,3]; track i) {
+          <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px"></ion-skeleton-text>
+        }
+      </div>
+    }
+
+    @if (!loading && appointments.length > 0) {
+      <section class="section-card">
+        <div class="section-title-row">
+          <div>
+            <h2 class="section-title">{{ 'adminAppointments.current' | translate }}</h2>
+            <p class="section-note">{{ 'adminAppointments.cardHint' | translate }}</p>
+          </div>
+          <span class="pill-badge">{{ 'adminAppointments.count' | translate:{count: appointments.length} }}</span>
+        </div>
+        <div class="entity-list">
+          @for (a of appointments; track a) {
+            <article class="entity-row">
+              <div class="entity-icon"><ion-icon name="time-outline"></ion-icon></div>
+              <div class="entity-body">
+                <h3 class="entity-title">{{ a.customer_name }}</h3>
+                <div class="entity-tags">
+                  <span class="pill-badge">{{ a.service_name }}</span>
+                  <span class="pill-badge">{{ a.gym_name }}</span>
+                  @if (a.scheduled_timezone) {
+                    <span class="pill-badge">
+                      {{ 'adminAppointments.italyTime' | translate }}:
+                      {{ formatTimeInZone(a.scheduled_at, 'Europe/Rome') }}
+                    </span>
+                    <span class="pill-badge">
+                      {{ 'adminAppointments.sourceLocalTime' | translate }}:
+                      {{ formatTimeInZone(a.scheduled_at, a.scheduled_timezone) }}
+                    </span>
+                    <small>{{ a.scheduled_timezone }}</small>
+                  } @else {
+                    <span class="pill-badge">
+                      {{ 'adminAppointments.legacyTimeUnknown' | translate }}: {{ a.scheduled_at }}
+                    </span>
+                  }
+                </div>
+                <div class="entity-subline">
+                  <ion-badge [color]="statusColor(a.status)">{{ ('status.' + a.status) | translate }}</ion-badge>
+                  @if (a.customer_email) {
+                    <span> &nbsp;·&nbsp; {{ a.customer_email }}</span>
+                  }
+                  @if (a.notes) {
+                    <span> &nbsp;·&nbsp; {{ a.notes }}</span>
+                  }
+                </div>
+              </div>
+              <div class="entity-actions">
+                <ion-button fill="clear" (click)="openEdit(a)">
+                  <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" color="danger" (click)="del(a)">
+                  <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (!loading && appointments.length === 0) {
+      <div class="empty-state">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <div class="empty-title">{{ 'adminAppointments.empty' | translate }}</div>
+        <p class="empty-copy">{{ 'adminAppointments.emptyDescription' | translate }}</p>
+      </div>
+    }
   </div>
 
-  <section class="section-card" *ngIf="!loading && appointments.length > 0">
-    <div class="section-title-row">
-      <div>
-        <h2 class="section-title">{{ 'adminAppointments.current' | translate }}</h2>
-        <p class="section-note">{{ 'adminAppointments.cardHint' | translate }}</p>
-      </div>
-      <span class="pill-badge">{{ 'adminAppointments.count' | translate:{count: appointments.length} }}</span>
-    </div>
-
-    <div class="entity-list">
-      <article class="entity-row" *ngFor="let a of appointments">
-        <div class="entity-icon"><ion-icon name="time-outline"></ion-icon></div>
-        <div class="entity-body">
-          <h3 class="entity-title">{{ a.customer_name }}</h3>
-          <div class="entity-tags">
-            <span class="pill-badge">{{ a.service_name }}</span>
-            <span class="pill-badge">{{ a.gym_name }}</span>
-            <ng-container *ngIf="a.scheduled_timezone; else legacyTime">
-              <span class="pill-badge">
-                {{ 'adminAppointments.italyTime' | translate }}:
-                {{ formatTimeInZone(a.scheduled_at, 'Europe/Rome') }}
-              </span>
-              <span class="pill-badge">
-                {{ 'adminAppointments.sourceLocalTime' | translate }}:
-                {{ formatTimeInZone(a.scheduled_at, a.scheduled_timezone) }}
-              </span>
-              <small>{{ a.scheduled_timezone }}</small>
-            </ng-container>
-            <ng-template #legacyTime>
-              <span class="pill-badge">
-                {{ 'adminAppointments.legacyTimeUnknown' | translate }}: {{ a.scheduled_at }}
-              </span>
-            </ng-template>
-          </div>
-          <div class="entity-subline">
-            <ion-badge [color]="statusColor(a.status)">{{ ('status.' + a.status) | translate }}</ion-badge>
-            <span *ngIf="a.customer_email"> &nbsp;·&nbsp; {{ a.customer_email }}</span>
-            <span *ngIf="a.notes"> &nbsp;·&nbsp; {{ a.notes }}</span>
+  @if (showForm) {
+    <div class="modal-overlay" (click)="closeForm()"></div>
+  }
+  @if (showForm) {
+    <div class="modal-sheet">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ (editingApt ? 'adminAppointments.edit' : 'adminAppointments.add') | translate }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeForm()">{{ 'adminAppointments.close' | translate }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <div class="modal-body">
+        <div class="sheet-form">
+          <ion-item>
+            <ion-select [label]="'adminAppointments.service' | translate" labelPlacement="stacked" [(ngModel)]="formData.service_id" interface="popover">
+              @for (s of services; track s) {
+                <ion-select-option [value]="s.id">{{ s.name }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-select [label]="'adminAppointments.member' | translate" labelPlacement="stacked" [(ngModel)]="formData.customer_name" interface="popover">
+              @for (c of contacts; track c) {
+                <ion-select-option [value]="contactLabel(c)">{{ contactLabel(c) }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'adminAppointments.email' | translate" labelPlacement="stacked" type="email" [(ngModel)]="formData.customer_email" [placeholder]="'adminAppointments.optional' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input
+              [label]="'adminAppointments.dateTime' | translate"
+              labelPlacement="stacked"
+              type="datetime-local"
+              [(ngModel)]="formData.scheduled_at">
+            </ion-input>
+          </ion-item>
+          <ion-note class="ion-padding-start" color="medium">{{ 'booking.localTimeHint' | translate }}</ion-note>
+          <ion-item>
+            <ion-select [label]="'adminAppointments.status' | translate" labelPlacement="stacked" [(ngModel)]="formData.status" interface="popover">
+              @for (st of statuses; track st) {
+                <ion-select-option [value]="st">{{ ('status.' + st) | translate }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-textarea [label]="'adminAppointments.notes' | translate" labelPlacement="stacked" [(ngModel)]="formData.notes" rows="2"></ion-textarea>
+          </ion-item>
+          <div class="ion-padding-top">
+            <ion-button expand="block" (click)="save()">{{ 'adminAppointments.save' | translate }}</ion-button>
           </div>
         </div>
-        <div class="entity-actions">
-          <ion-button fill="clear" (click)="openEdit(a)">
-            <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
-          </ion-button>
-          <ion-button fill="clear" color="danger" (click)="del(a)">
-            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-          </ion-button>
-        </div>
-      </article>
-    </div>
-  </section>
-
-  <div class="empty-state" *ngIf="!loading && appointments.length === 0">
-    <ion-icon name="calendar-outline"></ion-icon>
-    <div class="empty-title">{{ 'adminAppointments.empty' | translate }}</div>
-    <p class="empty-copy">{{ 'adminAppointments.emptyDescription' | translate }}</p>
-  </div>
-  </div>
-
-  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
-  <div class="modal-sheet" *ngIf="showForm">
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>{{ (editingApt ? 'adminAppointments.edit' : 'adminAppointments.add') | translate }}</ion-title>
-        <ion-buttons slot="end">
-          <ion-button (click)="closeForm()">{{ 'adminAppointments.close' | translate }}</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-    <div class="modal-body">
-      <div class="sheet-form">
-      <ion-item>
-        <ion-select [label]="'adminAppointments.service' | translate" labelPlacement="stacked" [(ngModel)]="formData.service_id" interface="popover">
-          <ion-select-option *ngFor="let s of services" [value]="s.id">{{ s.name }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'adminAppointments.member' | translate" labelPlacement="stacked" [(ngModel)]="formData.customer_name" interface="popover">
-          <ion-select-option *ngFor="let c of contacts" [value]="contactLabel(c)">{{ contactLabel(c) }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'adminAppointments.email' | translate" labelPlacement="stacked" type="email" [(ngModel)]="formData.customer_email" [placeholder]="'adminAppointments.optional' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input
-          [label]="'adminAppointments.dateTime' | translate"
-          labelPlacement="stacked"
-          type="datetime-local"
-          [(ngModel)]="formData.scheduled_at">
-        </ion-input>
-      </ion-item>
-      <ion-note class="ion-padding-start" color="medium">{{ 'booking.localTimeHint' | translate }}</ion-note>
-      <ion-item>
-        <ion-select [label]="'adminAppointments.status' | translate" labelPlacement="stacked" [(ngModel)]="formData.status" interface="popover">
-          <ion-select-option *ngFor="let st of statuses" [value]="st">{{ ('status.' + st) | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-textarea [label]="'adminAppointments.notes' | translate" labelPlacement="stacked" [(ngModel)]="formData.notes" rows="2"></ion-textarea>
-      </ion-item>
-      <div class="ion-padding-top">
-        <ion-button expand="block" (click)="save()">{{ 'adminAppointments.save' | translate }}</ion-button>
-      </div>
       </div>
     </div>
-  </div>
+  }
 </ion-content>

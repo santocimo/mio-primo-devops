@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { forkJoin, of, Subject } from 'rxjs';
 import { catchError, takeUntil } from 'rxjs/operators';
 import { ToastController } from '@ionic/angular';
@@ -8,9 +8,11 @@ import { AuthService } from '../../services/auth.service';
 import { LanguageService } from '../../i18n/language.service';
 
 @Component({
-  selector: 'app-gym',
-  templateUrl: './gym.page.html',
-  styleUrls: ['./gym.page.scss'],
+    selector: 'app-gym',
+    templateUrl: './gym.page.html',
+    styleUrls: ['./gym.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class GymPage implements OnInit, OnDestroy {
   gym: Gym | null = null;

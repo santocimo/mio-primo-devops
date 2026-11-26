@@ -3,7 +3,7 @@ import { CapacitorConfig } from '@capacitor/cli';
 const config: CapacitorConfig = {
   appId: 'com.businessregistry.app',
   appName: 'BusinessRegistry',
-  webDir: 'dist',
+  webDir: 'dist/browser',
   plugins: {
     SplashScreen: {
       launchShowDuration: 0,

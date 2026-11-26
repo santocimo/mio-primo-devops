@@ -1,3 +1,11 @@
+Options -Indexes
+
 <FilesMatch "^\.">
     Require all denied
 </FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteRule ^(?:config|inc|src|vendor|tests|migrations|scripts|backups|logs|docker)(?:/|$) - [F,L,NC]
+    RewriteRule ^(?:composer\.(?:json|lock)|phpunit\.xml|.*\.(?:md|sql|sh|txt))$ - [F,L,NC]
+</IfModule>

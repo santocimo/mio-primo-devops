@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { CanActivate, Router, UrlTree } from '@angular/router';
+import { Router, UrlTree } from '@angular/router';
 import { ToastController } from '@ionic/angular';
 import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
@@ -10,7 +10,7 @@ import { LanguageService } from '../i18n/language.service';
 @Injectable({
   providedIn: 'root',
 })
-export class UsersGuard implements CanActivate {
+export class UsersGuard  {
   constructor(
     private authService: AuthService,
     private api: ApiService,

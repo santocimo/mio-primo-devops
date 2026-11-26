@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { AlertController, NavController, ToastController, ViewWillEnter } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
 import { AuthService } from '../../services/auth.service';
@@ -9,9 +9,11 @@ import { takeUntil } from 'rxjs/operators';
 import { formatDateTimeInTimeZone } from '../../utils/local-time';
 
 @Component({
-  selector: 'app-appointments',
-  templateUrl: './appointments.page.html',
-  styleUrls: ['./appointments.page.scss'],
+    selector: 'app-appointments',
+    templateUrl: './appointments.page.html',
+    styleUrls: ['./appointments.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AppointmentsPage implements OnInit, OnDestroy, ViewWillEnter {
   appointments: Appointment[] = [];

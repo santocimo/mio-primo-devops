@@ -5,24 +5,26 @@
     </ion-buttons>
     <ion-title>{{ 'gym.title' | translate }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button *ngIf="!editing && gym && canEditActivity" (click)="startEdit()" [attr.aria-label]="'gym.editAria' | translate">
-        <ion-icon slot="icon-only" name="create-outline"></ion-icon>
-      </ion-button>
-      <ng-container *ngIf="editing">
+      @if (!editing && gym && canEditActivity) {
+        <ion-button (click)="startEdit()" [attr.aria-label]="'gym.editAria' | translate">
+          <ion-icon slot="icon-only" name="create-outline"></ion-icon>
+        </ion-button>
+      }
+      @if (editing) {
         <ion-button (click)="cancelEdit()" [disabled]="saving" [attr.aria-label]="'gym.cancel' | translate">
           <ion-icon slot="icon-only" name="close-outline"></ion-icon>
         </ion-button>
         <ion-button (click)="save()" [disabled]="saving || !canSave()" [attr.aria-label]="'gym.saveAria' | translate">
           <ion-icon slot="icon-only" name="checkmark-outline"></ion-icon>
         </ion-button>
-      </ng-container>
+      }
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content class="gym-content">
   <div class="page-shell">
-    <ng-container *ngIf="!loading && gym; else loadingOrEmpty">
+    @if (!loading && gym) {
       <section class="page-hero contacts-hero">
         <div class="hero-kicker">
           <ion-icon name="business-outline"></ion-icon>
@@ -37,7 +39,6 @@
           </div>
         </div>
       </section>
-
       <section class="section-card gym-profile-card">
         <div class="section-title-row">
           <div>
@@ -46,94 +47,114 @@
           </div>
           <span class="pill-badge">{{ categoryLabel() | translate }}</span>
         </div>
-
-        <div class="gym-profile-grid" *ngIf="!editing">
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.manager' | translate }}</span>
-            <strong>{{ managerName() }}</strong>
+        @if (!editing) {
+          <div class="gym-profile-grid">
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.manager' | translate }}</span>
+              <strong>{{ managerName() }}</strong>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.username' | translate }}</span>
+              <strong>{{ managerUsername() }}</strong>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.email' | translate }}</span>
+              <strong>{{ managerEmail() }}</strong>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.taxCode' | translate }}</span>
+              <strong>{{ managerTaxCode() || '—' }}</strong>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.address' | translate }}</span>
+              <strong>{{ gym.address || '—' }}</strong>
+              <small>{{ gym.city || '' }}</small>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.phone' | translate }}</span>
+              <strong>{{ gym.phone || '—' }}</strong>
+            </div>
+            <div class="gym-profile-item">
+              <span class="profile-label">{{ 'gym.activityName' | translate }}</span>
+              <strong>{{ businessActivity() | translate }}</strong>
+            </div>
           </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.username' | translate }}</span>
-            <strong>{{ managerUsername() }}</strong>
+        }
+        @if (editing) {
+          <div class="gym-edit-grid">
+            <ion-input [label]="'gym.name' | translate" labelPlacement="stacked" maxlength="150" [(ngModel)]="formData.name"></ion-input>
+            <ion-select [label]="'gym.category' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.category">
+              @for (category of categories; track category) {
+                <ion-select-option [value]="category.value">{{ category.label | translate }}</ion-select-option>
+              }
+            </ion-select>
+            <ion-input [label]="'gym.activityName' | translate" labelPlacement="stacked" maxlength="150" [(ngModel)]="formData.activity_name"></ion-input>
+            <ion-input [label]="'gym.managerName' | translate" labelPlacement="stacked" maxlength="160" [(ngModel)]="formData.manager_name" [readonly]="!canEditManager()"></ion-input>
+            <ion-input [label]="'gym.managerEmail' | translate" labelPlacement="stacked" type="email" maxlength="255" [(ngModel)]="formData.manager_email" [readonly]="!canEditManager()"></ion-input>
+            <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" maxlength="24" [(ngModel)]="formData.manager_cf" [readonly]="!canEditManager()"></ion-input>
+            <ion-input [label]="'gym.address' | translate" labelPlacement="stacked" maxlength="200" [(ngModel)]="formData.address"></ion-input>
+            <ion-input [label]="'gym.city' | translate" labelPlacement="stacked" maxlength="120" [(ngModel)]="formData.city"></ion-input>
+            <ion-input [label]="'gym.phone' | translate" labelPlacement="stacked" type="tel" maxlength="30" [(ngModel)]="formData.phone"></ion-input>
+            <div class="readonly-field">
+              <span class="profile-label">{{ 'gym.username' | translate }}</span>
+              <strong>{{ managerUsername() }}</strong>
+            </div>
           </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.email' | translate }}</span>
-            <strong>{{ managerEmail() }}</strong>
+        }
+        @if (editing && validationMessage()) {
+          <p class="gym-validation-note">{{ validationMessage() | translate }}</p>
+        }
+        @if (editing && !canEditManager()) {
+          <p class="section-note">{{ 'gym.managerReadonly' | translate }}</p>
+        }
+        @if (editing) {
+          <div class="gym-edit-actions">
+            <ion-button fill="clear" color="medium" (click)="cancelEdit()" [disabled]="saving">{{ 'gym.cancel' | translate }}</ion-button>
+            <ion-button color="primary" (click)="save()" [disabled]="saving || !canSave()">
+              <ion-icon slot="start" name="save-outline"></ion-icon>
+              {{ (saving ? 'gym.saving' : 'gym.save') | translate }}
+            </ion-button>
           </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.taxCode' | translate }}</span>
-            <strong>{{ managerTaxCode() || '—' }}</strong>
-          </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.address' | translate }}</span>
-            <strong>{{ gym.address || '—' }}</strong>
-            <small>{{ gym.city || '' }}</small>
-          </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.phone' | translate }}</span>
-            <strong>{{ gym.phone || '—' }}</strong>
-          </div>
-          <div class="gym-profile-item">
-            <span class="profile-label">{{ 'gym.activityName' | translate }}</span>
-            <strong>{{ businessActivity() | translate }}</strong>
-          </div>
-        </div>
-
-        <div class="gym-edit-grid" *ngIf="editing">
-          <ion-input [label]="'gym.name' | translate" labelPlacement="stacked" maxlength="150" [(ngModel)]="formData.name"></ion-input>
-          <ion-select [label]="'gym.category' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.category">
-            <ion-select-option *ngFor="let category of categories" [value]="category.value">{{ category.label | translate }}</ion-select-option>
-          </ion-select>
-          <ion-input [label]="'gym.activityName' | translate" labelPlacement="stacked" maxlength="150" [(ngModel)]="formData.activity_name"></ion-input>
-          <ion-input [label]="'gym.managerName' | translate" labelPlacement="stacked" maxlength="160" [(ngModel)]="formData.manager_name" [readonly]="!canEditManager()"></ion-input>
-          <ion-input [label]="'gym.managerEmail' | translate" labelPlacement="stacked" type="email" maxlength="255" [(ngModel)]="formData.manager_email" [readonly]="!canEditManager()"></ion-input>
-          <ion-input [label]="'gym.taxCode' | translate" labelPlacement="stacked" maxlength="24" [(ngModel)]="formData.manager_cf" [readonly]="!canEditManager()"></ion-input>
-          <ion-input [label]="'gym.address' | translate" labelPlacement="stacked" maxlength="200" [(ngModel)]="formData.address"></ion-input>
-          <ion-input [label]="'gym.city' | translate" labelPlacement="stacked" maxlength="120" [(ngModel)]="formData.city"></ion-input>
-          <ion-input [label]="'gym.phone' | translate" labelPlacement="stacked" type="tel" maxlength="30" [(ngModel)]="formData.phone"></ion-input>
-          <div class="readonly-field">
-            <span class="profile-label">{{ 'gym.username' | translate }}</span>
-            <strong>{{ managerUsername() }}</strong>
-          </div>
-        </div>
-
-        <p class="gym-validation-note" *ngIf="editing && validationMessage()">{{ validationMessage() | translate }}</p>
-        <p class="section-note" *ngIf="editing && !canEditManager()">{{ 'gym.managerReadonly' | translate }}</p>
-
-        <div class="gym-edit-actions" *ngIf="editing">
-          <ion-button fill="clear" color="medium" (click)="cancelEdit()" [disabled]="saving">{{ 'gym.cancel' | translate }}</ion-button>
-          <ion-button color="primary" (click)="save()" [disabled]="saving || !canSave()">
-            <ion-icon slot="start" name="save-outline"></ion-icon>
-            {{ (saving ? 'gym.saving' : 'gym.save') | translate }}
-          </ion-button>
-        </div>
+        }
       </section>
+      @if (!editing) {
+        <section class="section-card gym-profile-card">
+          <h2 class="section-title">{{ 'gym.operators' | translate }}</h2>
+          @if (usersLoadError) {
+            <p class="section-note" role="alert">{{ 'gym.usersLoadError' | translate }}</p>
+          }
+          @if (!usersLoadError && operators.length === 0) {
+            <p class="section-note">{{ 'gym.noOperators' | translate }}</p>
+          }
+          @if (operators.length > 0) {
+            <div class="gym-profile-grid">
+              @for (operator of operators; track operator) {
+                <div class="gym-profile-item">
+                  <span class="profile-label">{{ 'gym.operator' | translate }}</span>
+                  <strong>{{ operator.name || operator.username }}</strong>
+                  <span>{{ operator.username }}</span>
+                  <small>{{ operator.email || '—' }}</small>
+                  <small>{{ 'gym.taxCode' | translate }}: {{ operator.tax_code || '—' }}</small>
+                </div>
+              }
+            </div>
+          }
+        </section>
+      }
+    } @else {
+      @if (loading) {
+        <section class="section-card gym-status-card">
+          <ion-skeleton-text animated style="width: 42%; height: 18px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 75%; height: 30px;"></ion-skeleton-text>
+          <ion-skeleton-text animated style="width: 100%; height: 180px; margin-top: 20px;"></ion-skeleton-text>
+        </section>
+      }
+      @if (!loading) {
+        <section class="section-card gym-status-card">
+          <p>{{ (usersLoadError ? 'gym.loadError' : 'gym.noActivity') | translate }}</p>
+        </section>
+      }
+    }
 
-      <section class="section-card gym-profile-card" *ngIf="!editing">
-        <h2 class="section-title">{{ 'gym.operators' | translate }}</h2>
-        <p class="section-note" *ngIf="usersLoadError" role="alert">{{ 'gym.usersLoadError' | translate }}</p>
-        <p class="section-note" *ngIf="!usersLoadError && operators.length === 0">{{ 'gym.noOperators' | translate }}</p>
-        <div class="gym-profile-grid" *ngIf="operators.length > 0">
-          <div class="gym-profile-item" *ngFor="let operator of operators">
-            <span class="profile-label">{{ 'gym.operator' | translate }}</span>
-            <strong>{{ operator.name || operator.username }}</strong>
-            <span>{{ operator.username }}</span>
-            <small>{{ operator.email || '—' }}</small>
-            <small>{{ 'gym.taxCode' | translate }}: {{ operator.tax_code || '—' }}</small>
-          </div>
-        </div>
-      </section>
-    </ng-container>
-
-    <ng-template #loadingOrEmpty>
-      <section class="section-card gym-status-card" *ngIf="loading">
-        <ion-skeleton-text animated style="width: 42%; height: 18px;"></ion-skeleton-text>
-        <ion-skeleton-text animated style="width: 75%; height: 30px;"></ion-skeleton-text>
-        <ion-skeleton-text animated style="width: 100%; height: 180px; margin-top: 20px;"></ion-skeleton-text>
-      </section>
-      <section class="section-card gym-status-card" *ngIf="!loading">
-        <p>{{ (usersLoadError ? 'gym.loadError' : 'gym.noActivity') | translate }}</p>
-      </section>
-    </ng-template>
   </div>
 </ion-content>

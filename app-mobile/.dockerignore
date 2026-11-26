@@ -1,0 +1,9 @@
+**
+!/angular.json
+!/nginx.conf
+!/package.json
+!/package-lock.json
+!/src
+!/src/**
+!/tsconfig.app.json
+!/tsconfig.json

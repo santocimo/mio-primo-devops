@@ -41,9 +41,13 @@
         type="submit"
         [disabled]="loginForm.invalid || loading"
         class="login-button"
-      >
-        <span *ngIf="!loading">{{ 'login.submit' | translate }}</span>
-        <ion-spinner *ngIf="loading" name="crescent"></ion-spinner>
+        >
+        @if (!loading) {
+          <span>{{ 'login.submit' | translate }}</span>
+        }
+        @if (loading) {
+          <ion-spinner name="crescent"></ion-spinner>
+        }
       </ion-button>
 
     </form>

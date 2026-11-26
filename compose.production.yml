@@ -1,0 +1,111 @@
+name: businessregistry-production
+
+services:
+  database:
+    image: mariadb:11.4
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:?Set DB_NAME}
+      MARIADB_USER: ${DB_USER:?Set DB_USER}
+      MARIADB_PASSWORD_FILE: /run/secrets/db_app_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/db_root_password
+    secrets:
+      - db_app_password
+      - db_root_password
+    volumes:
+      - production_db_data:/var/lib/mysql
+    networks:
+      - data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - MYSQL_PWD="$$(cat /run/secrets/db_root_password)" mariadb-admin ping --host=127.0.0.1 --user=root --silent
+      timeout: 10s
+      retries: 10
+      interval: 10s
+      start_period: 30s
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      APP_URL: https://${APP_DOMAIN:?Set APP_DOMAIN}
+      APP_FRONTEND_URL: https://${APP_DOMAIN:?Set APP_DOMAIN}
+      APP_TOKEN_SECRET_FILE: /run/secrets/app_token_secret
+      ADMIN_INITIAL_PASSWORD_FILE: /run/secrets/admin_initial_password
+      DB_HOST: database
+      DB_PORT: "3306"
+      DB_NAME: ${DB_NAME:?Set DB_NAME}
+      DB_USER: ${DB_USER:?Set DB_USER}
+      DB_PASSWORD_FILE: /run/secrets/db_app_password
+      CSRF_PROTECTION: "true"
+      LOG_LEVEL: warning
+      LOG_CHANNEL: file
+    secrets:
+      - admin_initial_password
+      - app_token_secret
+      - db_app_password
+    expose:
+      - "80"
+    networks:
+      - app
+      - data
+    depends_on:
+      database:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./app-mobile
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "80"
+    networks:
+      - edge
+      - app
+    depends_on:
+      - backend
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?Set APP_DOMAIN}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - edge
+    depends_on:
+      - frontend
+
+secrets:
+  admin_initial_password:
+    file: ${ADMIN_INITIAL_PASSWORD_FILE:?Set ADMIN_INITIAL_PASSWORD_FILE}
+  app_token_secret:
+    file: ${APP_TOKEN_SECRET_FILE:?Set APP_TOKEN_SECRET_FILE}
+  db_app_password:
+    file: ${DB_APP_PASSWORD_FILE:?Set DB_APP_PASSWORD_FILE}
+  db_root_password:
+    file: ${DB_ROOT_PASSWORD_FILE:?Set DB_ROOT_PASSWORD_FILE}
+
+volumes:
+  production_db_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  edge:
+  app:
+  data:
+    internal: true

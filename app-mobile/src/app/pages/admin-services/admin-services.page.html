@@ -23,106 +23,131 @@
       <p class="hero-subtitle">{{ 'services.heroDescription' | translate }}</p>
     </section>
 
-  <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
-    <ion-refresher-content></ion-refresher-content>
-  </ion-refresher>
+    <ion-refresher slot="fixed" (ionRefresh)="load(); $event.target.complete()">
+      <ion-refresher-content></ion-refresher-content>
+    </ion-refresher>
 
-  <div class="skeleton-stack" *ngIf="loading">
-    <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px" *ngFor="let i of [1,2,3]"></ion-skeleton-text>
-  </div>
+    @if (loading) {
+      <div class="skeleton-stack">
+        @for (i of [1,2,3]; track i) {
+          <ion-skeleton-text animated style="width:100%; height:60px; margin-bottom:8px"></ion-skeleton-text>
+        }
+      </div>
+    }
 
-  <section class="section-card" *ngIf="!loading && services.length > 0">
-    <div class="section-title-row">
-      <div>
+    @if (!loading && services.length > 0) {
+      <section class="section-card">
+        <div class="section-title-row">
+          <div>
             <h2 class="section-title">{{ 'services.active' | translate }}</h2>
             <p class="section-note">{{ 'services.cardHint' | translate }}</p>
-      </div>
-          <span class="pill-badge">{{ 'services.count' | translate:{count: services.length} }}</span>
-    </div>
-
-    <div class="entity-list">
-      <article class="entity-row" *ngFor="let s of services">
-        <div class="entity-icon"><ion-icon name="ribbon-outline"></ion-icon></div>
-        <div class="entity-body">
-          <h3 class="entity-title">{{ s.name }}</h3>
-          <div class="entity-tags">
-            <span class="pill-badge">{{ s.gym_name }}</span>
-            <span class="pill-badge">{{ s.duration_minutes }} min</span>
-            <span class="pill-badge">{{ 'services.capacity' | translate:{capacity: s.capacity} }}</span>
-            <span class="pill-badge" *ngIf="s.price != null">€ {{ s.price }}</span>
-            <span class="pill-badge" *ngIf="s.provider_name || s.provider_type">{{ s.provider_name || ('services.collaborator' | translate) }} · {{ providerTypeLabel(s.provider_type) | translate }}</span>
           </div>
-          <div class="entity-subline">{{ categoryLabel(s.category) | translate }}<span *ngIf="s.description"> · {{ s.description }}</span></div>
+          <span class="pill-badge">{{ 'services.count' | translate:{count: services.length} }}</span>
         </div>
-        <div class="entity-actions">
-          <ion-button fill="clear" (click)="openEdit(s)">
-            <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
-          </ion-button>
-          <ion-button fill="clear" color="danger" (click)="del(s)">
-            <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
-          </ion-button>
+        <div class="entity-list">
+          @for (s of services; track s) {
+            <article class="entity-row">
+              <div class="entity-icon"><ion-icon name="ribbon-outline"></ion-icon></div>
+              <div class="entity-body">
+                <h3 class="entity-title">{{ s.name }}</h3>
+                <div class="entity-tags">
+                  <span class="pill-badge">{{ s.gym_name }}</span>
+                  <span class="pill-badge">{{ s.duration_minutes }} min</span>
+                  <span class="pill-badge">{{ 'services.capacity' | translate:{capacity: s.capacity} }}</span>
+                  @if (s.price != null) {
+                    <span class="pill-badge">€ {{ s.price }}</span>
+                  }
+                  @if (s.provider_name || s.provider_type) {
+                    <span class="pill-badge">{{ s.provider_name || ('services.collaborator' | translate) }} · {{ providerTypeLabel(s.provider_type) | translate }}</span>
+                  }
+                </div>
+                <div class="entity-subline">{{ categoryLabel(s.category) | translate }}@if (s.description) {
+                  <span> · {{ s.description }}</span>
+                }</div>
+              </div>
+              <div class="entity-actions">
+                <ion-button fill="clear" (click)="openEdit(s)">
+                  <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" color="danger" (click)="del(s)">
+                  <ion-icon slot="icon-only" name="trash-outline"></ion-icon>
+                </ion-button>
+              </div>
+            </article>
+          }
         </div>
-      </article>
-    </div>
-  </section>
+      </section>
+    }
 
-  <div class="empty-state" *ngIf="!loading && services.length === 0">
-    <ion-icon name="list-outline"></ion-icon>
-    <div class="empty-title">{{ 'services.empty' | translate }}</div>
-    <p class="empty-copy">{{ 'services.emptyDescription' | translate }}</p>
-  </div>
+    @if (!loading && services.length === 0) {
+      <div class="empty-state">
+        <ion-icon name="list-outline"></ion-icon>
+        <div class="empty-title">{{ 'services.empty' | translate }}</div>
+        <p class="empty-copy">{{ 'services.emptyDescription' | translate }}</p>
+      </div>
+    }
   </div>
 
   <!-- Modal form custom (piu stabile su webview) -->
-  <div class="modal-overlay" *ngIf="showForm" (click)="closeForm()"></div>
-  <div class="modal-sheet" *ngIf="showForm">
-    <ion-header>
-      <ion-toolbar>
-        <ion-title>{{ (editingService ? 'services.edit' : 'services.add') | translate }}</ion-title>
-        <ion-buttons slot="end">
-          <ion-button (click)="closeForm()">{{ 'services.close' | translate }}</ion-button>
-        </ion-buttons>
-      </ion-toolbar>
-    </ion-header>
-    <div class="modal-body">
-      <div class="sheet-form">
-      <ion-item>
-        <ion-input [label]="'services.name' | translate" labelPlacement="stacked" [(ngModel)]="formData.name" [placeholder]="'services.namePlaceholder' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'services.location' | translate" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover">
-          <ion-select-option *ngFor="let g of gyms" [value]="g.id">{{ g.name }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'services.category' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.category">
-          <ion-select-option *ngFor="let category of serviceCategories" [value]="category.value">{{ category.label | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'services.provider' | translate" labelPlacement="stacked" [(ngModel)]="formData.provider_name" [placeholder]="'services.providerPlaceholder' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'services.providerType' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.provider_type">
-          <ion-select-option *ngFor="let option of providerTypes" [value]="option.value">{{ option.label | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'services.duration' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.duration_minutes"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'services.capacityField' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.capacity"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'services.price' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.price" [placeholder]="'services.optional' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-textarea [label]="'services.description' | translate" labelPlacement="stacked" [(ngModel)]="formData.description" rows="2"></ion-textarea>
-      </ion-item>
-      <div class="ion-padding-top">
-        <ion-button expand="block" (click)="save()">{{ 'services.save' | translate }}</ion-button>
-      </div>
+  @if (showForm) {
+    <div class="modal-overlay" (click)="closeForm()"></div>
+  }
+  @if (showForm) {
+    <div class="modal-sheet">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>{{ (editingService ? 'services.edit' : 'services.add') | translate }}</ion-title>
+          <ion-buttons slot="end">
+            <ion-button (click)="closeForm()">{{ 'services.close' | translate }}</ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <div class="modal-body">
+        <div class="sheet-form">
+          <ion-item>
+            <ion-input [label]="'services.name' | translate" labelPlacement="stacked" [(ngModel)]="formData.name" [placeholder]="'services.namePlaceholder' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-select [label]="'services.location' | translate" labelPlacement="stacked" [(ngModel)]="formData.gym_id" interface="popover">
+              @for (g of gyms; track g) {
+                <ion-select-option [value]="g.id">{{ g.name }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-select [label]="'services.category' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.category">
+              @for (category of serviceCategories; track category) {
+                <ion-select-option [value]="category.value">{{ category.label | translate }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'services.provider' | translate" labelPlacement="stacked" [(ngModel)]="formData.provider_name" [placeholder]="'services.providerPlaceholder' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-select [label]="'services.providerType' | translate" labelPlacement="stacked" interface="popover" [(ngModel)]="formData.provider_type">
+              @for (option of providerTypes; track option) {
+                <ion-select-option [value]="option.value">{{ option.label | translate }}</ion-select-option>
+              }
+            </ion-select>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'services.duration' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.duration_minutes"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'services.capacityField' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.capacity"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-input [label]="'services.price' | translate" labelPlacement="stacked" type="number" [(ngModel)]="formData.price" [placeholder]="'services.optional' | translate"></ion-input>
+          </ion-item>
+          <ion-item>
+            <ion-textarea [label]="'services.description' | translate" labelPlacement="stacked" [(ngModel)]="formData.description" rows="2"></ion-textarea>
+          </ion-item>
+          <div class="ion-padding-top">
+            <ion-button expand="block" (click)="save()">{{ 'services.save' | translate }}</ion-button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+  }
 </ion-content>

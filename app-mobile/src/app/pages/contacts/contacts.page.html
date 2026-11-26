@@ -5,186 +5,210 @@
     </ion-buttons>
     <ion-title>{{ contactLabel('title') | translate }}</ion-title>
     <ion-buttons slot="end">
-      <ion-button *ngIf="isAdminUser" (click)="exportCsv()" [disabled]="exporting">
-        <ion-icon slot="icon-only" name="download-outline"></ion-icon>
-      </ion-button>
+      @if (isAdminUser) {
+        <ion-button (click)="exportCsv()" [disabled]="exporting">
+          <ion-icon slot="icon-only" name="download-outline"></ion-icon>
+        </ion-button>
+      }
       <ion-button (click)="openAdd()">
         <ion-icon slot="icon-only" name="add-outline"></ion-icon>
       </ion-button>
     </ion-buttons>
   </ion-toolbar>
   <!-- Sede attiva -->
-  <ion-toolbar *ngIf="selectedGymName" color="light" style="--min-height:32px;">
-  <ion-title size="small" style="font-size:0.78rem; color:var(--ion-color-medium); padding:0 16px;">
-      <ion-icon name="location-outline" style="vertical-align:middle; margin-right:4px;"></ion-icon>
-      {{ selectedGymName }}
-    </ion-title>
-  </ion-toolbar>
+  @if (selectedGymName) {
+    <ion-toolbar color="light" style="--min-height:32px;">
+      <ion-title size="small" style="font-size:0.78rem; color:var(--ion-color-medium); padding:0 16px;">
+        <ion-icon name="location-outline" style="vertical-align:middle; margin-right:4px;"></ion-icon>
+        {{ selectedGymName }}
+      </ion-title>
+    </ion-toolbar>
+  }
 </ion-header>
 
 <ion-content class="contacts-content">
   <div class="page-shell">
-    <section class="page-hero contacts-hero" *ngIf="isAdminUser">
-      <div class="hero-kicker">
-        <ion-icon name="people-outline"></ion-icon>
-        <span>{{ contactLabel(isAdminUser ? 'adminKicker' : 'operatorKicker') | translate }}</span>
-      </div>
-      <h1 class="hero-title">{{ contactLabel(isAdminUser ? 'adminHeading' : 'operatorHeading') | translate }}</h1>
-      <p class="hero-subtitle">{{ contactLabel(isAdminUser ? 'adminDescription' : 'operatorDescription') | translate }}</p>
-      <div class="hero-meta-row">
-        <div class="hero-chip" *ngIf="selectedGymName">
-          <ion-icon name="location-outline"></ion-icon>
-          <span>{{ selectedGymName }}</span>
+    @if (isAdminUser) {
+      <section class="page-hero contacts-hero">
+        <div class="hero-kicker">
+          <ion-icon name="people-outline"></ion-icon>
+          <span>{{ contactLabel(isAdminUser ? 'adminKicker' : 'operatorKicker') | translate }}</span>
         </div>
-        <div class="hero-chip" *ngIf="isAdminUser">
-          <ion-icon name="download-outline"></ion-icon>
-          <span>{{ 'contacts.exportAvailable' | translate }}</span>
+        <h1 class="hero-title">{{ contactLabel(isAdminUser ? 'adminHeading' : 'operatorHeading') | translate }}</h1>
+        <p class="hero-subtitle">{{ contactLabel(isAdminUser ? 'adminDescription' : 'operatorDescription') | translate }}</p>
+        <div class="hero-meta-row">
+          @if (selectedGymName) {
+            <div class="hero-chip">
+              <ion-icon name="location-outline"></ion-icon>
+              <span>{{ selectedGymName }}</span>
+            </div>
+          }
+          @if (isAdminUser) {
+            <div class="hero-chip">
+              <ion-icon name="download-outline"></ion-icon>
+              <span>{{ 'contacts.exportAvailable' | translate }}</span>
+            </div>
+          }
         </div>
-      </div>
-    </section>
+      </section>
+    }
 
-  <!-- Barra ricerca -->
-  <div class="search-bar">
-    <ion-searchbar
-      [formControl]="searchCtrl"
-      [placeholder]="'contacts.searchPlaceholder' | translate"
-      animated
-      class="search-input">
-    </ion-searchbar>
-  </div>
-
-  <!-- Skeleton loading -->
-  <ng-container *ngIf="loading">
-    <ion-skeleton-text animated style="height:56px; border-radius:10px; margin:8px 16px;" *ngFor="let i of [1,2,3,4]"></ion-skeleton-text>
-  </ng-container>
-
-  <!-- Tabella iscritti (stile web) -->
-  <div class="table-wrap" *ngIf="!loading">
-    <div *ngIf="contacts.length === 0" class="no-data ion-text-center ion-padding">
-      <ion-icon name="people-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
-      <p>{{ contactLabel('notFound') | translate }}</p>
+    <!-- Barra ricerca -->
+    <div class="search-bar">
+      <ion-searchbar
+        [formControl]="searchCtrl"
+        [placeholder]="'contacts.searchPlaceholder' | translate"
+        animated
+        class="search-input">
+      </ion-searchbar>
     </div>
 
-    <table *ngIf="contacts.length > 0" class="contacts-table">
-      <thead>
-        <tr>
-          <th>{{ 'contacts.tableName' | translate }}</th>
-          <th class="hide-sm">{{ 'contacts.tableTaxCode' | translate }}</th>
-          <th class="hide-sm">{{ 'contacts.tableBirth' | translate }}</th>
-          <th class="hide-md">{{ 'contacts.tableCity' | translate }}</th>
-          <th class="hide-md">{{ 'contacts.tableAddress' | translate }}</th>
-          <th class="hide-sm">{{ 'contacts.tablePhone' | translate }}</th>
-          <th class="hide-md">{{ 'contacts.tableGender' | translate }}</th>
-          <th class="text-end">{{ 'contacts.tableActions' | translate }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr *ngFor="let c of contacts">
-          <td>
-            <div class="contact-name-cell">
-              <span class="name">{{ c.nome }} {{ c.cognome }}</span>
-              <span class="cf-badge show-sm">{{ c.codice_fiscale }}</span>
-            </div>
-          </td>
-          <td class="hide-sm"><span class="cf-tag">{{ c.codice_fiscale }}</span></td>
-          <td class="hide-sm">{{ formatDate(c.data_nascita) }}</td>
-          <td class="hide-md">{{ c.luogo_nascita }}</td>
-          <td class="hide-md">{{ c.indirizzo }}</td>
-          <td class="hide-sm">{{ c.recapito }}</td>
-          <td class="hide-md">{{ c.sesso }}</td>
-          <td class="text-end actions-cell">
-            <ion-button fill="clear" size="small" (click)="openEdit(c)">
-              <ion-icon name="pencil-outline" color="primary"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" size="small" (click)="confirmDelete(c)">
-              <ion-icon name="trash-outline" color="danger"></ion-icon>
-            </ion-button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
+    <!-- Skeleton loading -->
+    @if (loading) {
+      @for (i of [1,2,3,4]; track i) {
+        <ion-skeleton-text animated style="height:56px; border-radius:10px; margin:8px 16px;"></ion-skeleton-text>
+      }
+    }
+
+    <!-- Tabella iscritti (stile web) -->
+    @if (!loading) {
+      <div class="table-wrap">
+        @if (contacts.length === 0) {
+          <div class="no-data ion-text-center ion-padding">
+            <ion-icon name="people-outline" style="font-size:48px; color:var(--ion-color-medium)"></ion-icon>
+            <p>{{ contactLabel('notFound') | translate }}</p>
+          </div>
+        }
+        @if (contacts.length > 0) {
+          <table class="contacts-table">
+            <thead>
+              <tr>
+                <th>{{ 'contacts.tableName' | translate }}</th>
+                <th class="hide-sm">{{ 'contacts.tableTaxCode' | translate }}</th>
+                <th class="hide-sm">{{ 'contacts.tableBirth' | translate }}</th>
+                <th class="hide-md">{{ 'contacts.tableCity' | translate }}</th>
+                <th class="hide-md">{{ 'contacts.tableAddress' | translate }}</th>
+                <th class="hide-sm">{{ 'contacts.tablePhone' | translate }}</th>
+                <th class="hide-md">{{ 'contacts.tableGender' | translate }}</th>
+                <th class="text-end">{{ 'contacts.tableActions' | translate }}</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (c of contacts; track c) {
+                <tr>
+                  <td>
+                    <div class="contact-name-cell">
+                      <span class="name">{{ c.nome }} {{ c.cognome }}</span>
+                      <span class="cf-badge show-sm">{{ c.codice_fiscale }}</span>
+                    </div>
+                  </td>
+                  <td class="hide-sm"><span class="cf-tag">{{ c.codice_fiscale }}</span></td>
+                  <td class="hide-sm">{{ formatDate(c.data_nascita) }}</td>
+                  <td class="hide-md">{{ c.luogo_nascita }}</td>
+                  <td class="hide-md">{{ c.indirizzo }}</td>
+                  <td class="hide-sm">{{ c.recapito }}</td>
+                  <td class="hide-md">{{ c.sesso }}</td>
+                  <td class="text-end actions-cell">
+                    <ion-button fill="clear" size="small" (click)="openEdit(c)">
+                      <ion-icon name="pencil-outline" color="primary"></ion-icon>
+                    </ion-button>
+                    <ion-button fill="clear" size="small" (click)="confirmDelete(c)">
+                      <ion-icon name="trash-outline" color="danger"></ion-icon>
+                    </ion-button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    }
   </div>
 
 </ion-content>
 
 <!-- Overlay nuovo/modifica contatto -->
-<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()"></div>
-<div class="modal-sheet" *ngIf="showModal">
-  <ion-header>
-    <ion-toolbar color="primary">
-      <ion-title>{{ contactLabel(editingContact ? 'edit' : 'add') | translate }}</ion-title>
-      <ion-buttons slot="end">
-        <ion-button (click)="closeModal()">{{ 'contacts.close' | translate }}</ion-button>
-      </ion-buttons>
-    </ion-toolbar>
-  </ion-header>
-  <div class="modal-body">
-
-    <p class="data-minimization-note">{{ 'contacts.dataMinimization' | translate }}</p>
-    <ion-list>
-      <ion-item>
-        <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.firstName' | translate" required></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.lastName' | translate" required></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionChange)="onFormFieldChange()"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover">
-          <ion-select-option value="M">{{ 'contacts.male' | translate }}</ion-select-option>
-          <ion-select-option value="F">{{ 'contacts.female' | translate }}</ion-select-option>
-        </ion-select>
-      </ion-item>
-
-      <ion-item>
-        <ion-input
-          [label]="'contacts.birthCity' | translate"
-          labelPlacement="stacked"
-          [value]="comuneSearch"
-          (ionInput)="onComuneInput($event)"
-          [placeholder]="'contacts.searchCity' | translate">
-        </ion-input>
-      </ion-item>
-      <p class="city-search-hint">{{ 'contacts.citySearchHint' | translate }}</p>
-      <div class="suggestions" *ngIf="showSuggestions" role="listbox" [attr.aria-label]="'contacts.birthCity' | translate">
-        <button
-          type="button"
-          class="suggestion-item"
-          role="option"
-          *ngFor="let comune of comuniSuggestions"
-          (click)="selectComune(comune)">
-          <span>{{ comune.value }}</span>
-          <small>{{ comune.label.substring(comune.value.length) }}</small>
-        </button>
+@if (showModal) {
+  <div class="modal-overlay" (click)="closeModal()"></div>
+}
+@if (showModal) {
+  <div class="modal-sheet">
+    <ion-header>
+      <ion-toolbar color="primary">
+        <ion-title>{{ contactLabel(editingContact ? 'edit' : 'add') | translate }}</ion-title>
+        <ion-buttons slot="end">
+          <ion-button (click)="closeModal()">{{ 'contacts.close' | translate }}</ion-button>
+        </ion-buttons>
+      </ion-toolbar>
+    </ion-header>
+    <div class="modal-body">
+      <p class="data-minimization-note">{{ 'contacts.dataMinimization' | translate }}</p>
+      <ion-list>
+        <ion-item>
+          <ion-input [label]="'contacts.firstName' | translate" labelPlacement="stacked" [(ngModel)]="formData.nome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.firstName' | translate" required></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input [label]="'contacts.lastName' | translate" labelPlacement="stacked" [(ngModel)]="formData.cognome" (ionInput)="onFormFieldChange()" [placeholder]="'contacts.lastName' | translate" required></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input [label]="'contacts.birthDate' | translate" labelPlacement="stacked" type="date" [(ngModel)]="formData.data_nascita" (ionChange)="onFormFieldChange()"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-select [label]="'contacts.gender' | translate" labelPlacement="stacked" [(ngModel)]="formData.sesso" (ionChange)="onFormFieldChange()" interface="popover">
+            <ion-select-option value="M">{{ 'contacts.male' | translate }}</ion-select-option>
+            <ion-select-option value="F">{{ 'contacts.female' | translate }}</ion-select-option>
+          </ion-select>
+        </ion-item>
+        <ion-item>
+          <ion-input
+            [label]="'contacts.birthCity' | translate"
+            labelPlacement="stacked"
+            [value]="comuneSearch"
+            (ionInput)="onComuneInput($event)"
+            [placeholder]="'contacts.searchCity' | translate">
+          </ion-input>
+        </ion-item>
+        <p class="city-search-hint">{{ 'contacts.citySearchHint' | translate }}</p>
+        @if (showSuggestions) {
+          <div class="suggestions" role="listbox" [attr.aria-label]="'contacts.birthCity' | translate">
+            @for (comune of comuniSuggestions; track comune) {
+              <button
+                type="button"
+                class="suggestion-item"
+                role="option"
+                (click)="selectComune(comune)">
+                <span>{{ comune.value }}</span>
+                <small>{{ comune.label.substring(comune.value.length) }}</small>
+              </button>
+            }
+          </div>
+        }
+        @if (citySearchFailed) {
+          <p class="city-search-message">{{ 'contacts.citySearchError' | translate }}</p>
+        }
+        <ion-item>
+          <ion-input [label]="'contacts.address' | translate" labelPlacement="stacked" [(ngModel)]="formData.indirizzo" [placeholder]="'contacts.addressPlaceholder' | translate"></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input [label]="'contacts.phone' | translate" labelPlacement="stacked" type="tel" [(ngModel)]="formData.recapito" placeholder="+39..."></ion-input>
+        </ion-item>
+        <ion-item>
+          <ion-input
+            [label]="'contacts.taxCode' | translate"
+            labelPlacement="stacked"
+            [(ngModel)]="formData.codice_fiscale"
+            (ionInput)="formData.codice_fiscale = ($any($event.detail).value ?? '').toUpperCase()"
+            [placeholder]="'contacts.manualTaxCode' | translate"
+            style="text-transform:uppercase;"
+            maxlength="16">
+          </ion-input>
+        </ion-item>
+      </ion-list>
+      <div class="ion-padding">
+        <ion-button expand="block" (click)="save()" [disabled]="!isFormValid()">
+          {{ (editingContact ? 'contacts.update' : 'contacts.save') | translate }}
+        </ion-button>
       </div>
-      <p class="city-search-message" *ngIf="citySearchFailed">{{ 'contacts.citySearchError' | translate }}</p>
-
-      <ion-item>
-        <ion-input [label]="'contacts.address' | translate" labelPlacement="stacked" [(ngModel)]="formData.indirizzo" [placeholder]="'contacts.addressPlaceholder' | translate"></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input [label]="'contacts.phone' | translate" labelPlacement="stacked" type="tel" [(ngModel)]="formData.recapito" placeholder="+39..."></ion-input>
-      </ion-item>
-      <ion-item>
-        <ion-input
-          [label]="'contacts.taxCode' | translate"
-          labelPlacement="stacked"
-          [(ngModel)]="formData.codice_fiscale"
-          (ionInput)="formData.codice_fiscale = ($any($event.detail).value ?? '').toUpperCase()"
-          [placeholder]="'contacts.manualTaxCode' | translate"
-          style="text-transform:uppercase;"
-          maxlength="16">
-        </ion-input>
-      </ion-item>
-    </ion-list>
-
-    <div class="ion-padding">
-      <ion-button expand="block" (click)="save()" [disabled]="!isFormValid()">
-        {{ (editingContact ? 'contacts.update' : 'contacts.save') | translate }}
-      </ion-button>
     </div>
   </div>
-</div>
+}

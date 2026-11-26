@@ -19,23 +19,32 @@
       <p class="hero-subtitle">{{ 'profile.accountDescription' | translate }}</p>
     </section>
 
-    <section class="section-card" *ngIf="subscriptionLoadError">
-      <p role="alert">{{ 'profile.subscriptionLoadError' | translate }}</p>
-    </section>
+    @if (subscriptionLoadError) {
+      <section class="section-card">
+        <p role="alert">{{ 'profile.subscriptionLoadError' | translate }}</p>
+      </section>
+    }
 
-    <section class="section-card" *ngIf="canManageSubscription && subscription">
-      <h2 class="section-title">{{ 'profile.subscription' | translate }}</h2>
-      <p *ngIf="subscription.auto_renew">{{ 'profile.subscriptionRenews' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
-      <p *ngIf="subscription.cancel_at_period_end">{{ 'profile.subscriptionEnds' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
-      <ion-button
-        *ngIf="subscription.auto_renew"
-        fill="outline"
-        color="danger"
-        [disabled]="managingSubscription"
-        (click)="cancelSubscription()">
-        {{ 'profile.cancelSubscriptionAction' | translate }}
-      </ion-button>
-    </section>
+    @if (canManageSubscription && subscription) {
+      <section class="section-card">
+        <h2 class="section-title">{{ 'profile.subscription' | translate }}</h2>
+        @if (subscription.auto_renew) {
+          <p>{{ 'profile.subscriptionRenews' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
+        }
+        @if (subscription.cancel_at_period_end) {
+          <p>{{ 'profile.subscriptionEnds' | translate:{date: subscription.expires_at | date:'mediumDate'} }}</p>
+        }
+        @if (subscription.auto_renew) {
+          <ion-button
+            fill="outline"
+            color="danger"
+            [disabled]="managingSubscription"
+            (click)="cancelSubscription()">
+            {{ 'profile.cancelSubscriptionAction' | translate }}
+          </ion-button>
+        }
+      </section>
+    }
 
     <section class="section-card">
       <h2 class="section-title">{{ 'profile.accountDetails' | translate }}</h2>
@@ -63,26 +72,40 @@
         </div>
       </div>
 
-      <div *ngIf="loading" class="profile-loading">
-        <ion-spinner name="crescent"></ion-spinner>
-      </div>
-      <div *ngIf="loadError" class="profile-error" role="alert">
-        <p>{{ 'profile.activitiesError' | translate }}</p>
-        <ion-button fill="outline" size="small" (click)="loadActivities()">{{ 'common.retry' | translate }}</ion-button>
-      </div>
-      <p *ngIf="!loading && !loadError && activities.length === 0">{{ 'profile.noActivities' | translate }}</p>
+      @if (loading) {
+        <div class="profile-loading">
+          <ion-spinner name="crescent"></ion-spinner>
+        </div>
+      }
+      @if (loadError) {
+        <div class="profile-error" role="alert">
+          <p>{{ 'profile.activitiesError' | translate }}</p>
+          <ion-button fill="outline" size="small" (click)="loadActivities()">{{ 'common.retry' | translate }}</ion-button>
+        </div>
+      }
+      @if (!loading && !loadError && activities.length === 0) {
+        <p>{{ 'profile.noActivities' | translate }}</p>
+      }
 
-      <div class="profile-activity-list" *ngIf="!loading && !loadError">
-        <article class="profile-activity" *ngFor="let activity of activities">
-          <ion-icon name="business-outline" aria-hidden="true"></ion-icon>
-          <div>
-            <strong>{{ activity.name }}</strong>
-            <span>{{ (activity.activity_name || categoryKey(activity)) | translate }}</span>
-            <small *ngIf="activity.city">{{ activity.city }}</small>
-          </div>
-          <ion-badge *ngIf="activity.category">{{ categoryKey(activity) | translate }}</ion-badge>
-        </article>
-      </div>
+      @if (!loading && !loadError) {
+        <div class="profile-activity-list">
+          @for (activity of activities; track activity.id) {
+            <article class="profile-activity">
+              <ion-icon name="business-outline" aria-hidden="true"></ion-icon>
+              <div>
+                <strong>{{ activity.name }}</strong>
+                <span>{{ (activity.activity_name || categoryKey(activity)) | translate }}</span>
+                @if (activity.city) {
+                  <small>{{ activity.city }}</small>
+                }
+              </div>
+              @if (activity.category) {
+                <ion-badge>{{ categoryKey(activity) | translate }}</ion-badge>
+              }
+            </article>
+          }
+        </div>
+      }
     </section>
 
     <section class="section-card profile-danger-zone">

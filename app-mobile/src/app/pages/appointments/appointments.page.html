@@ -27,75 +27,93 @@
       <ion-refresher-content></ion-refresher-content>
     </ion-refresher>
 
-    <section class="section-card appointments-card" *ngIf="loading">
-      <ion-skeleton-text animated style="width: 100%; height: 58px; margin-bottom: 10px;" *ngFor="let item of [1,2,3]"></ion-skeleton-text>
-    </section>
+    @if (loading) {
+      <section class="section-card appointments-card">
+        @for (item of [1,2,3]; track item) {
+          <ion-skeleton-text animated style="width: 100%; height: 58px; margin-bottom: 10px;"></ion-skeleton-text>
+        }
+      </section>
+    }
 
-    <section class="section-card appointments-card" *ngIf="!loading && appointments.length > 0">
-      <div class="section-title-row">
-        <div>
-          <h2 class="section-title">{{ 'appointments.current' | translate }}</h2>
-          <p class="section-note">{{ 'appointments.listHint' | translate }}</p>
+    @if (!loading && appointments.length > 0) {
+      <section class="section-card appointments-card">
+        <div class="section-title-row">
+          <div>
+            <h2 class="section-title">{{ 'appointments.current' | translate }}</h2>
+            <p class="section-note">{{ 'appointments.listHint' | translate }}</p>
+          </div>
+          <span class="pill-badge">{{ 'appointments.count' | translate:{count: appointments.length} }}</span>
         </div>
-        <span class="pill-badge">{{ 'appointments.count' | translate:{count: appointments.length} }}</span>
-      </div>
+        <div class="entity-list">
+          @for (appointment of appointments; track appointment) {
+            <article class="entity-row">
+              <div class="entity-icon"><ion-icon name="time-outline"></ion-icon></div>
+              <div class="entity-body">
+                <h3 class="entity-title">{{ appointment.customer_name }}</h3>
+                <div class="entity-tags">
+                  <span class="pill-badge">{{ appointment.service_name || ('appointments.service' | translate) }}</span>
+                  @if (appointment.service_provider_name) {
+                    <span class="pill-badge">{{ appointment.service_provider_name }} · {{ (appointment.service_provider_type === 'external' ? 'appointments.external' : 'appointments.internal') | translate }}</span>
+                  }
+                  @if (!isAdmin) {
+                    <span class="pill-badge">
+                      {{ appointment.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}
+                    </span>
+                  }
+                  @if (isAdmin) {
+                    @if (appointment.scheduled_timezone) {
+                      <span class="pill-badge">
+                        {{ 'appointments.italyTime' | translate }}:
+                        {{ formatAppointmentTime(appointment.scheduled_at, 'Europe/Rome') }}
+                      </span>
+                      <span class="pill-badge">
+                        {{ 'appointments.sourceLocalTime' | translate }}:
+                        {{ formatAppointmentTime(appointment.scheduled_at, appointment.scheduled_timezone) }}
+                      </span>
+                      <small>{{ appointment.scheduled_timezone }}</small>
+                    } @else {
+                      <span class="pill-badge">
+                        {{ 'appointments.legacyTimeUnknown' | translate }}: {{ appointment.scheduled_at }}
+                      </span>
+                    }
+                  }
+                  @if (appointment.gym_name) {
+                    <span class="pill-badge">{{ appointment.gym_name }}</span>
+                  }
+                </div>
+                <div class="entity-subline">
+                  <ion-badge [color]="statusColor(appointment.status)">{{ ('status.' + appointment.status) | translate }}</ion-badge>
+                  @if (appointment.notes) {
+                    <span> · {{ appointment.notes }}</span>
+                  }
+                </div>
+              </div>
+              @if (appointment.status !== 'cancelled' && appointment.status !== 'completed') {
+                <div class="entity-actions">
+                  <ion-button fill="clear" (click)="editAppointment(appointment)" [attr.aria-label]="'appointments.edit' | translate">
+                    <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
+                  </ion-button>
+                  <ion-button fill="clear" color="danger" (click)="cancelAppointment(appointment)" [attr.aria-label]="'appointments.cancelAria' | translate">
+                    <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
+                  </ion-button>
+                </div>
+              }
+            </article>
+          }
+        </div>
+      </section>
+    }
 
-      <div class="entity-list">
-        <article class="entity-row" *ngFor="let appointment of appointments">
-          <div class="entity-icon"><ion-icon name="time-outline"></ion-icon></div>
-          <div class="entity-body">
-            <h3 class="entity-title">{{ appointment.customer_name }}</h3>
-            <div class="entity-tags">
-              <span class="pill-badge">{{ appointment.service_name || ('appointments.service' | translate) }}</span>
-              <span class="pill-badge" *ngIf="appointment.service_provider_name">{{ appointment.service_provider_name }} · {{ (appointment.service_provider_type === 'external' ? 'appointments.external' : 'appointments.internal') | translate }}</span>
-              <span class="pill-badge" *ngIf="!isAdmin">
-                {{ appointment.scheduled_at | date:(language.currentLanguage === 'en' ? 'MMM d, y, h:mm a' : 'dd/MM/yyyy HH:mm') }}
-              </span>
-              <ng-container *ngIf="isAdmin">
-                <ng-container *ngIf="appointment.scheduled_timezone; else unknownAppointmentTime">
-                  <span class="pill-badge">
-                    {{ 'appointments.italyTime' | translate }}:
-                    {{ formatAppointmentTime(appointment.scheduled_at, 'Europe/Rome') }}
-                  </span>
-                  <span class="pill-badge">
-                    {{ 'appointments.sourceLocalTime' | translate }}:
-                    {{ formatAppointmentTime(appointment.scheduled_at, appointment.scheduled_timezone) }}
-                  </span>
-                  <small>{{ appointment.scheduled_timezone }}</small>
-                </ng-container>
-                <ng-template #unknownAppointmentTime>
-                  <span class="pill-badge">
-                    {{ 'appointments.legacyTimeUnknown' | translate }}: {{ appointment.scheduled_at }}
-                  </span>
-                </ng-template>
-              </ng-container>
-              <span class="pill-badge" *ngIf="appointment.gym_name">{{ appointment.gym_name }}</span>
-            </div>
-            <div class="entity-subline">
-              <ion-badge [color]="statusColor(appointment.status)">{{ ('status.' + appointment.status) | translate }}</ion-badge>
-              <span *ngIf="appointment.notes"> · {{ appointment.notes }}</span>
-            </div>
-          </div>
-          <div class="entity-actions" *ngIf="appointment.status !== 'cancelled' && appointment.status !== 'completed'">
-            <ion-button fill="clear" (click)="editAppointment(appointment)" [attr.aria-label]="'appointments.edit' | translate">
-              <ion-icon slot="icon-only" name="pencil-outline"></ion-icon>
-            </ion-button>
-            <ion-button fill="clear" color="danger" (click)="cancelAppointment(appointment)" [attr.aria-label]="'appointments.cancelAria' | translate">
-              <ion-icon slot="icon-only" name="close-circle-outline"></ion-icon>
-            </ion-button>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="section-card appointments-empty" *ngIf="!loading && appointments.length === 0">
-      <ion-icon name="calendar-outline"></ion-icon>
-      <h2>{{ 'appointments.emptyTitle' | translate }}</h2>
-      <p>{{ 'appointments.emptyDescription' | translate }}</p>
-      <ion-button (click)="openBooking()">
-        <ion-icon slot="start" name="add-outline"></ion-icon>
-        {{ 'appointments.new' | translate }}
-      </ion-button>
-    </section>
+    @if (!loading && appointments.length === 0) {
+      <section class="section-card appointments-empty">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <h2>{{ 'appointments.emptyTitle' | translate }}</h2>
+        <p>{{ 'appointments.emptyDescription' | translate }}</p>
+        <ion-button (click)="openBooking()">
+          <ion-icon slot="start" name="add-outline"></ion-icon>
+          {{ 'appointments.new' | translate }}
+        </ion-button>
+      </section>
+    }
   </div>
 </ion-content>

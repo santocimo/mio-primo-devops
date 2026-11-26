@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { AlertController, ToastController } from '@ionic/angular';
 import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
@@ -9,9 +9,11 @@ import { LanguageService } from '../../i18n/language.service';
 import { User } from '../../models/auth.model';
 
 @Component({
-  selector: 'app-account-deletion',
-  templateUrl: './account-deletion.page.html',
-  styleUrls: ['./account-deletion.page.scss'],
+    selector: 'app-account-deletion',
+    templateUrl: './account-deletion.page.html',
+    styleUrls: ['./account-deletion.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AccountDeletionPage implements OnInit, OnDestroy {
   user?: User;

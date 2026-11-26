@@ -11,12 +11,18 @@
   <div class="paywall-container">
 
     <div class="header-section">
-      <div *ngIf="isTrialExpired" class="trial-expired-badge">
-        {{ 'paywall.expired' | translate }}
-      </div>
+      @if (isTrialExpired) {
+        <div class="trial-expired-badge">
+          {{ 'paywall.expired' | translate }}
+        </div>
+      }
       <h1>{{ 'paywall.heading' | translate }}</h1>
-      <p *ngIf="!isTrialExpired">{{ 'paywall.trial' | translate }}</p>
-      <p *ngIf="isTrialExpired">{{ 'paywall.choosePlan' | translate }}</p>
+      @if (!isTrialExpired) {
+        <p>{{ 'paywall.trial' | translate }}</p>
+      }
+      @if (isTrialExpired) {
+        <p>{{ 'paywall.choosePlan' | translate }}</p>
+      }
       <p>{{ 'paywall.gymCoverage' | translate }}</p>
     </div>
 
@@ -44,39 +50,48 @@
     </div>
 
     <div class="pricing-section">
-      <div *ngIf="loadingPlans" class="plans-loading">
-        <ion-spinner name="crescent"></ion-spinner>
-      </div>
-      <p *ngIf="plansUnavailable" class="plans-error" role="alert">
-        {{ 'paywall.plansError' | translate }}
-      </p>
-      <div
-        *ngFor="let product of products"
-        class="pricing-card"
-        [class.selected]="selectedProductId === product.id"
-        [class.best-value]="product.duration === 'yearly'"
-        (click)="selectedProductId = product.id"
-      >
-        <div *ngIf="product.duration === 'yearly'" class="best-value-badge">{{ 'paywall.bestValue' | translate }}</div>
-        <h3>{{ (product.duration === 'yearly' ? 'paywall.yearlyPlan' : 'paywall.monthlyPlan') | translate }}</h3>
-        <p class="description">{{ (product.duration === 'yearly' ? 'paywall.yearlyDescription' : 'paywall.monthlyDescription') | translate }}</p>
-        <div class="price">
-          <span class="amount">{{ product.price }}</span>
-          <span class="currency">{{ product.currency }}</span>
-          <span class="duration">/{{ (product.duration === 'monthly' ? 'paywall.month' : 'paywall.year') | translate }}</span>
+      @if (loadingPlans) {
+        <div class="plans-loading">
+          <ion-spinner name="crescent"></ion-spinner>
         </div>
-        <ion-button
-          expand="block"
-          (click)="onPurchase(product.id); $event.stopPropagation()"
-          [disabled]="purchaseInProgress || loadingPlans || plansUnavailable || !canManageSubscription || (!providers.paypal && !providers.stripe)"
-          class="purchase-button"
-        >
-          {{ 'paywall.subscribeNow' | translate }}
-        </ion-button>
-      </div>
-      <p *ngIf="!loadingPlans && !canManageSubscription" class="plans-error" role="status">
-        {{ 'paywall.billingOwnerOnly' | translate }}
-      </p>
+      }
+      @if (plansUnavailable) {
+        <p class="plans-error" role="alert">
+          {{ 'paywall.plansError' | translate }}
+        </p>
+      }
+      @for (product of products; track product) {
+        <div
+          class="pricing-card"
+          [class.selected]="selectedProductId === product.id"
+          [class.best-value]="product.duration === 'yearly'"
+          (click)="selectedProductId = product.id"
+          >
+          @if (product.duration === 'yearly') {
+            <div class="best-value-badge">{{ 'paywall.bestValue' | translate }}</div>
+          }
+          <h3>{{ (product.duration === 'yearly' ? 'paywall.yearlyPlan' : 'paywall.monthlyPlan') | translate }}</h3>
+          <p class="description">{{ (product.duration === 'yearly' ? 'paywall.yearlyDescription' : 'paywall.monthlyDescription') | translate }}</p>
+          <div class="price">
+            <span class="amount">{{ product.price }}</span>
+            <span class="currency">{{ product.currency }}</span>
+            <span class="duration">/{{ (product.duration === 'monthly' ? 'paywall.month' : 'paywall.year') | translate }}</span>
+          </div>
+          <ion-button
+            expand="block"
+            (click)="onPurchase(product.id); $event.stopPropagation()"
+            [disabled]="purchaseInProgress || loadingPlans || plansUnavailable || !canManageSubscription || (!providers.paypal && !providers.stripe)"
+            class="purchase-button"
+            >
+            {{ 'paywall.subscribeNow' | translate }}
+          </ion-button>
+        </div>
+      }
+      @if (!loadingPlans && !canManageSubscription) {
+        <p class="plans-error" role="status">
+          {{ 'paywall.billingOwnerOnly' | translate }}
+        </p>
+      }
     </div>
 
     <div class="terms-text">

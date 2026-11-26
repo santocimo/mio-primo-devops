@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
@@ -24,9 +24,11 @@ export interface ServiceItem {
 }
 
 @Component({
-  selector: 'app-admin-services',
-  templateUrl: './admin-services.page.html',
-  styleUrls: ['./admin-services.page.scss'],
+    selector: 'app-admin-services',
+    templateUrl: './admin-services.page.html',
+    styleUrls: ['./admin-services.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AdminServicesPage implements OnInit, OnDestroy {
   readonly serviceCategories = [

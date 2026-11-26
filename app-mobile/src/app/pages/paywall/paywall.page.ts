@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { CheckoutConfig, PaymentService, Product } from '../../services/payment.service';
 import { AuthService } from '../../services/auth.service';
@@ -8,9 +8,11 @@ import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
 
 @Component({
-  selector: 'app-paywall',
-  templateUrl: './paywall.page.html',
-  styleUrls: ['./paywall.page.scss'],
+    selector: 'app-paywall',
+    templateUrl: './paywall.page.html',
+    styleUrls: ['./paywall.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class PaywallPage implements OnInit, OnDestroy {
   products: Product[] = [];

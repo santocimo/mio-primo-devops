@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectionStrategy } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { NavController, ToastController } from '@ionic/angular';
 import { Subject } from 'rxjs';
@@ -10,9 +10,11 @@ import { LanguageService } from '../../i18n/language.service';
 import { apiDateTimeToLocalInput, getDeviceTimeZone, localDateTimeToUtcIso } from '../../utils/local-time';
 
 @Component({
-  selector: 'app-book-appointment',
-  templateUrl: './book-appointment.page.html',
-  styleUrls: ['./book-appointment.page.scss'],
+    selector: 'app-book-appointment',
+    templateUrl: './book-appointment.page.html',
+    styleUrls: ['./book-appointment.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class BookAppointmentPage implements OnInit, OnDestroy {
   contacts: Contact[] = [];

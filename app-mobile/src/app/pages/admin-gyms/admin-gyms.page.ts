@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectionStrategy } from '@angular/core';
 import { Router } from '@angular/router';
 import { AlertController } from '@ionic/angular';
 import { ApiService } from '../../services/api.service';
@@ -8,9 +8,11 @@ import { takeUntil } from 'rxjs/operators';
 import { LanguageService } from '../../i18n/language.service';
 
 @Component({
-  selector: 'app-admin-gyms',
-  templateUrl: './admin-gyms.page.html',
-  styleUrls: ['./admin-gyms.page.scss'],
+    selector: 'app-admin-gyms',
+    templateUrl: './admin-gyms.page.html',
+    styleUrls: ['./admin-gyms.page.scss'],
+    changeDetection: ChangeDetectionStrategy.Eager,
+    standalone: false
 })
 export class AdminGymsPage implements OnInit, OnDestroy {
   gyms: Gym[] = [];
