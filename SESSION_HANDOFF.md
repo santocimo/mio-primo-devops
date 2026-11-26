@@ -1,6 +1,6 @@
 # Session handoff
 
-Aggiornato il 2026-11-25. Le note qui sotto sono lo stato più recente e prevalgono sulle note storiche successive. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md` e `DEPLOY_CHECKLIST.md`.
+Aggiornato il 2026-11-26. Le note qui sotto sono lo stato più recente e prevalgono sulle note storiche successive. Per la ripresa operativa vedere anche `RIPRENDI_QUI.md` e `DEPLOY_CHECKLIST.md`.
 
 ## Routine
 
@@ -8,6 +8,11 @@ Aggiornare sempre questo handoff al termine del lavoro con attività completate,
 
 ## Ultimo checkpoint
 
+- Il 26 novembre sono state committate e pushate le modifiche di preparazione deploy e migrazione frontend nel commit `95988d1` (`Prepare production deploy and modernize frontend`) sul branch `work/clean-app-2026-10-04`. Il push è riuscito. Questo handoff viene aggiornato e pushato separatamente per registrare lo stato finale.
+- Verifiche del checkpoint: build Angular di produzione e `npm audit` riusciti (0 vulnerabilità); PHPUnit 40 test / 67 asserzioni, 7 saltati perché dipendono da un DB di test isolato; `composer validate`, PHP lint e `git diff --check` riusciti. Il wrapper Android Gradle 8.13 è stato verificato con JDK 21; non è stata prodotta l'APK perché manca Android SDK. Le immagini Docker, la configurazione Compose e gli smoke test web/Apache erano già stati verificati nel checkpoint precedente.
+- L'anteprima web continua su `http://localhost:4200`; la schermata profilo è stata aperta e la build passa, ma l'utente deve ancora confermare i flussi manuali. È solo un server di sviluppo, esposto sulla porta 4200: non inserire dati reali.
+- Nessun deploy pubblico, dominio, pagamento live o migrazione del database locale è stato eseguito. La checklist di produzione resta in `DEPLOY_CHECKLIST.md`; l'APK Android e i prerequisiti legali/infrastrutturali sono ancora da completare.
+- Le modifiche privacy, i relativi test e la bozza della mappa privacy sono nel commit `f8914ec` (`Strengthen privacy and contact data handling`), pushato su `origin/work/clean-app-2026-10-04`. Non sono state distribuite in produzione.
 - Commit `be733e5` (`Implement timezone-aware appointments and access tests`) è stato pushato su `origin/work/clean-app-2026-10-04` su richiesta dell'utente; il worktree era pulito dopo il push.
 - I quattro appuntamenti legacy senza fuso sono stati convertiti in `Europe/Rome` dopo l'autorizzazione dell'utente. Non restano righe con `scheduled_timezone IS NULL`; il record legacy verificato appare alle 10:00 ora italiana e alle 10:00 ora di inserimento. Backup pre-migrazione: `/home/santo/backups-db/mio_database_pre_legacy_timezone_20261125_105231.sql`.
 - Gli admin vedono ora italiana e fuso d'inserimento nelle pagine appuntamenti; operatori/gestori vedono il proprio orario locale. Il registro accessi admin mostra solo l'ora italiana.
@@ -18,7 +23,7 @@ Aggiornare sempre questo handoff al termine del lavoro con attività completate,
 
 ## Prossimo passo
 
-Se richiesto dall'utente, aggiornare solo il container web al commit corrente, mantenendo invariati il container DB e il volume `santo_db_data`; poi fare smoke test con account admin, referente e operatore su attività distinte. Non eseguire il deploy senza richiesta esplicita.
+Attendere la conferma dell'utente dopo la prova manuale dell'anteprima su `http://localhost:4200`. Se emergono problemi, correggerli in un nuovo commit; non aggiornare/ricreare database o volume `santo_db_data`. Per la pubblicazione, seguire `DEPLOY_CHECKLIST.md` e ottenere prima le decisioni mancanti su hosting, dominio, segreti e requisiti legali.
 
 ## Pubblicazione su dominio e revisione legale (25 novembre 2026)
 
@@ -32,7 +37,7 @@ Se richiesto dall'utente, aggiornare solo il container web al commit corrente, m
 - Bloccata la categoria `medical` per nuove registrazioni e nuove assegnazioni via API e gestione legacy. Le attività già classificate medical sono conservate e possono mantenere la categoria; controllare eventuali record legacy prima del lancio.
 - Verificato il flusso di ricerca comuni: usa l'endpoint dell'app e la tabella locale, senza servizio esterno individuato.
 - Lo script di pulizia audit ha retention di 90 giorni; Compose non pianifica la pulizia e l'ambiente di produzione non è scelto, quindi la schedulazione va configurata e verificata sull'hosting.
-- Validazione delle modifiche: suite PHP 38 test / 154 asserzioni passata; integrazione autorizzazioni eseguita su MariaDB temporaneo isolato e container rimosso; PHP lint, build Angular di produzione e `git diff --check` superati. Il test Playwright E2E è stato aggiornato e la sintassi transpilata, ma non eseguito: l'ambiente ha Node 18 mentre Playwright richiede Node 20+. Nessun dato di produzione toccato, nessun deploy, commit o push.
+- Validazione delle modifiche: suite PHP 38 test / 154 asserzioni passata; integrazione autorizzazioni eseguita su MariaDB temporaneo isolato e container rimosso; PHP lint, build Angular di produzione e `git diff --check` superati. Il test Playwright E2E è stato aggiornato e la sintassi transpilata, ma non eseguito: l'ambiente ha Node 18 mentre Playwright richiede Node 20+. Nessun dato di produzione toccato e nessun deploy eseguito; commit e push effettuati come indicato nell'ultimo checkpoint.
 - Il cleanup audit ha retention di 90 giorni; lo script esiste e la documentazione raccomanda una schedulazione giornaliera, ma `docker-compose.yml` non la configura e l'ambiente di produzione non è stato scelto, quindi la schedulazione effettiva non è verificabile.
 - La bozza [legal-content.ts](/home/santo/progetti/mio-primo-devops/app-mobile/src/app/pages/legal/legal-content.ts) è incompleta e l'interfaccia la marca esplicitamente come bozza. Mancano almeno identità/contatti legali verificati, hosting e localizzazione, elenco completo di fornitori/sub-responsabili, tempi di conservazione/cancellazione e flusso per richieste sui dati degli iscritti. Non pubblicarla come testo definitivo.
 - Dall'implementazione risultano account di attività/operatori (nome, email, username, codice fiscale), anagrafiche iscritti (nome, cognome, codice fiscale, data e comune di nascita, sesso, indirizzo e recapito), appuntamenti (nome/email, orario, stato e note) e dati di piano/pagamento. La UI avverte di non inserire dati sanitari nelle note; verificare che l'avviso e le istruzioni agli operatori siano adeguati.
